@@ -1,0 +1,34 @@
+[guid]=22302548-652c-4a07-b45d-80569888f63b
+[boosterfolder]=C:\booster
+[imagetype]=png
+
+;setup the card size
+cardsize=6.3,8.8
+
+;load all the images from a folder in a label
+[images]=dirfiles([boosterfolder]\[guid]\*.[imagetype])
+
+;create a range for all the cards
+[all]=1-{(images)}
+
+;setup the page size and paper color
+page=21,29.7,portrait,hv;,#000000
+
+;setup the cut marks and color, with an offset of 0.2
+;border=none,,0,mark,#FF0000,0,0.2,0.2
+
+;detect height and width of image
+imagesize=[all],[images]
+
+; RetroLotti
+image=[all],[images],0,0,6.3,8.8
+
+;draw the image, rotated if needed
+;if={ih}>{iw}
+;  image=[all],[images],0.2,0.2,6.4,9
+;else
+;  image=[all],[images],0.2,0.2,6.4,9,90
+;endif
+
+;extend the image to the bleed
+;bleed=[all],0.2,0.2,6.4,9

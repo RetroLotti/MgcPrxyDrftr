@@ -6,6 +6,9 @@
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <Authors>RetroLotti</Authors>
     <Product>Magic the Gathering Proxy Draftor</Product>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>ProxyDrator.snk</AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
   </PropertyGroup>
 
   <ItemGroup>
@@ -26,7 +29,6 @@
     <Folder Include="booster\" />
     <Folder Include="draft\" />
     <Folder Include="images\multiverse\" />
-    <Folder Include="images\scryfall\" />
   </ItemGroup>
 
   <ItemGroup>
@@ -468,10 +470,13 @@
     <None Update="json\sets\ZNR.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="scripts\booster.nde">
+    <None Update="scripts\booster.v1.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
-    <None Update="scripts\booster2.nde">
+    <None Update="scripts\booster.v3.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.v2.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

@@ -1,0 +1,19 @@
+; set guid for subfolder
+;[guid]=22302548-652c-4a07-b45d-80569888f63b
+; set booster folder
+;[boosterfolder]=C:\booster
+
+;setup the card size
+cardsize=6.3,8.8
+
+;load all the images from a folder in a label
+[images]=dirfiles([boosterfolder]\[guid]\, jpg|png)
+
+;create a range for all the cards
+[all]=1-{(images)}
+
+;setup the page size and paper color
+page=21,29.7,portrait,hv;,#000000
+
+; draw the image
+image=[all],[images],0,0,6.3,8.8

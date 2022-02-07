@@ -1,7 +1,6 @@
 ﻿using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using ProxyDraftor.lib;
-using ScryfallApi.Client;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -9,12 +8,9 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using H = ProxyDraftor.lib.Helpers;
 
 namespace ProxyDraftor
 {
@@ -28,6 +24,7 @@ namespace ProxyDraftor
         private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"];
         private static string JsonSetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"];
         private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"];
+        private static string ImageCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"];
         private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"];
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"];
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
@@ -40,16 +37,21 @@ namespace ProxyDraftor
         private static readonly SortedList<string, models.Set> sets = new();
         
         private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
-        private static readonly ISetService setService = serviceProvider.GetSetService();
-        private static readonly ICardService cardService = serviceProvider.GetCardService();
+        //private static readonly ISetService setService = serviceProvider.GetSetService();
+        //private static readonly ICardService cardService = serviceProvider.GetCardService();
         private static readonly WebClient client = new();
         private static readonly ApiCaller api = new();
 
         //static async Task Main(/*string[] args*/)
         static async Task Main()
         {
-            Console.WriteLine("╔═                   Preparing Application                    ═╗");
-            Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
+            H.Write("╔═", 0, 0);
+            H.Write("Preparing Application", (Console.WindowWidth / 2) - ("Preparing Application".Length / 2), 0);
+            H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
+            H.Write("╚", 0, 1);
+            H.Write("".PadRight(Console.WindowWidth - 2, '═'), 1, 1);
+            H.Write("╝", Console.WindowWidth - 1, 1);
+            Console.SetCursorPosition(0, 2);
 
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
@@ -58,7 +60,7 @@ namespace ProxyDraftor
             ReadAllSets();
 
             Console.WriteLine(">> Looking for NanDeck...");
-            CheckNanDeck();
+            H.CheckNanDeck(NanDeckFullPath);
 
             Console.WriteLine(">> Launching application...");
             Thread.Sleep(1000);
@@ -68,18 +70,13 @@ namespace ProxyDraftor
             await Draft();
         }
 
-        private static void CheckDirectory(string path)
-        {
-            DirectoryInfo dir = new(path);
-            if(!dir.Exists) { dir.Create(); }
-        }
-
         private static void CheckAllDirectories()
         {
-            CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\");
-            CheckDirectory(@$"{BaseDirectory}\{BoosterDirectory}\");
-            CheckDirectory(@$"{BaseDirectory}\{ScriptDirectory}\");
-            CheckDirectory(@$"{BaseDirectory}\{DraftDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{BoosterDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{ScriptDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{DraftDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{ImageCacheDirectory}\");
         }
 
         private static void ReadAllSets()
@@ -91,6 +88,10 @@ namespace ProxyDraftor
                 foreach (var file in files)
                 {
                     _ = ReadSingleSet(file);
+                }
+                if(files.Length <= 0)
+                {
+                    Console.WriteLine("Keine Set-Dateien gefunden!");
                 }
             }
         }
@@ -111,11 +112,6 @@ namespace ProxyDraftor
             }
                 
             return o;
-        }
-
-        static models.Deck ReadSingleDeck(string file)
-        {
-            return JsonConvert.DeserializeObject<models.Deck>(File.ReadAllText(file));
         }
 
         static List<models.CardIdentifiers> GenerateBooster(string setCode)
@@ -166,7 +162,14 @@ namespace ProxyDraftor
                 // get cards from sheet and add to booster
                 for (int i = 0; i < cardCount; i++)
                 {
-                    boosterCards.Add(temporarySheet.RandomElementByWeight(e => e.Value).Key);
+                    // reset card id
+                    Guid card = Guid.Empty;
+
+                    // prevent added duplicate cards
+                    do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
+                    
+                    // add card to booster
+                    boosterCards.Add(card);
                 }
             }
 
@@ -179,55 +182,77 @@ namespace ProxyDraftor
             return boosterCardIdentifier;
         }
 
-        static void CheckNanDeck()
+        static async Task<bool> MainLoop()
         {
-            FileInfo nandeck = new(NanDeckFullPath);
-            if(!nandeck.Exists)
+            /*
+                ┌──┬──┐  ╔══╦══╗ ╒══╤══╕ ╓──╥──╖
+                │  │  │  ║  ║  ║ │  │  │ ║  ║  ║
+                ├──┼──┤  ╠══╬══╣ ╞══╪══╡ ╟──╫──╢
+                │  │  │  ║  ║  ║ │  │  │ ║  ║  ║
+                └──┴──┘  ╚══╩══╝ ╘══╧══╛ ╙──╨──╜
+            */
+
+            //string selection = "D";
+
+            string title = "RetroLottis Magic The Gathering Proxy Generator";
+            Console.CursorVisible = false;
+
+            do
             {
-                Console.WriteLine("NanDECK wurde nicht gefunden. Bitte geben die den Ort manuell an!");
-                Console.Write("> ");
-                NanDeckFullPath = Console.ReadLine();
-                ConfigurationManager.AppSettings["NanDeckFullPath"] = NanDeckFullPath;
-            }
+                H.Write("╔═", 0, 0);
+                H.Write(title, (Console.WindowWidth / 2) - (title.Length / 2), 0);
+                H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
+
+                H.Write("╠═══╦══════════╦═══════════════════════════════════════════════╝", 0, 1);
+                H.Write("╠ D ╬ Draft    ╣", 0, 2);
+                H.Write("╠ O ╬ Optionen ╣", 0, 3);
+                H.Write("╟───╫──────────╢", 0, 4);
+                H.Write("╠ X ╬ Beenden  ╣", 0, 5);
+                H.Write("╚═══╩══════════╝", 0, 6);
+
+            } while (Console.ReadKey().Key != ConsoleKey.X);
+
+            return true;
         }
 
-        //static string RemoveNoise(string input)
-        //{
-        //    input = Regex.Replace(input, @"\r\n?|\n", string.Empty); // no more NewLine stuff
-        //    return input.Replace(" ", string.Empty)
-        //        .Replace(@"""", string.Empty);
-        //}
-
-        static async Task<bool> Draft()
+        static async Task<object> Draft()
         {
+            ISetService setService = serviceProvider.GetSetService();
+            MtgApiManager.Lib.Model.ISet set = null;
             do
             {
                 Console.Clear();
-                Console.WriteLine("╔═      RetroLottis Magic The Gathering Proxy Generator       ═╗");
-                Console.WriteLine("╚══════════════════════════════════════════════════════════════╝");
-                Console.WriteLine("");
-                Console.WriteLine("Verfügbare Sets");
-                Console.WriteLine("╔═════╦════════════╦═══════════════════════════════════════════╗");
+                Console.WriteLine("╔══════ RetroLottis Magic The Gathering Proxy Generator ═══════╗");
+                Console.WriteLine("╠═════╦════════════╦═══════════════════════════════════════════╣");
+                Console.WriteLine("╠═════╬════════════╬═══════════════════════════════════════════╣");
                 foreach (var item in releaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key.Substring(0, 10)):dd.MM.yyyy} ║ {sets[item.Value].Data.Name.PadRight(41, ' ')} ║"); }
                 Console.WriteLine("╚═════╩════════════╩═══════════════════════════════════════════╝");
-                Console.WriteLine("");
-                Console.Write("Welches Set soll verwendet werden? > ");
-                var setCode = Console.ReadLine();
-                var set = await setService.FindAsync(setCode);
-                Console.WriteLine("");
-                if(set.Value == null)
+                bool noValidSetFound = true;
+                do
                 {
-                    Console.WriteLine($"Die Eingabe [{setCode}] ist kein gültiger Set-Code.");
-                    Console.Write("Beliebige Taste zum fortfahren drücken.");
-                    continue;
-                }
-                Console.WriteLine($"Gewähltes Set: {set.Value.Name}");
+                    Console.WriteLine("");
+                    Console.Write("Welches Set soll verwendet werden? > ");
+                    var setCode = Console.ReadLine();
+                    set = (await setService.FindAsync(setCode)).Value;
+                    Console.WriteLine("");
+                    if (set == null)
+                    {
+                        Console.WriteLine($"Die Eingabe [{setCode}] ist kein gültiger Set-Code.");
+                        Console.Write("Beliebige Taste zum fortfahren drücken.");
+                    }
+                    else
+                    {
+                        noValidSetFound = false;
+                    }
+                } while (noValidSetFound);
+                
+                Console.WriteLine($"Gewähltes Set: {set.Name}");
                 Console.WriteLine("");
-                Console.Write("Wie viele Booster sollen erstellt werden? > ");
+                Console.Write("Wie viele Booster sollen erstellt werden? [1] > ");
                 var count = Console.ReadLine();
-                int boosterCount = int.Parse(count);
+                int boosterCount = int.TryParse(count, out boosterCount) ? boosterCount : 1;
                 Console.WriteLine("");
-                Console.WriteLine($"Es {(boosterCount == 1 ? "wird" : "werden")} {boosterCount} Booster der Erweiterung \"{set.Value.Name}\" erstellt.");
+                Console.WriteLine($"Es {(boosterCount == 1 ? "wird" : "werden")} {boosterCount} Booster der Erweiterung \"{set.Name}\" erstellt.");
                 Console.CursorVisible = false;
                 Console.Write("Beliebige Taste zum starten drücken!");
                 Console.ReadKey();
@@ -243,7 +268,7 @@ namespace ProxyDraftor
                     Console.WriteLine($"Generiere Booster {i}/{boosterCount}...");
 
                     // get a booster
-                    var booster = GenerateBooster(set.Value.Code);
+                    var booster = GenerateBooster(set.Code);
 
                     // new booster guid 
                     var boosterGuid = Guid.NewGuid();
@@ -253,7 +278,7 @@ namespace ProxyDraftor
                     if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
 
                     Console.WriteLine("Lade Bilder herunter...");
-                    Console.WriteLine("=======================================================================================");
+                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
 
                     // load images
                     foreach (var card in booster) { await GetImage(card, boosterDirectory.FullName); }
@@ -282,13 +307,13 @@ namespace ProxyDraftor
                         {
                             file.MoveTo($@"{draftDirectory}\{boosterGuid}.pdf");
                         }
-                        Console.WriteLine("=======================================================================================");
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                         Console.WriteLine($@"Datei {draftDirectory}\{boosterGuid}.pdf erstellt.");
-                        Console.WriteLine("=======================================================================================");
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                     } 
                     else
                     {
-                        Console.WriteLine("=======================================================================================");
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                         Console.WriteLine("Erzeugen des Boosters fehlgeschlagen...");
                     }
 
@@ -306,15 +331,24 @@ namespace ProxyDraftor
             return true;
         }
 
+        private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory)
+        {
+            // check for image
+            FileInfo file = new(@$"{cacheDirectory}\{imageName}.{imageExtension}");
+            if (file.Exists) { file.CopyTo(targetBoosterDirectory + file.Name); return true; }
+
+            // download if not present
+            await client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{imageName}.{imageExtension}");
+
+            // copy to booster directory
+            FileInfo newFile = new(@$"{cacheDirectory}\{imageName}.{imageExtension}");
+            if (newFile.Exists) { newFile.CopyTo(targetBoosterDirectory + newFile.Name); return true; }
+
+            return false;
+        }
+
         private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string boosterDirectory)
         {
-            //DirectoryInfo localImageFolder = new("");
-            //// Dictionary<string, Uri> scryfallImageUris
-
-
-            //// check for local image
-            //FileInfo file = new();
-
             // get scryfall card
             var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
 
@@ -323,8 +357,7 @@ namespace ProxyDraftor
             // check if images are present
             if(scryfallCard.ImageUris != null)
             {
-                // download image
-                await client.DownloadFileTaskAsync(scryfallCard.ImageUris["png"].AbsoluteUri, boosterDirectory + Guid.NewGuid().ToString() + ".png");
+                _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}", boosterDirectory);
             }
             else
             {
@@ -332,98 +365,19 @@ namespace ProxyDraftor
                 {
                     foreach (var item in scryfallCard.CardFaces)
                     {
+                        // get image uri
+                        var uri = item.ImageUris["png"].AbsoluteUri;
+
+                        // get card face
+                        var face = uri.Contains("front") ? "front" : "back";
+
                         // download image
-                        await client.DownloadFileTaskAsync(item.ImageUris["png"].AbsoluteUri, boosterDirectory + Guid.NewGuid().ToString() + ".png");
+                        _ = await GetImage(uri, $"{scryfallCard.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}", boosterDirectory);
                     }
                 }
             }
 
-            //{
-            //    //magicthegathering.io
-            //    var cardFallback = await cardService.FindAsync((int)cardIdentifiers.MultiverseId);
-
-            //    if (cardFallback.IsSuccess)
-            //    {
-            //        // download image
-            //        await client.DownloadFileTaskAsync(cardFallback.Value.ImageUrl, boosterDirectory + Guid.NewGuid().ToString() + ".png");
-            //    }
-            //    else
-            //    { // gatherer
-
-            //        // download image
-            //       // await client.DownloadFileTaskAsync(scryfallCard.ImageUris["png"].AbsoluteUri, boosterDirectory + Guid.NewGuid().ToString() + ".png");
-            //    }
-            //}
-
             return true;
-        }
-
-        //private static void GeneratePdf(string boosterPath)
-        //{
-        //    var ImageFiles = System.IO.Directory.EnumerateFiles(boosterPath).Where(f => f.EndsWith(".png"));
-        //    ImageToPdfConverter.ImageToPdf(ImageFiles).SaveAs(@"C:\booster\composite.pdf");
-        //}
-    }
-
-    public class ApiCaller
-    {
-        //private const int WAIT_TIME = 100;
-        private readonly HttpClient client = null;
-        //private DateTime lastApiCall;
-
-        //https://scryfall.com/docs/api
-
-        public ApiCaller()
-        {
-            client = new HttpClient();
-            client.BaseAddress = new Uri("https://api.scryfall.com");
-            client.DefaultRequestHeaders.Accept.Clear();
-            client.DefaultRequestHeaders.Accept.Add(
-                new MediaTypeWithQualityHeaderValue("application/json"));
-        }
-
-        public async Task<ScryfallApi.Client.Models.Card> GetCardByMultiverseIdAsync(string multiverseid)
-        {
-            //var currentTime = DateTime.Now;
-            //lastApiCall = DateTime.Now;
-
-            ScryfallApi.Client.Models.Card card = null;
-
-            HttpResponseMessage response = await client.GetAsync($"cards/multiverse/{multiverseid}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
-            }
-            return card;
-        }
-        public async Task<ScryfallApi.Client.Models.Card> GetCardByScryfallIdAsync(Guid scryfallGuid)
-        {
-            //var currentTime = DateTime.Now;
-            //lastApiCall = DateTime.Now;
-
-            ScryfallApi.Client.Models.Card card = null;
-
-            HttpResponseMessage response = await client.GetAsync($"cards/{scryfallGuid}");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
-            }
-            return card;
-        }
-
-        public async Task<List<ScryfallApi.Client.Models.Set>> GetSetsAsync()
-        {
-            //lastApiCall = DateTime.Now;
-            List<ScryfallApi.Client.Models.Set> sets = null;
-            HttpResponseMessage response = await client.GetAsync($"sets");
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                sets = System.Text.Json.JsonSerializer.Deserialize<List<ScryfallApi.Client.Models.Set>>(json);
-            }
-            return sets;
         }
     }
 }
