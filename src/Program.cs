@@ -17,7 +17,9 @@ namespace ProxyDraftor
     class Program
     {
 #if DEBUG
-        public static string BaseDirectory { get; set; } = @"c:\dev\git\ProxyDraftor\src";
+        //public static string BaseDirectory { get; set; } = @"c:\dev\git\ProxyDraftor\src";
+        public static string BaseDirectory { get; set; } = @"C:\Users\Affenbande\source\repos\RetroLotti\MagicTheGatheringProxyDrafter\src";
+        
 #else
         public static string BaseDirectory { get; set; } = Environment.CurrentDirectory;
 #endif
@@ -25,24 +27,19 @@ namespace ProxyDraftor
         private static string JsonSetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"];
         private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"];
         private static string ImageCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"];
+        private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"];
         private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"];
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"];
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
-        //private static string DefaultImageType { get; set; } = ConfigurationManager.AppSettings["DefaultImageType"];
-        //private static string DefaultCardLanguage { get; set; } = ConfigurationManager.AppSettings["DefaultCardLanguage"];
         private static string NanDeckFullPath { get; set; } = ConfigurationManager.AppSettings["NanDeckFullPath"];
-        //private static string[] SetsToLoad { get; set; } = ConfigurationManager.AppSettings["SetsToLoad"].Split(" ");
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
         private static readonly SortedList<string, models.Set> sets = new();
         
         private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
-        //private static readonly ISetService setService = serviceProvider.GetSetService();
-        //private static readonly ICardService cardService = serviceProvider.GetCardService();
         private static readonly WebClient client = new();
         private static readonly ApiCaller api = new();
 
-        //static async Task Main(/*string[] args*/)
         static async Task Main()
         {
             H.Write("╔═", 0, 0);
@@ -184,16 +181,6 @@ namespace ProxyDraftor
 
         static async Task<bool> MainLoop()
         {
-            /*
-                ┌──┬──┐  ╔══╦══╗ ╒══╤══╕ ╓──╥──╖
-                │  │  │  ║  ║  ║ │  │  │ ║  ║  ║
-                ├──┼──┤  ╠══╬══╣ ╞══╪══╡ ╟──╫──╢
-                │  │  │  ║  ║  ║ │  │  │ ║  ║  ║
-                └──┴──┘  ╚══╩══╝ ╘══╧══╛ ╙──╨──╜
-            */
-
-            //string selection = "D";
-
             string title = "RetroLottis Magic The Gathering Proxy Generator";
             Console.CursorVisible = false;
 
@@ -357,7 +344,7 @@ namespace ProxyDraftor
             // check if images are present
             if(scryfallCard.ImageUris != null)
             {
-                _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}", boosterDirectory);
+                _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", boosterDirectory);
             }
             else
             {
@@ -372,7 +359,7 @@ namespace ProxyDraftor
                         var face = uri.Contains("front") ? "front" : "back";
 
                         // download image
-                        _ = await GetImage(uri, $"{scryfallCard.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}", boosterDirectory);
+                        _ = await GetImage(uri, $"{scryfallCard.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", boosterDirectory);
                     }
                 }
             }
