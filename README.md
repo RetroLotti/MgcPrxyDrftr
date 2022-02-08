@@ -1,1 +1,1 @@
-# RetroLottisProxyDrafter
+# RetroLottis MagicTheGatheringProxyDrafter
