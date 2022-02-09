@@ -19,7 +19,6 @@ namespace ProxyDraftor
 #if DEBUG
         //public static string BaseDirectory { get; set; } = @"c:\dev\git\ProxyDraftor\src";
         public static string BaseDirectory { get; set; } = @"C:\Users\Affenbande\source\repos\RetroLotti\MagicTheGatheringProxyDrafter\src";
-        
 #else
         public static string BaseDirectory { get; set; } = Environment.CurrentDirectory;
 #endif
@@ -31,7 +30,9 @@ namespace ProxyDraftor
         private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"];
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"];
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
-        private static string NanDeckFullPath { get; set; } = ConfigurationManager.AppSettings["NanDeckFullPath"];
+        private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
+        private static string LastGeneratedSet { get; set; } = ConfigurationManager.AppSettings["LastGeneratedSet"];
+        private static bool AutomaticPrinting { get; set; } = bool.Parse(ConfigurationManager.AppSettings["AutomaticPrinting"]);
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
         private static readonly SortedList<string, models.Set> sets = new();
@@ -43,24 +44,24 @@ namespace ProxyDraftor
         static async Task Main()
         {
             H.Write("╔═", 0, 0);
-            H.Write("Preparing Application", (Console.WindowWidth / 2) - ("Preparing Application".Length / 2), 0);
+            H.Write("Bereite Applikation vor", (Console.WindowWidth / 2) - ("Bereite Applikation vor".Length / 2), 0);
             H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
             H.Write("╚", 0, 1);
             H.Write("".PadRight(Console.WindowWidth - 2, '═'), 1, 1);
             H.Write("╝", Console.WindowWidth - 1, 1);
             Console.SetCursorPosition(0, 2);
 
-            Console.WriteLine(">> Checking directories...");
+            Console.WriteLine(">> Prüfe Verzeichnisse...");
             CheckAllDirectories();
 
-            Console.WriteLine(">> Reading sets...");
+            Console.WriteLine(">> Lese Sets...");
             ReadAllSets();
 
-            Console.WriteLine(">> Looking for NanDeck...");
-            H.CheckNanDeck(NanDeckFullPath);
+            Console.WriteLine(">> Halte nach NanDeck ausschau...");
+            H.CheckNanDeck(NanDeckPath);
 
-            Console.WriteLine(">> Launching application...");
-            Thread.Sleep(1000);
+            Console.WriteLine(">> Starte...");
+            Thread.Sleep(666);
             Console.Clear();
 
             // start main loop
@@ -212,14 +213,19 @@ namespace ProxyDraftor
                 Console.WriteLine("╔══════ RetroLottis Magic The Gathering Proxy Generator ═══════╗");
                 Console.WriteLine("╠═════╦════════════╦═══════════════════════════════════════════╣");
                 Console.WriteLine("╠═════╬════════════╬═══════════════════════════════════════════╣");
-                foreach (var item in releaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key.Substring(0, 10)):dd.MM.yyyy} ║ {sets[item.Value].Data.Name.PadRight(41, ' ')} ║"); }
+                foreach (var item in releaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key[..10]):dd.MM.yyyy} ║ {sets[item.Value].Data.Name.PadRight(41, ' ')} ║"); }
                 Console.WriteLine("╚═════╩════════════╩═══════════════════════════════════════════╝");
                 bool noValidSetFound = true;
                 do
                 {
                     Console.WriteLine("");
-                    Console.Write("Welches Set soll verwendet werden? > ");
+                    Console.Write($"Welches Set soll verwendet werden? [{LastGeneratedSet}]> ");
                     var setCode = Console.ReadLine();
+                    if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(LastGeneratedSet))
+                    {
+                        Console.WriteLine($"Benutze zuletzt verwendetes Set {LastGeneratedSet}.");
+                        setCode = LastGeneratedSet;
+                    }
                     set = (await setService.FindAsync(setCode)).Value;
                     Console.WriteLine("");
                     if (set == null)
@@ -232,8 +238,11 @@ namespace ProxyDraftor
                         noValidSetFound = false;
                     }
                 } while (noValidSetFound);
+
+                // save last used set
+                ConfigurationManager.AppSettings["LastGeneratedSet"] = set.Code.ToUpper();
                 
-                Console.WriteLine($"Gewähltes Set: {set.Name}");
+                Console.WriteLine($"Ausgewähltes Set: {set.Name}");
                 Console.WriteLine("");
                 Console.Write("Wie viele Booster sollen erstellt werden? [1] > ");
                 var count = Console.ReadLine();
@@ -281,11 +290,14 @@ namespace ProxyDraftor
                     proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
                     proc.StartInfo.CreateNoWindow = true;
                     proc.StartInfo.FileName = "cmd.exe";
-                    proc.StartInfo.Arguments = $"/c {NanDeckFullPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={boosterGuid} /[boosterfolder]={BaseDirectory}\\{BoosterDirectory} /createpdf";
+                    proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={boosterGuid} /[boosterfolder]={BaseDirectory}\\{BoosterDirectory} /createpdf";
+                    if (AutomaticPrinting)
+                    {
+                        proc.StartInfo.Arguments += " /print";
+                    }
                     proc.EnableRaisingEvents = true;
                     proc.Start();
                     proc.WaitForExit();
-                    var exitCode = proc.ExitCode;
 
                     if(proc.ExitCode == 0)
                     {
@@ -313,6 +325,7 @@ namespace ProxyDraftor
                 Console.WriteLine("Alle Booster wurden erstellt.");
                 Console.WriteLine("Um weitere Booster zu erstellen bitte eine beliebige Taste drücken.");
                 Console.Write("Zum beenden [x] drücken!");
+
             } while (Console.ReadKey().Key != ConsoleKey.X);
             
             return true;
