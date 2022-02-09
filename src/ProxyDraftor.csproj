@@ -10,21 +10,12 @@
     <AssemblyOriginatorKeyFile>ProxyDrator.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
-  
-  <ItemGroup>
-    <Compile Remove="json\**" />
-    <Content Include="json\**" />
-    
-    <Compile Remove="draft\**" />
-    <Content Include="draft\**" />
-    
-    <Compile Remove="booster\**" />
-    <Content Include="booster\**" />
-    
-    <Compile Remove="images\**" />
-    <Content Include="images\**" />
-  </ItemGroup>
 
+  <ItemGroup>
+    <!--Don't include Correlation classes in Function V1.-->
+    <Compile Include="**/*.cs" Exclude="json/**/*.json" />
+  </ItemGroup>
+  
   <ItemGroup>
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.1" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
