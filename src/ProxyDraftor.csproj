@@ -10,11 +10,6 @@
     <AssemblyOriginatorKeyFile>ProxyDrator.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
-
-  <ItemGroup>
-    <!--Don't include Correlation classes in Function V1.-->
-    <Compile Exclude="json/**/*.json" />
-  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.1" />
