@@ -13,7 +13,7 @@
 
   <ItemGroup>
     <!--Don't include Correlation classes in Function V1.-->
-    <Compile Include="**/*.cs" Exclude="json/**/*.json" />
+    <Compile Exclude="json/**/*.json" />
   </ItemGroup>
   
   <ItemGroup>
