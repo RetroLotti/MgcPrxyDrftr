@@ -19,7 +19,6 @@ namespace ProxyDraftor
 #if DEBUG
         //public static string BaseDirectory { get; set; } = @"c:\dev\git\ProxyDraftor\src";
         public static string BaseDirectory { get; set; } = @"C:\Users\Affenbande\source\repos\RetroLotti\MagicTheGatheringProxyDrafter\src";
-        
 #else
         public static string BaseDirectory { get; set; } = Environment.CurrentDirectory;
 #endif
@@ -73,7 +72,7 @@ namespace ProxyDraftor
             H.CheckDirectory(@$"{BaseDirectory}\{BoosterDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{ScriptDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{DraftDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{ImageCacheDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}\");
         }
 
         private static void ReadAllSets()
@@ -170,36 +169,10 @@ namespace ProxyDraftor
                 }
             }
 
-            // balance colors
-            // TODO: if a sheet has balanceColors == true this has to be considered ==> BUT HOW
-
             // get scryfall id for card determination later on
             for (int i = 0; i < boosterCards.Count; i++) { boosterCardIdentifier.Add(cards[boosterCards[i]].Identifiers); boosterCards[i] = cards[boosterCards[i]].Identifiers.ScryfallId; }
 
             return boosterCardIdentifier;
-        }
-
-        static async Task<bool> MainLoop()
-        {
-            string title = "RetroLottis Magic The Gathering Proxy Generator";
-            Console.CursorVisible = false;
-
-            do
-            {
-                H.Write("╔═", 0, 0);
-                H.Write(title, (Console.WindowWidth / 2) - (title.Length / 2), 0);
-                H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
-
-                H.Write("╠═══╦══════════╦═══════════════════════════════════════════════╝", 0, 1);
-                H.Write("╠ D ╬ Draft    ╣", 0, 2);
-                H.Write("╠ O ╬ Optionen ╣", 0, 3);
-                H.Write("╟───╫──────────╢", 0, 4);
-                H.Write("╠ X ╬ Beenden  ╣", 0, 5);
-                H.Write("╚═══╩══════════╝", 0, 6);
-
-            } while (Console.ReadKey().Key != ConsoleKey.X);
-
-            return true;
         }
 
         static async Task<object> Draft()
