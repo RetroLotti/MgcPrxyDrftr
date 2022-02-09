@@ -10,11 +10,19 @@
     <AssemblyOriginatorKeyFile>ProxyDrator.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
-
+  
   <ItemGroup>
-    <Compile Remove="draft\2022-02-01T13-37-06\**" />
-    <EmbeddedResource Remove="draft\2022-02-01T13-37-06\**" />
-    <None Remove="draft\2022-02-01T13-37-06\**" />
+    <Compile Remove="json\**" />
+    <Content Include="json\**" />
+    
+    <Compile Remove="draft\**" />
+    <Content Include="draft\**" />
+    
+    <Compile Remove="booster\**" />
+    <Content Include="booster\**" />
+    
+    <Compile Remove="images\**" />
+    <Content Include="images\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -23,12 +31,6 @@
     <PackageReference Include="ScryfallAPI.Client" Version="2.0.5" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />
     <PackageReference Include="WolfCurses" Version="2018.9.12.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="booster\" />
-    <Folder Include="draft\" />
-    <Folder Include="images\multiverse\" />
   </ItemGroup>
 
   <ItemGroup>
