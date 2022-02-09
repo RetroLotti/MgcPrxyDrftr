@@ -15,15 +15,15 @@ jobs:
       with:
         dotnet-version: 5.0.x
     - name: Install dependencies
-      run: dotnet restore "./myApp"
+      run: dotnet restore "./src"
     - name: Build code
-      run: dotnet build "./myApp" --configuration Release --no-restore
+      run: dotnet build "./src" --configuration Release --no-restore
 #    - name: Test code 
-#      run: dotnet test "./myApp" --no-restore --verbosity normal
+#      run: dotnet test "./MagicTheGahteringProxyDrafter" --no-restore --verbosity normal
     - name: Publish application
-      run: dotnet publish "./myApp" -c Release -o myApp
+      run: dotnet publish "./src" -c Release -o MagicTheGatheringProxyDrafter
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:
        name: my-artifact
-       path: "./myApp" 
+       path: "./src" 
