@@ -1,0 +1,30 @@
+name: .NET Core
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout GitHub actions
+      uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Install dependencies
+      run: dotnet restore "./src"
+    - name: Build code
+      run: dotnet build "./src" --configuration Release --no-restore
+#    - name: Test code 
+#      run: dotnet test "./MagicTheGahteringProxyDrafter" --no-restore --verbosity normal
+    - name: Publish application
+      #run: dotnet publish "./src" -c Release -o MagicTheGatheringProxyDrafter -r win10-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained true
+      run: dotnet publish "./src" -c Release -o MagicTheGatheringProxyDrafter -r win10-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v2
+      with:
+       name: my-artifact
+       path: "./src" 
