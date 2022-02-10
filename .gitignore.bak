@@ -351,3 +351,6 @@ MigrationBackup/
 /src/images/scryfall
 /src/booster
 /src/draft
+/src/json/
+/src/json/sets/
+/src/json/decks/

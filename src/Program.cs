@@ -334,15 +334,19 @@ namespace ProxyDraftor
         private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory)
         {
             // check for image
-            FileInfo file = new(@$"{cacheDirectory}\{imageName}.{imageExtension}");
-            if (file.Exists) { file.CopyTo(targetBoosterDirectory + file.Name); return true; }
+            FileInfo file = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+            if (file.Exists) { _ = file.CopyTo(targetBoosterDirectory + file.Name); return true; }
+
+            // check target directory
+            DirectoryInfo directoryInfo = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\");
+            if(!directoryInfo.Exists) { directoryInfo.Create(); }
 
             // download if not present
-            await client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{imageName}.{imageExtension}");
+            await client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
 
             // copy to booster directory
-            FileInfo newFile = new(@$"{cacheDirectory}\{imageName}.{imageExtension}");
-            if (newFile.Exists) { newFile.CopyTo(targetBoosterDirectory + newFile.Name); return true; }
+            FileInfo newFile = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+            if (newFile.Exists) { _ = newFile.CopyTo(targetBoosterDirectory + newFile.Name); return true; }
 
             return false;
         }
