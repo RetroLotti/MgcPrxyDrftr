@@ -16,12 +16,7 @@ namespace ProxyDraftor
 {
     class Program
     {
-#if DEBUG
-        //public static string BaseDirectory { get; set; } = @"c:\dev\git\ProxyDraftor\src";
-        public static string BaseDirectory { get; set; } = @"C:\Users\Affenbande\source\repos\RetroLotti\MagicTheGatheringProxyDrafter\src";
-#else
-        public static string BaseDirectory { get; set; } = Environment.CurrentDirectory;
-#endif
+        public static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
         private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"];
         private static string JsonSetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"];
         private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"];
@@ -34,6 +29,7 @@ namespace ProxyDraftor
         private static string LastGeneratedSet { get; set; } = ConfigurationManager.AppSettings["LastGeneratedSet"];
         private static string SetsToLoad { get; set; } = ConfigurationManager.AppSettings["SetsToLoad"];
         private static bool AutomaticPrinting { get; set; } = bool.Parse(ConfigurationManager.AppSettings["AutomaticPrinting"]);
+        private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
         private static readonly SortedList<string, models.Set> sets = new();
@@ -56,8 +52,7 @@ namespace ProxyDraftor
             CheckAllDirectories();
 
             Console.WriteLine(">> Lese Sets...");
-            //ReadAllSets();
-            ReadAllConfiguredSets();
+            if(UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
 
             Console.WriteLine(">> Halte nach NanDeck ausschau...");
             H.CheckNanDeck(NanDeckPath);
@@ -66,7 +61,7 @@ namespace ProxyDraftor
             Thread.Sleep(666);
             Console.Clear();
 
-            // start main loop
+            // start drafting loop
             await Draft();
         }
 
