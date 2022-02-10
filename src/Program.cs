@@ -32,6 +32,7 @@ namespace ProxyDraftor
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static string LastGeneratedSet { get; set; } = ConfigurationManager.AppSettings["LastGeneratedSet"];
+        private static string SetsToLoad { get; set; } = ConfigurationManager.AppSettings["SetsToLoad"];
         private static bool AutomaticPrinting { get; set; } = bool.Parse(ConfigurationManager.AppSettings["AutomaticPrinting"]);
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
@@ -55,7 +56,8 @@ namespace ProxyDraftor
             CheckAllDirectories();
 
             Console.WriteLine(">> Lese Sets...");
-            ReadAllSets();
+            //ReadAllSets();
+            ReadAllConfiguredSets();
 
             Console.WriteLine(">> Halte nach NanDeck ausschau...");
             H.CheckNanDeck(NanDeckPath);
@@ -92,6 +94,30 @@ namespace ProxyDraftor
                     Console.WriteLine("Keine Set-Dateien gefunden!");
                 }
             }
+        }
+
+        private static void ReadAllConfiguredSets()
+        {
+            List<string> configuredSets = SetsToLoad.Split(' ').ToList();
+            if(configuredSets.Count <= 0)
+            {
+                Console.WriteLine("Keine Sets konfiguriert!");
+            }
+            else
+            {
+                foreach (var set in configuredSets)
+                {
+                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}\updates.json");
+                    _ = ReadSingleSet(set);
+                }
+            }
+            
+        }
+
+        static models.Set ReadSingleSet(string setCode)
+        {
+            FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\{setCode.ToUpper()}.json");
+            return ReadSingleSet(fileInfo);
         }
 
         static models.Set ReadSingleSet(FileInfo fileInfo)
