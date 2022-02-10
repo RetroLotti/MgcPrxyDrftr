@@ -1,6 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <AppConfig>App.$(Configuration).config</AppConfig>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net5.0</TargetFramework>
     <ApplicationIcon>icon.ico</ApplicationIcon>
