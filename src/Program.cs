@@ -220,7 +220,7 @@ namespace ProxyDraftor
                 {
                     Console.WriteLine("");
                     Console.Write($"Welches Set soll verwendet werden? [{LastGeneratedSet}]> ");
-                    var setCode = Console.ReadLine();
+                    var setCode = Console.ReadLine().ToUpper();
                     if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(LastGeneratedSet))
                     {
                         Console.WriteLine($"Benutze zuletzt verwendetes Set {LastGeneratedSet}.");
@@ -235,7 +235,15 @@ namespace ProxyDraftor
                     }
                     else
                     {
-                        noValidSetFound = false;
+                        if(set.Booster == null || set.Booster.Count == 0)
+                        {
+                            Console.WriteLine($"Das Set [{setCode}] enthält keine Booster Informationen bitte wählen ein anderes Set aus.");
+                            Console.Write("Beliebige Taste zum fortfahren drücken.");
+                        }
+                        else
+                        {
+                            noValidSetFound = false;
+                        }
                     }
                 } while (noValidSetFound);
 
