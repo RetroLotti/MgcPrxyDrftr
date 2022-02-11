@@ -102,7 +102,7 @@ namespace ProxyDraftor
             {
                 foreach (var set in configuredSets)
                 {
-                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}\updates.json");
+                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", "updates.json", JsonSetDirectory);
                     _ = ReadSingleSet(set);
                 }
             }
