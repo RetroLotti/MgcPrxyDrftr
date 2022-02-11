@@ -47,9 +47,9 @@ namespace ProxyDraftor.lib
             }
         }
         
-        public static bool CheckLastUpdate(string setCode, string path)
+        public static bool CheckLastUpdate(string setCode, string fullJsonPath, string updateFile, string setFolder)
         {
-            LastUpdates updates = LoadLastUpdates(path);
+            LastUpdates updates = LoadLastUpdates(@$"{fullJsonPath}\{updateFile}");
             if (updates == null)
             {
                 updates = new LastUpdates();
@@ -63,35 +63,35 @@ namespace ProxyDraftor.lib
 
             if (updates.LastUpdatesList[setCode].AddDays(1) < DateTime.Now)
             {
-                DownloadSetFile(setCode);
+                DownloadSetFile(setCode, fullJsonPath, setFolder);
                 updates.LastUpdatesList[setCode] = DateTime.Now;
-                SaveLastUpdates(path, updates);
+                SaveLastUpdates(@$"{fullJsonPath}\{updateFile}", updates);
             }
 
             return true;
         }
 
-        private static void DownloadSetFile(string setCode)
+        private static void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
         {
             WebClient webClient = new();
             string currentFileText = string.Empty;
             Set currentSet = null;
 
             // download content file
-            webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json"), @$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json");
+            webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json"), @$"{fullJsonPath}\{setCode.ToUpper()}.json");
 
             // download checksum file
-            webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json.sha256"), @$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json.sha256");
+            webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json.sha256"), @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
             // validate checksum
-            bool isValid = ValidateFiles(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json", @$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json.sha256");
+            bool isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
             if(isValid)
             {
-                var downloadedFileText = File.ReadAllText(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json");
-                if (File.Exists(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\sets\{setCode.ToUpper()}.json"))
+                var downloadedFileText = File.ReadAllText(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
+                if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json"))
                 {
-                    currentFileText = File.ReadAllText(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\sets\{setCode.ToUpper()}.json");
+                    currentFileText = File.ReadAllText(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
                 }
                 
                 var downloadSet = JsonConvert.DeserializeObject<Set>(downloadedFileText);
@@ -100,16 +100,16 @@ namespace ProxyDraftor.lib
                 if(currentSet == null)
                 {
                     // move
-                    File.Move(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json", @$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\sets\{setCode.ToUpper()}.json");
+                    File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
                 }
                 else if (downloadSet.Meta.Date > currentSet.Meta.Date && !downloadSet.Meta.Version.Equals(currentSet.Meta.Version))
                 {
                     // replace
-                    File.Replace(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json", @$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\sets\{setCode.ToUpper()}.json", @$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\sets\{setCode.ToUpper()}.json.bak");
+                    File.Replace(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
                 }
 
-                File.Delete(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\sets\{setCode.ToUpper()}.json.bak");
-                File.Delete(@$"C:\Users\Affenbande\Source\Repos\RetroLotti\MagicTheGatheringProxyDrafter\src\json\{setCode.ToUpper()}.json.sha256");
+                File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
+                File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
             }
         }
