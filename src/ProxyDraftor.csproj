@@ -9,8 +9,8 @@
     <TargetFramework>net5.0</TargetFramework>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <Authors>RetroLotti</Authors>
-    <Product>Magic the Gathering Proxy Draftor</Product>
-    <SignAssembly>true</SignAssembly>
+    <Product>Magic the Gathering Proxy Drafter</Product>
+    <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>ProxyDrator.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
   </PropertyGroup>
