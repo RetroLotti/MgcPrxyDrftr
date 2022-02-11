@@ -41,23 +41,23 @@ namespace ProxyDraftor
         static async Task Main()
         {
             H.Write("╔═", 0, 0);
-            H.Write("Bereite Applikation vor", (Console.WindowWidth / 2) - ("Bereite Applikation vor".Length / 2), 0);
+            H.Write("Preparing application", (Console.WindowWidth / 2) - ("Preparing application".Length / 2), 0);
             H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
             H.Write("╚", 0, 1);
             H.Write("".PadRight(Console.WindowWidth - 2, '═'), 1, 1);
             H.Write("╝", Console.WindowWidth - 1, 1);
             Console.SetCursorPosition(0, 2);
 
-            Console.WriteLine(">> Prüfe Verzeichnisse...");
+            Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
-            Console.WriteLine(">> Lese Sets...");
+            Console.WriteLine(">> Reading sets...");
             if(UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
 
-            Console.WriteLine(">> Halte nach NanDeck ausschau...");
+            Console.WriteLine(">> Looking for nanDeck...");
             H.CheckNanDeck(NanDeckPath);
 
-            Console.WriteLine(">> Starte...");
+            Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
             Console.Clear();
 
@@ -86,7 +86,7 @@ namespace ProxyDraftor
                 }
                 if(files.Length <= 0)
                 {
-                    Console.WriteLine("Keine Set-Dateien gefunden!");
+                    Console.WriteLine("No Set-Files found!");
                 }
             }
         }
@@ -96,7 +96,7 @@ namespace ProxyDraftor
             List<string> configuredSets = SetsToLoad.Split(' ').ToList();
             if(configuredSets.Count <= 0)
             {
-                Console.WriteLine("Keine Sets konfiguriert!");
+                Console.WriteLine("Not sets configured!");
             }
             else
             {
@@ -214,26 +214,27 @@ namespace ProxyDraftor
                 do
                 {
                     Console.WriteLine("");
-                    Console.Write($"Welches Set soll verwendet werden? [{LastGeneratedSet}]> ");
+                    Console.Write($"Which set shall be used? [{LastGeneratedSet}]> ");
                     var setCode = Console.ReadLine().ToUpper();
                     if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(LastGeneratedSet))
                     {
-                        Console.WriteLine($"Benutze zuletzt verwendetes Set {LastGeneratedSet}.");
+                        Console.WriteLine($"Using last used set {LastGeneratedSet}.");
                         setCode = LastGeneratedSet;
                     }
                     set = (await setService.FindAsync(setCode)).Value;
                     Console.WriteLine("");
                     if (set == null)
                     {
-                        Console.WriteLine($"Die Eingabe [{setCode}] ist kein gültiger Set-Code.");
-                        Console.Write("Beliebige Taste zum fortfahren drücken.");
+                        Console.WriteLine($"The given input [{setCode}] is no valid set code.");
+                        Console.Write("Press any key to continue.");
                     }
                     else
                     {
                         if(set.Booster == null || set.Booster.Count == 0)
                         {
-                            Console.WriteLine($"Das Set [{setCode}] enthält keine Booster Informationen bitte wählen ein anderes Set aus.");
-                            Console.Write("Beliebige Taste zum fortfahren drücken.");
+                            Console.WriteLine($"The set [{setCode}] does not contain any booster information.");
+                            Console.WriteLine($"Please choose another set.");
+                            Console.Write("Press any key to continue.");
                         }
                         else
                         {
@@ -245,15 +246,15 @@ namespace ProxyDraftor
                 // save last used set
                 ConfigurationManager.AppSettings["LastGeneratedSet"] = set.Code.ToUpper();
                 
-                Console.WriteLine($"Ausgewähltes Set: {set.Name}");
+                Console.WriteLine($"Chosen set: {set.Name}");
                 Console.WriteLine("");
-                Console.Write("Wie viele Booster sollen erstellt werden? [1] > ");
+                Console.Write("How many boosters shall be created? [1] > ");
                 var count = Console.ReadLine();
                 int boosterCount = int.TryParse(count, out boosterCount) ? boosterCount : 1;
                 Console.WriteLine("");
-                Console.WriteLine($"Es {(boosterCount == 1 ? "wird" : "werden")} {boosterCount} Booster der Erweiterung \"{set.Name}\" erstellt.");
+                Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
                 Console.CursorVisible = false;
-                Console.Write("Beliebige Taste zum starten drücken!");
+                Console.Write("Press any key to start generating.");
                 Console.ReadKey();
 
                 Console.Clear();
@@ -264,7 +265,7 @@ namespace ProxyDraftor
 
                 for (int i = 1; i <= boosterCount; i++)
                 {
-                    Console.WriteLine($"Generiere Booster {i}/{boosterCount}...");
+                    Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                     // get a booster
                     var booster = GenerateBooster(set.Code);
@@ -276,7 +277,7 @@ namespace ProxyDraftor
                     DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{BoosterDirectory}\{boosterGuid}\");
                     if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
 
-                    Console.WriteLine("Lade Bilder herunter...");
+                    Console.WriteLine("Downloading images...");
                     Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
 
                     // load images
@@ -286,7 +287,7 @@ namespace ProxyDraftor
                     FileInfo backFile = new(@$"{BaseDirectory}\images\mtg.back.png");
                     if(backFile.Exists) { backFile.CopyTo(@$"{boosterDirectory.FullName}\{backFile.Name}"); }
 
-                    Console.WriteLine("Erstelle PDF-Datei via nanDECK...");
+                    Console.WriteLine("Creating PDF-file via nanDECK...");
 
                     // prepare pdf with nandeck
                     Process proc = new();
@@ -310,13 +311,13 @@ namespace ProxyDraftor
                             file.MoveTo($@"{draftDirectory}\{boosterGuid}.pdf");
                         }
                         Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        Console.WriteLine($@"Datei {draftDirectory}\{boosterGuid}.pdf erstellt.");
+                        Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
                         Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                     } 
                     else
                     {
                         Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        Console.WriteLine("Erzeugen des Boosters fehlgeschlagen...");
+                        Console.WriteLine("Booster creation failed...");
                     }
 
                     // cleanup
@@ -325,9 +326,9 @@ namespace ProxyDraftor
                 }
 
                 Console.WriteLine("");
-                Console.WriteLine("Alle Booster wurden erstellt.");
-                Console.WriteLine("Um weitere Booster zu erstellen bitte eine beliebige Taste drücken.");
-                Console.Write("Zum beenden [x] drücken!");
+                Console.WriteLine("All boosters created.");
+                Console.WriteLine("Press any key to generate more boosters.");
+                Console.Write("To exit the application press [x].");
 
             } while (Console.ReadKey().Key != ConsoleKey.X);
             
