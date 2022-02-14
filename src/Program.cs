@@ -143,6 +143,12 @@ namespace ProxyDraftor
             SortedDictionary<Guid, models.Card> cards = new();
             foreach (var item in set.Data.Cards) { if(!cards.ContainsKey(item.Uuid) && (item.Side == null || item.Side == models.Side.A)) cards.Add(item.Uuid, item); }
 
+            // check for available booster blueprints
+            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0)
+            {
+                return null;
+            }
+
             // determine booster blueprint
             Dictionary<models.Contents, float> blueprint = new();
             foreach (var item in set.Data.Booster.Default.Boosters) { blueprint.Add(item.Contents, (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight); }
@@ -230,16 +236,7 @@ namespace ProxyDraftor
                     }
                     else
                     {
-                        if(set.Booster == null || set.Booster.Count == 0)
-                        {
-                            Console.WriteLine($"The set [{setCode}] does not contain any booster information.");
-                            Console.WriteLine($"Please choose another set.");
-                            Console.Write("Press any key to continue.");
-                        }
-                        else
-                        {
-                            noValidSetFound = false;
-                        }
+                        noValidSetFound = false;
                     }
                 } while (noValidSetFound);
 

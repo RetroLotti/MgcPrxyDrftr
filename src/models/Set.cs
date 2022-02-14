@@ -20,12 +20,10 @@ namespace ProxyDraftor.models
         public string Block { get; set; }
         public Booster Booster { get; set; }
         public List<Card> Cards { get; set; }
-        //public Code Code { get; set; }
         public string Code { get; set; }
         public bool IsFoilOnly { get; set; }
         public bool IsNonFoilOnly { get; set; }
         public bool IsOnlineOnly { get; set; }
-        //public Code KeyruneCode { get; set; }
         public string KeyruneCode { get; set; }
         public string Name { get; set; }
         public DateTimeOffset ReleaseDate { get; set; }
@@ -36,7 +34,6 @@ namespace ProxyDraftor.models
         public Translations Translations { get; set; }
         public string Type { get; set; }
         public long McmIdExtras { get; set; }
-        //public Code MtgoCode { get; set; }
         public string MtgoCode { get; set; }
         public long McmId { get; set; }
         public string McmName { get; set; }
@@ -513,15 +510,5 @@ namespace ProxyDraftor.models
     //public enum CardLayout { Normal, Class, Transform };
 
     public enum Legality { Banned, Legal, Restricted };
-    
-    //public enum Code { Lea, Leb, The2ED, The3ED, The4ED, The5ED, The6ED, Arn, Atq, Leg, Drk, Khm, Tsr, Vow, Ice, Afr, Mid, Chr, Exo, Fem, Hml, Mir, Mi, Vi, Wl, Te, St, Ex, Ren, Sth, Tmp, Uds, Ugl, Ulg, Usg, Vis, Wth, Ath, Ul, Ud };
-
-    //public enum CardType {  };
-
-    //public enum TokenLayout { Emblem, Normal, Token };
-
-    //public enum OriginalTypeEnum { Artifact, Creature, Dungeon, Emblem, Token };
-
-    //public enum SetCode { Tafr, Tmid };
     #endregion
 }
