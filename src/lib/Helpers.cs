@@ -47,25 +47,29 @@ namespace ProxyDraftor.lib
             }
         }
         
-        public static bool CheckLastUpdate(string setCode, string fullJsonPath, string updateFile, string setFolder)
+        public static bool CheckLastUpdate(string setCode, string fullJsonPath, Settings settings, string setFolder)
         {
-            LastUpdates updates = LoadLastUpdates(@$"{fullJsonPath}\{updateFile}");
-            if (updates == null)
+            if (settings == null)
             {
-                updates = new LastUpdates();
-                updates.LastUpdatesList = new Dictionary<string, DateTime>();
+                settings = new Settings();
+                settings.Statistics = new();
+                settings.LastUpdatesList = new();
+            }
+            else if (settings.LastUpdatesList == null)
+            {
+                settings.LastUpdatesList = new();
             }
 
-            if (!updates.LastUpdatesList.ContainsKey(setCode))
+            if (!settings.LastUpdatesList.ContainsKey(setCode))
             {
-                updates.LastUpdatesList.Add(setCode, DateTime.Now.AddDays(-2));
+                settings.LastUpdatesList.Add(setCode, DateTime.Now.AddDays(-2));
             }
 
-            if (updates.LastUpdatesList[setCode].AddDays(1) < DateTime.Now)
+            if (settings.LastUpdatesList[setCode].AddDays(1) < DateTime.Now)
             {
                 DownloadSetFile(setCode, fullJsonPath, setFolder);
-                updates.LastUpdatesList[setCode] = DateTime.Now;
-                SaveLastUpdates(@$"{fullJsonPath}\{updateFile}", updates);
+                settings.LastUpdatesList[setCode] = DateTime.Now;
+                SaveSettings(settings, @$"{fullJsonPath}\settings.json");
             }
 
             return true;
@@ -144,22 +148,59 @@ namespace ProxyDraftor.lib
             return checksum.ToLower();
         }
 
-        private static LastUpdates LoadLastUpdates(string lastUpdateFilePath)
+        public static Settings LoadSettings(string settingsFileFullPath)
         {
-            LastUpdates setUpdates = null;
-            if (File.Exists(lastUpdateFilePath))
+            Settings setUpdates = null;
+            if (File.Exists(settingsFileFullPath))
             {
-                string json = File.ReadAllText(lastUpdateFilePath);
-                setUpdates = System.Text.Json.JsonSerializer.Deserialize<LastUpdates>(json);
+                string json = File.ReadAllText(settingsFileFullPath);
+                setUpdates = System.Text.Json.JsonSerializer.Deserialize<Settings>(json);
             }
 
             return setUpdates;
         }
 
-        public static void SaveLastUpdates(string lastUpdateFilePath, LastUpdates lastUpdates)
+        public static void SaveSettings(Settings settings, string settingsFileFullPath)
         {
-            string json = System.Text.Json.JsonSerializer.Serialize(lastUpdates);
-            File.WriteAllText(lastUpdateFilePath, json);
+            string json = System.Text.Json.JsonSerializer.Serialize(settings);
+            File.WriteAllText(settingsFileFullPath, json);
+        }
+
+        public static void UpdateStatistics(Settings settings, string stat, string value)
+        {
+            if (settings.Statistics.ContainsKey(stat))
+            {
+                settings.Statistics[stat] = value;
+            }
+            else
+            {
+                settings.Statistics.Add(stat, value);
+            }
+        }
+        public static void UpdateBoosterCount(Settings settings, string settingsFileFullPath, int value)
+        {
+            if(settings == null)
+            {
+                settings = new();
+                settings.Statistics = new();
+                settings.LastUpdatesList = new();
+            }
+            else if(settings.Statistics == null)
+            {
+                settings.Statistics = new();
+            }
+
+            if(settings.Statistics.TryGetValue("booster", out string currentValue))
+            {
+                int newValue = int.Parse(currentValue) + value;
+                UpdateStatistics(settings, "booster", newValue.ToString());
+                SaveSettings(settings, settingsFileFullPath);
+            }
+            else
+            {
+                UpdateStatistics(settings, "booster", value.ToString());
+                SaveSettings(settings, settingsFileFullPath);
+            }
         }
 
         //static bool Test()

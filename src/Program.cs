@@ -26,9 +26,7 @@ namespace ProxyDraftor
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"];
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
-        private static string LastGeneratedSet { get; set; } = ConfigurationManager.AppSettings["LastGeneratedSet"];
         private static string SetsToLoad { get; set; } = ConfigurationManager.AppSettings["SetsToLoad"];
-        private static bool AutomaticPrinting { get; set; } = bool.Parse(ConfigurationManager.AppSettings["AutomaticPrinting"]);
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
@@ -37,6 +35,7 @@ namespace ProxyDraftor
         private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
         private static readonly WebClient client = new();
         private static readonly ApiCaller api = new();
+        private static models.Settings Settings { get; set; }
 
         static async Task Main()
         {
@@ -50,6 +49,8 @@ namespace ProxyDraftor
 
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
+
+            Settings = H.LoadSettings(@$"{BaseDirectory}\{JsonDirectory}\settings.json");
 
             Console.WriteLine(">> Reading sets...");
             if(UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
@@ -102,7 +103,7 @@ namespace ProxyDraftor
             {
                 foreach (var set in configuredSets)
                 {
-                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", "updates.json", JsonSetDirectory);
+                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", Settings, JsonSetDirectory);
                     _ = ReadSingleSet(set);
                 }
             }
@@ -220,14 +221,16 @@ namespace ProxyDraftor
                 do
                 {
                     Console.WriteLine("");
-                    Console.Write($"Which set shall be used? [{LastGeneratedSet}]> ");
+                    Console.Write($"Which set shall be used? [{Settings.LastGeneratedSet}]> ");
                     var setCode = Console.ReadLine().ToUpper();
-                    if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(LastGeneratedSet))
+                    if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(Settings.LastGeneratedSet))
                     {
-                        Console.WriteLine($"Using last used set {LastGeneratedSet}.");
-                        setCode = LastGeneratedSet;
+                        Console.WriteLine($"Using last used set {Settings.LastGeneratedSet}.");
+                        setCode = Settings.LastGeneratedSet;
                     }
                     set = (await setService.FindAsync(setCode)).Value;
+                    Settings.LastGeneratedSet = setCode;
+                    H.SaveSettings(Settings, $@"{BaseDirectory}\{JsonDirectory}\settings.json");
                     Console.WriteLine("");
                     if (set == null)
                     {
@@ -280,9 +283,9 @@ namespace ProxyDraftor
                     // load images
                     foreach (var card in booster) { await GetImage(card, boosterDirectory.FullName); }
 
-                    // copy magic back once
-                    FileInfo backFile = new(@$"{BaseDirectory}\images\mtg.back.png");
-                    if(backFile.Exists) { backFile.CopyTo(@$"{boosterDirectory.FullName}\{backFile.Name}"); }
+                    //// copy magic back once
+                    //FileInfo backFile = new(@$"{BaseDirectory}\images\mtg.back.png");
+                    //if(backFile.Exists) { backFile.CopyTo(@$"{boosterDirectory.FullName}\{backFile.Name}"); }
 
                     Console.WriteLine("Creating PDF-file via nanDECK...");
 
@@ -292,7 +295,7 @@ namespace ProxyDraftor
                     proc.StartInfo.CreateNoWindow = true;
                     proc.StartInfo.FileName = "cmd.exe";
                     proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={boosterGuid} /[boosterfolder]={BaseDirectory}\\{BoosterDirectory} /createpdf";
-                    if (AutomaticPrinting)
+                    if (Settings.AutomaticPrinting)
                     {
                         proc.StartInfo.Arguments += " /print";
                     }
@@ -316,6 +319,8 @@ namespace ProxyDraftor
                         Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                         Console.WriteLine("Booster creation failed...");
                     }
+
+                    H.UpdateBoosterCount(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json", 1);
 
                     // cleanup
                     boosterDirectory.Delete(true);
