@@ -308,7 +308,7 @@ namespace ProxyDraftor
                         FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
                         if (file.Exists)
                         {
-                            file.MoveTo($@"{draftDirectory}\{boosterGuid}.pdf");
+                            file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
                         }
                         Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                         Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
@@ -357,15 +357,32 @@ namespace ProxyDraftor
             return false;
         }
 
+        private static ConsoleColor GetColorByRarity(string rarity)
+        {
+            return rarity switch
+            {
+                "common" => ConsoleColor.Gray,
+                "uncommon" => ConsoleColor.White,
+                "rare" => ConsoleColor.Yellow,
+                "mythicrare" => ConsoleColor.Red,
+                "land" => ConsoleColor.DarkYellow,
+                "special" => ConsoleColor.Magenta,
+                "bonus" => ConsoleColor.Magenta,
+                _ => ConsoleColor.Gray,
+            };
+        }
+
         private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string boosterDirectory)
         {
             // get scryfall card
             var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
+            var currentColor = Console.ForegroundColor;
 
+            Console.ForegroundColor = GetColorByRarity(scryfallCard.Rarity);
             Console.WriteLine($"Lade {scryfallCard.Name} herunter...");
 
             // check if images are present
-            if(scryfallCard.ImageUris != null)
+            if (scryfallCard.ImageUris != null)
             {
                 _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", boosterDirectory);
             }
@@ -386,6 +403,7 @@ namespace ProxyDraftor
                     }
                 }
             }
+            Console.ForegroundColor = currentColor;
 
             return true;
         }
