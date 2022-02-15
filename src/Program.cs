@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using H = ProxyDraftor.lib.Helpers;
@@ -28,6 +29,7 @@ namespace ProxyDraftor
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static string SetsToLoad { get; set; } = ConfigurationManager.AppSettings["SetsToLoad"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
+        private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
         private static readonly SortedList<string, models.Set> sets = new();
@@ -53,10 +55,17 @@ namespace ProxyDraftor
             Settings = H.LoadSettings(@$"{BaseDirectory}\{JsonDirectory}\settings.json");
 
             Console.WriteLine(">> Reading sets...");
-            if(UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
+            if (UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
 
-            Console.WriteLine(">> Looking for nanDeck...");
-            H.CheckNanDeck(NanDeckPath);
+            if(IsWindows)
+            {
+                Console.WriteLine(">> Looking for nanDeck...");
+                H.CheckNanDeck(NanDeckPath);
+            }
+            else
+            {
+                Console.WriteLine(">> nanDeck disabled");
+            }
 
             Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
@@ -205,6 +214,22 @@ namespace ProxyDraftor
             return boosterCardIdentifier;
         }
 
+        static async void Loop()
+        {
+            Console.Clear();
+            // show options
+            H.Write("O => Options", 0, 0);
+
+            //H.Write("P => enable / disable automatic printing", 0, 0)
+        }
+
+        public enum LoopState
+        {
+            Main,
+            Options,
+            Drafting
+        }
+
         static async Task<object> Draft()
         {
             ISetService setService = serviceProvider.GetSetService();
@@ -287,43 +312,50 @@ namespace ProxyDraftor
                     //FileInfo backFile = new(@$"{BaseDirectory}\images\mtg.back.png");
                     //if(backFile.Exists) { backFile.CopyTo(@$"{boosterDirectory.FullName}\{backFile.Name}"); }
 
-                    Console.WriteLine("Creating PDF-file via nanDECK...");
-
-                    // prepare pdf with nandeck
-                    Process proc = new();
-                    proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                    proc.StartInfo.CreateNoWindow = true;
-                    proc.StartInfo.FileName = "cmd.exe";
-                    proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={boosterGuid} /[boosterfolder]={BaseDirectory}\\{BoosterDirectory} /createpdf";
-                    if (Settings.AutomaticPrinting)
+                    if (IsWindows)
                     {
-                        proc.StartInfo.Arguments += " /print";
-                    }
-                    proc.EnableRaisingEvents = true;
-                    proc.Start();
-                    proc.WaitForExit();
+                        Console.WriteLine("Creating PDF-file via nanDECK...");
 
-                    if(proc.ExitCode == 0)
-                    {
-                        FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                        if (file.Exists)
+                        // prepare pdf with nandeck
+                        Process proc = new();
+                        proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+                        proc.StartInfo.CreateNoWindow = true;
+                        proc.StartInfo.FileName = "cmd.exe";
+                        proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={boosterGuid} /[boosterfolder]={BaseDirectory}\\{BoosterDirectory} /createpdf";
+                        if (Settings.AutomaticPrinting)
                         {
-                            file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
+                            proc.StartInfo.Arguments += " /print";
                         }
-                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
-                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                    } 
+                        proc.EnableRaisingEvents = true;
+                        proc.Start();
+                        proc.WaitForExit();
+
+                        if (proc.ExitCode == 0)
+                        {
+                            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                            if (file.Exists)
+                            {
+                                file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
+                            }
+                            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                            Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
+                            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                        }
+                        else
+                        {
+                            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                            Console.WriteLine("Booster creation failed...");
+                        }
+                    }
                     else
                     {
-                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        Console.WriteLine("Booster creation failed...");
+                        Console.WriteLine("Skipping PDF-file generation...");
                     }
 
                     H.UpdateBoosterCount(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json", 1);
 
                     // cleanup
-                    boosterDirectory.Delete(true);
+                    if (IsWindows) { boosterDirectory.Delete(true); }
                     Console.Clear();
                 }
 

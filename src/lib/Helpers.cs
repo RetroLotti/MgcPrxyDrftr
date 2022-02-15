@@ -40,7 +40,7 @@ namespace ProxyDraftor.lib
             FileInfo nandeck = new(fullPath);
             if (!nandeck.Exists)
             {
-                Console.WriteLine("NanDECK wurde nicht gefunden. Bitte geben die den Ort manuell an!");
+                Console.WriteLine("NanDECK not found. Please enter path to nandeck.exe manually!");
                 Console.Write("> ");
                 fullPath = Console.ReadLine();
                 ConfigurationManager.AppSettings["NanDeckFullPath"] = fullPath;
