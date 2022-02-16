@@ -1,8 +1,8 @@
 ;setup the card size
-cardsize=6.3,8.89
+cardsize=6.33,8.89
 
 ;load all the images from a folder in a label
-[images]=dirfiles([boosterfolder]\[guid]\, jpg|png)
+[images]=dirfiles([boosterfolder]\[guid]\, j*pg|png)
 
 ;create a range for all the cards
 [all]=1-{(images)}
@@ -11,4 +11,4 @@ cardsize=6.3,8.89
 page=21,29.7,portrait,hv;,#000000
 
 ; draw the image
-image=[all],[images],0,0,6.3,8.8
+image=[all],[images],0,0,6.33,8.89

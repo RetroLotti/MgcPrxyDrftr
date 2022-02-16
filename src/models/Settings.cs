@@ -12,5 +12,18 @@ namespace ProxyDraftor.models
         public string LastGeneratedSet { get; set; }
         public Dictionary<string, DateTime> LastUpdatesList { get; set; }
         public Dictionary<string, string> Statistics { get; set; }
+        public List<string> SetsToLoad { get; set; }
+
+        public void AddSet(string setCode)
+        {
+            if(SetsToLoad != null && !SetsToLoad.Contains(setCode))
+            {
+                SetsToLoad.Add(setCode);
+            }
+        }
+        public void Save()
+        {
+
+        }
     }
 }

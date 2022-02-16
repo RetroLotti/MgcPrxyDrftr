@@ -38,4 +38,12 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="booster\" />
+    <Folder Include="draft\" />
+    <Folder Include="print\deck\" />
+    <Folder Include="print\booster\" />
+    <Folder Include="print\list\" />
+  </ItemGroup>
+
 </Project>

@@ -30,7 +30,7 @@ namespace ProxyDraftor.lib
             if (!dir.Exists) { dir.Create(); }
         }
 
-        public static models.Deck ReadSingleDeck(string file)
+        public static Deck ReadSingleDeck(string file)
         {
             return JsonConvert.DeserializeObject<models.Deck>(File.ReadAllText(file));
         }
@@ -73,6 +73,25 @@ namespace ProxyDraftor.lib
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Generic method to download the given file and validate sha256 hash
+        /// </summary>
+        /// <param name="downloadFileUri"></param>
+        /// <param name="validationFileUri"></param>
+        /// <param name="targetDirectory"></param>
+        /// <returns></returns>
+        public static bool DownloadAndValidateFile(string downloadFileUri, string validationFileUri, string targetDirectory)
+        {
+            WebClient webClient = new();
+            Uri downloadUri = new(downloadFileUri);
+            Uri checksumUri = new(validationFileUri);
+
+            webClient.DownloadFile(downloadUri, @$"{targetDirectory}\{downloadUri.Segments[^1]}");
+            webClient.DownloadFile(checksumUri, @$"{targetDirectory}\{checksumUri.Segments[^1]}");
+
+            return ValidateFiles(@$"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
         }
 
         private static void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)

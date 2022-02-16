@@ -18,16 +18,16 @@ namespace ProxyDraftor
     class Program
     {
         public static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
-        private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"];
-        private static string JsonSetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"];
-        private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"];
-        private static string ImageCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"];
-        private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"];
-        private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"];
-        private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"];
+        private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
+        private static string JsonSetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"] ?? "sets";
+        private static string JsonDeckDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDeckDirectory"] ?? "decks";
+        private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"] ?? "booster";
+        private static string ImageCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"] ?? "images";
+        private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"] ?? "scryfall";
+        private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"] ?? "scripts";
+        private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
-        private static string SetsToLoad { get; set; } = ConfigurationManager.AppSettings["SetsToLoad"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -38,6 +38,10 @@ namespace ProxyDraftor
         private static readonly WebClient client = new();
         private static readonly ApiCaller api = new();
         private static models.Settings Settings { get; set; }
+
+        // decks
+        private static Dictionary<string, string> DeckList { get; set; }
+        private static Dictionary<string, string> AllDecks { get; set; }
 
         static async Task Main()
         {
@@ -66,6 +70,13 @@ namespace ProxyDraftor
             {
                 Console.WriteLine(">> nanDeck disabled");
             }
+
+            var ok1 = H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+            var list = JsonConvert.DeserializeObject<models.DeckList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
+            var deck1 = list.Data.Find(x => x.Name.Contains("Kazz"));
+            var ok2 = H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deck1.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deck1.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{JsonDeckDirectory}\");
+            var deck2 = JsonConvert.DeserializeObject<models.DeckRoot>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{JsonDeckDirectory}\{deck1.FileName}.json"));
+
 
             Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
@@ -103,20 +114,25 @@ namespace ProxyDraftor
 
         private static void ReadAllConfiguredSets()
         {
-            List<string> configuredSets = SetsToLoad.Split(' ').ToList();
-            if(configuredSets.Count <= 0)
+            if(Settings.SetsToLoad.Count <= 0)
             {
-                Console.WriteLine("Not sets configured!");
+                Console.WriteLine("No sets configured!");
             }
             else
             {
-                foreach (var set in configuredSets)
+                foreach (var set in Settings.SetsToLoad)
                 {
                     H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", Settings, JsonSetDirectory);
                     _ = ReadSingleSet(set);
                 }
             }
             
+        }
+
+        static models.Set ReadSingleSetWithUpdateCheck(string setCode)
+        {
+            H.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", Settings, JsonSetDirectory);
+            return ReadSingleSet(setCode);
         }
 
         static models.Set ReadSingleSet(string setCode)
@@ -214,21 +230,64 @@ namespace ProxyDraftor
             return boosterCardIdentifier;
         }
 
-        static async void Loop()
+        // START
+
+        private static LoopState AppState { get; set; }
+
+        static async void EnterTheLoop()
         {
             Console.Clear();
-            // show options
-            H.Write("O => Options", 0, 0);
+            AppState = LoopState.Main;
 
-            //H.Write("P => enable / disable automatic printing", 0, 0)
+
+        }
+
+        static async void PrintMenu()
+        {
+            switch (AppState)
+            {
+                case LoopState.Main:
+                    H.Write("B => Draft Booster", 0, 0);
+                    H.Write("D => Create Deck", 0, 1);
+                    H.Write("S => Add or Remove Sets", 0, 2);
+                    H.Write("C => Clean Up", 0, 3);
+                    H.Write("O => Options", 0, 4);
+                    H.Write("X => Exit", 0, 6);
+                    break;
+                case LoopState.Options:
+                    H.Write("P => enable / disable automatic printing", 0, 0);
+                    break;
+                case LoopState.BoosterDraft:
+                    break;
+                case LoopState.DeckCreator:
+                    break;
+                case LoopState.SetManager:
+                    break;
+                default:
+                    break;
+            }
         }
 
         public enum LoopState
         {
             Main,
             Options,
-            Drafting
+            BoosterDraft,
+            DeckCreator,
+            SetManager
         }
+
+        // END
+
+        //static async Task<object> PrintDeck(string deckName) 
+        //{
+        //    if(AllDecks == null)
+        //    {
+        //        AllDecks = new();
+        //        H.ReadSingleDeck(deckName);
+        //    }
+        //}
+
 
         static async Task<object> Draft()
         {
@@ -254,8 +313,11 @@ namespace ProxyDraftor
                         setCode = Settings.LastGeneratedSet;
                     }
                     set = (await setService.FindAsync(setCode)).Value;
+
+                    // save last used set
                     Settings.LastGeneratedSet = setCode;
                     H.SaveSettings(Settings, $@"{BaseDirectory}\{JsonDirectory}\settings.json");
+                    
                     Console.WriteLine("");
                     if (set == null)
                     {
@@ -268,10 +330,13 @@ namespace ProxyDraftor
                     }
                 } while (noValidSetFound);
 
-                // save last used set
-                ConfigurationManager.AppSettings["LastGeneratedSet"] = set.Code.ToUpper();
-                
                 Console.WriteLine($"Chosen set: {set.Name}");
+                Console.WriteLine($"Reading set file...");
+                ReadSingleSetWithUpdateCheck(set.Code);
+                
+                Settings.AddSet(set.Code);
+                H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+                
                 Console.WriteLine("");
                 Console.Write("How many boosters shall be created? [1] > ");
                 var count = Console.ReadLine();
@@ -391,12 +456,13 @@ namespace ProxyDraftor
 
         private static ConsoleColor GetColorByRarity(string rarity)
         {
+            //Console.Write($"[{rarity}]");
             return rarity switch
             {
                 "common" => ConsoleColor.Gray,
                 "uncommon" => ConsoleColor.White,
                 "rare" => ConsoleColor.Yellow,
-                "mythicrare" => ConsoleColor.Red,
+                "mythic" => ConsoleColor.Red,
                 "land" => ConsoleColor.DarkYellow,
                 "special" => ConsoleColor.Magenta,
                 "bonus" => ConsoleColor.Magenta,
