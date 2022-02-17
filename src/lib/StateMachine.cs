@@ -51,11 +51,13 @@ namespace ProxyDraftor.lib
             transitions = new Dictionary<StateTransition, LoopState>
             {
                 { new StateTransition(LoopState.Main, "x"), LoopState.Exit },
-        //        { new StateTransition(ProcessState.Inactive, Command.Begin), ProcessState.Active },
-        //        { new StateTransition(ProcessState.Active, Command.End), ProcessState.Inactive },
-        //        { new StateTransition(ProcessState.Active, Command.Pause), ProcessState.Paused },
-        //        { new StateTransition(ProcessState.Paused, Command.End), ProcessState.Inactive },
-        //        { new StateTransition(ProcessState.Paused, Command.Resume), ProcessState.Active }
+                { new StateTransition(LoopState.Main, "b"), LoopState.BoosterDraft },
+                { new StateTransition(LoopState.Main, "d"), LoopState.DeckCreator },
+                { new StateTransition(LoopState.Main, "o"), LoopState.Options },
+                { new StateTransition(LoopState.Options, "p"), LoopState.Options },
+                { new StateTransition(LoopState.DeckCreator, "b"), LoopState.Main },
+                { new StateTransition(LoopState.BoosterDraft, "b"), LoopState.Main },
+                { new StateTransition(LoopState.Options, "b"), LoopState.Main },
             };
         }
 

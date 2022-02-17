@@ -40,9 +40,6 @@ namespace ProxyDraftor
         }
         public async Task<ScryfallApi.Client.Models.Card> GetCardByScryfallIdAsync(Guid scryfallGuid)
         {
-            //var currentTime = DateTime.Now;
-            //lastApiCall = DateTime.Now;
-
             ScryfallApi.Client.Models.Card card = null;
 
             HttpResponseMessage response = await client.GetAsync($"cards/{scryfallGuid}");
@@ -51,6 +48,7 @@ namespace ProxyDraftor
                 var json = await response.Content.ReadAsStringAsync();
                 card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
             }
+
             return card;
         }
 

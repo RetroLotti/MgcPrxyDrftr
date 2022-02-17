@@ -80,39 +80,61 @@ namespace ProxyDraftor
                 Console.WriteLine(">> nanDeck disabled");
             }
 
-            //var x = await PrintDeck("Vampiric Bloodline");
-
             Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
             Console.Clear();
 
             // start drafting loop
-            //await Draft();
-            _ = EnterTheLoop();
+#if DEBUG
+            _ = await EnterTheLoop();
+#else
+            await Draft();
+#endif
         }
 
         // #############################################################
         // START
         // #############################################################
-        static /*async Task<bool>*/ int EnterTheLoop()
+        static async Task<int> EnterTheLoop()
         {
-            Console.Clear();
             StateMachine = new StateMachine();
 
             do
             {
-                // check for special menu
-                // TODO
+                // clear the screen
+                Console.Clear();
 
                 // show current menu
                 PrintMenu(StateMachine.CurrentState);
 
                 // move cursor
                 Console.SetCursorPosition(0, 10);
-                Console.Write("enter command >> ");
+                Console.Write(">>> ");
 
-                // determine next state
-                _ = StateMachine.MoveNext((Console.ReadKey()).KeyChar.ToString());
+                // read entered string
+                string command = Console.ReadLine();
+                bool isCommand = (command.Length == 1);
+
+                if(isCommand)
+                {
+                    // move to next state
+                    _ = StateMachine.MoveNext(command);
+                }
+                else
+                {
+                    // handle entered string
+                    switch (StateMachine.CurrentState)
+                    {
+                        case LoopState.DeckCreator:
+                            _ = await PrintDeck(command);
+                            break;
+                        case LoopState.BoosterDraft:
+                            _= await Draft(command);
+                            break;
+                        default:
+                            break;
+                    }
+                }
 
             } while (StateMachine.CurrentState != LoopState.Exit);
 
@@ -124,30 +146,33 @@ namespace ProxyDraftor
             switch (loopState)
             {
                 case LoopState.Main:
-                    H.Write("B => Draft Booster", 0, 0);
-                    H.Write("D => Create Deck", 0, 1);
-                    H.Write("S => Add or Remove Sets", 0, 2);
-                    H.Write("C => Clean Up", 0, 3);
-                    H.Write("O => Options", 0, 4);
-                    H.Write("X => Exit", 0, 6);
+                    H.Write("B => Draft Booster", 0, 1);
+                    H.Write("D => Create Deck", 0, 2);
+                    H.Write("S => Add or Remove Sets", 0, 3);
+                    H.Write("C => Clean Up", 0, 4);
+                    H.Write("O => Options", 0, 5);
+                    H.Write("X => Exit", 0, 8);
                     break;
                 case LoopState.Options:
-                    H.Write("P => enable / disable automatic printing", 0, 0);
-                    H.Write("B => Back", 0, 1);
+                    H.Write("P => enable / disable automatic printing", 0, 1);
+                    H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.BoosterDraft:
-                    H.Write("B => Back", 0, 0);
+                    H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckCreator:
-                    H.Write("B => Back", 0, 0);
+                    H.Write("A => List all decks", 0, 1);
+                    H.Write("L => List downloaded decks", 0, 2);
+                    H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckManager:
-                    H.Write("B => Back", 0, 0);
+                    H.Write("C => Print Clipboard (later create a deck from it)", 0, 1);
+                    H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.SetManager:
-                    H.Write("A => Add Set", 0, 0);
-                    H.Write("R => Remove Set", 0, 1);
-                    H.Write("B => Back", 0, 2);
+                    H.Write("A => Add Set", 0, 1);
+                    H.Write("R => Remove Set", 0, 2);
+                    H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.Exit:
                     break;
@@ -335,15 +360,13 @@ namespace ProxyDraftor
             return boosterCardIdentifier;
         }
 
-
-
         static async Task<object> PrintDeck(string deckName)
         {
             // individual deck guid
             Guid guid = Guid.NewGuid();
             
             // create folder
-            DirectoryInfo directory = new(@$"{PrintDirectory}\{DeckDirectory}\{guid}\");
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
             directory.Create();
 
             // try to get deck from the list of already downloaded decks
@@ -353,7 +376,7 @@ namespace ProxyDraftor
             if (deck == null)
             {
                 // check if it is a legitimate deck
-                var deckFromList = DeckList.Data.Find(x => x.Name.Contains(deckName) || x.FileName.Contains(deckName));
+                var deckFromList = DeckList.Data.Find(x => x.Name.ToLowerInvariant().Contains(deckName.ToLowerInvariant()) || x.FileName.ToLowerInvariant().Contains(deckName.ToLowerInvariant()));
 
                 if(deckFromList != null)
                 {
@@ -368,7 +391,7 @@ namespace ProxyDraftor
                         deck = localDeck.Data;
                         
                         // add it to the list of local decks
-                        Decks.Add($"{deckFromList.FileName}_{deck.Name}", deck);
+                        Decks.Add($"{deckFromList.FileName.ToLowerInvariant()}_{deck.Name.ToLowerInvariant()}", deck);
                     }
                 }
                 else
@@ -378,17 +401,46 @@ namespace ProxyDraftor
             }
 
             // download all cards from mainboard and sideboard
-            foreach (var card in deck.MainBoard) { await GetImage(card.Identifiers, @$"{PrintDirectory}\{DeckDirectory}\{guid}\"); }
-            foreach (var card in deck.SideBoard) { await GetImage(card.Identifiers, @$"{PrintDirectory}\{DeckDirectory}\{guid}\"); }
+            foreach (var card in deck.MainBoard) { await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\"); }
+            foreach (var card in deck.SideBoard) { await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\"); }
 
             // create pdf
-            Process proc = CreatePdf(guid, @$"{PrintDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
+            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
             if (proc.ExitCode == 0)
             {
                 FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                if (file.Exists) { file.MoveTo($@"{PrintDirectory}\{deck.Name.ToLowerInvariant()}_{guid}.pdf"); }
+                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{PrintDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// Draft boosters from given set
+        /// </summary>
+        /// <param name="draftString">set + count i.e. NEO|6</param>
+        /// <returns></returns>
+        static async Task<bool> Draft(string draftString)
+        {
+            //ISetService setService = serviceProvider.GetSetService();
+            //MtgApiManager.Lib.Model.ISet set = null;
+
+            //set = (await setService.FindAsync(setCode)).Value;
+            //Settings.LastGeneratedSet = setCode;
+            //H.SaveSettings(Settings, $@"{BaseDirectory}\{JsonDirectory}\settings.json");
+            //ReadSingleSetWithUpdateCheck(set.Code);
+            //Settings.AddSet(set.Code);
+            //H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+            //int boosterCount = int.TryParse(count, out boosterCount) ? boosterCount : 1;
+            //Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
+            //Console.CursorVisible = false;
+            //Console.Write("Press any key to start generating.");
+            //Console.ReadKey();
+
+            //// create new draft folder
+            //DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            //if (!draftDirectory.Exists) { draftDirectory.Create(); }
+            Console.WriteLine("TODO");
             return true;
         }
 
@@ -583,7 +635,7 @@ namespace ProxyDraftor
             };
         }
 
-        private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string boosterDirectory)
+        private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string targetDirectory)
         {
             // get scryfall card
             var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
@@ -595,7 +647,7 @@ namespace ProxyDraftor
             // check if images are present
             if (scryfallCard.ImageUris != null)
             {
-                _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", boosterDirectory);
+                _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
             }
             else
             {
@@ -610,7 +662,7 @@ namespace ProxyDraftor
                         var face = uri.Contains("front") ? "front" : "back";
 
                         // download image
-                        _ = await GetImage(uri, $"{scryfallCard.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", boosterDirectory);
+                        _ = await GetImage(uri, $"{scryfallCard.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
                     }
                 }
             }
