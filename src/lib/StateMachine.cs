@@ -14,6 +14,7 @@ namespace ProxyDraftor.lib
         DeckCreator,
         DeckManager,
         SetManager,
+        RawListManager,
         Exit
     }
 
@@ -54,10 +55,12 @@ namespace ProxyDraftor.lib
                 { new StateTransition(LoopState.Main, "b"), LoopState.BoosterDraft },
                 { new StateTransition(LoopState.Main, "d"), LoopState.DeckCreator },
                 { new StateTransition(LoopState.Main, "o"), LoopState.Options },
+                { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
                 { new StateTransition(LoopState.Options, "p"), LoopState.Options },
                 { new StateTransition(LoopState.DeckCreator, "b"), LoopState.Main },
                 { new StateTransition(LoopState.BoosterDraft, "b"), LoopState.Main },
                 { new StateTransition(LoopState.Options, "b"), LoopState.Main },
+                { new StateTransition(LoopState.RawListManager, "b"), LoopState.Main },
             };
         }
 

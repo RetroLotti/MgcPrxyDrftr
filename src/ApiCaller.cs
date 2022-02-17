@@ -23,11 +23,20 @@ namespace ProxyDraftor
                 new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
+        public async Task<ScryfallApi.Client.Models.Card> GetCardByNameAsync(string cardName, string setCode = "")
+        {
+            ScryfallApi.Client.Models.Card card = null;
+            HttpResponseMessage response = await client.GetAsync($"cards/named?exact={cardName}&set={setCode}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
+            }
+            return card;
+        }
+
         public async Task<ScryfallApi.Client.Models.Card> GetCardByMultiverseIdAsync(string multiverseid)
         {
-            //var currentTime = DateTime.Now;
-            //lastApiCall = DateTime.Now;
-
             ScryfallApi.Client.Models.Card card = null;
 
             HttpResponseMessage response = await client.GetAsync($"cards/multiverse/{multiverseid}");

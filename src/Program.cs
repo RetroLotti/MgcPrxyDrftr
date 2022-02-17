@@ -129,7 +129,10 @@ namespace ProxyDraftor
                             _ = await PrintDeck(command);
                             break;
                         case LoopState.BoosterDraft:
-                            _= await Draft(command);
+                            _ = await Draft(command);
+                            break;
+                        case LoopState.RawListManager:
+                            _ = await PrintRawList(command);
                             break;
                         default:
                             break;
@@ -149,8 +152,9 @@ namespace ProxyDraftor
                     H.Write("B => Draft Booster", 0, 1);
                     H.Write("D => Create Deck", 0, 2);
                     H.Write("S => Add or Remove Sets", 0, 3);
-                    H.Write("C => Clean Up", 0, 4);
-                    H.Write("O => Options", 0, 5);
+                    H.Write("R => Print Raw List", 0, 4);
+                    H.Write("C => Clean Up", 0, 5);
+                    H.Write("O => Options", 0, 6);
                     H.Write("X => Exit", 0, 8);
                     break;
                 case LoopState.Options:
@@ -158,6 +162,8 @@ namespace ProxyDraftor
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.BoosterDraft:
+                    H.Write("A => List all sets", 0, 1);
+                    H.Write("L => List downloaded sets", 0, 2);
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckCreator:
@@ -172,6 +178,9 @@ namespace ProxyDraftor
                 case LoopState.SetManager:
                     H.Write("A => Add Set", 0, 1);
                     H.Write("R => Remove Set", 0, 2);
+                    H.Write("B => Back", 0, 8);
+                    break;
+                case LoopState.RawListManager:
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.Exit:
@@ -415,6 +424,37 @@ namespace ProxyDraftor
             return true;
         }
 
+        static async Task<object> PrintRawList(string listName)
+        {
+            Guid guid = Guid.NewGuid();
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\");
+            directory.Create();
+
+            var lines = File.ReadAllLines(@$"{BaseDirectory}\{JsonDirectory}\{listName}.txt");
+            foreach (var line in lines)
+            {
+                _ = int.TryParse(line[..1], out int cardCount);
+                string cardName = line[2..].Split('|')[0];
+                string cardSet = line[2..].Split('|')[1];
+
+                var card = await api.GetCardByNameAsync(cardName, cardSet);
+                if (card != null)
+                {
+                    _ = await GetImage(card, directory.FullName);
+                }
+            }
+
+            // create pdf
+            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{PrintDirectory}\list\", Settings.AutomaticPrinting);
+            if (proc.ExitCode == 0)
+            {
+                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{PrintDirectory}\{listName.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
+            }
+
+            return true;
+        }
+
         /// <summary>
         /// Draft boosters from given set
         /// </summary>
@@ -422,25 +462,79 @@ namespace ProxyDraftor
         /// <returns></returns>
         static async Task<bool> Draft(string draftString)
         {
-            //ISetService setService = serviceProvider.GetSetService();
-            //MtgApiManager.Lib.Model.ISet set = null;
+            ISetService setService = serviceProvider.GetSetService();
+            string setCode = draftString.Split('|')[0];
+            string boosterCountParam = draftString.Split('|')[1];
 
-            //set = (await setService.FindAsync(setCode)).Value;
-            //Settings.LastGeneratedSet = setCode;
-            //H.SaveSettings(Settings, $@"{BaseDirectory}\{JsonDirectory}\settings.json");
-            //ReadSingleSetWithUpdateCheck(set.Code);
-            //Settings.AddSet(set.Code);
-            //H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
-            //int boosterCount = int.TryParse(count, out boosterCount) ? boosterCount : 1;
-            //Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
-            //Console.CursorVisible = false;
-            //Console.Write("Press any key to start generating.");
-            //Console.ReadKey();
+            MtgApiManager.Lib.Model.ISet set = (await setService.FindAsync(setCode)).Value;
+            Settings.LastGeneratedSet = setCode;
+            ReadSingleSetWithUpdateCheck(set.Code);
+            Settings.AddSet(set.Code);
+            H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+            int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
+            Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
+            Console.CursorVisible = false;
+            Console.Write("Press any key to start generating.");
+            Console.ReadKey();
 
-            //// create new draft folder
-            //DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
-            //if (!draftDirectory.Exists) { draftDirectory.Create(); }
-            Console.WriteLine("TODO");
+            // create new draft folder
+            DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            if (!draftDirectory.Exists) { draftDirectory.Create(); }
+
+            for (int i = 1; i <= boosterCount; i++)
+            {
+                Console.WriteLine($"Generating booster {i}/{boosterCount}...");
+
+                // get a booster
+                var booster = GenerateBooster(set.Code);
+
+                // new booster guid 
+                var boosterGuid = Guid.NewGuid();
+
+                // create directory
+                DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{BoosterDirectory}\{boosterGuid}\");
+                if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
+
+                Console.WriteLine("Downloading images...");
+                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+
+                // load images
+                foreach (var card in booster) { await GetImage(card, boosterDirectory.FullName); }
+
+                if (IsWindows)
+                {
+                    Process proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+
+                    if (proc.ExitCode == 0)
+                    {
+                        FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                        if (file.Exists)
+                        {
+                            file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
+                        }
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                        Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                    }
+                    else
+                    {
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                        Console.WriteLine("Booster creation failed...");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine("Skipping PDF-file generation...");
+                }
+
+                // update booster count just for fun
+                H.UpdateBoosterCount(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json", 1);
+
+                // cleanup
+                if (IsWindows) { boosterDirectory.Delete(true); }
+                Console.Clear();
+            }
+
             return true;
         }
 
@@ -621,7 +715,6 @@ namespace ProxyDraftor
 
         private static ConsoleColor GetColorByRarity(string rarity)
         {
-            //Console.Write($"[{rarity}]");
             return rarity switch
             {
                 "common" => ConsoleColor.Gray,
@@ -635,25 +728,23 @@ namespace ProxyDraftor
             };
         }
 
-        private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string targetDirectory)
+        private static async Task<bool> GetImage(ScryfallApi.Client.Models.Card card, string targetDirectory)
         {
-            // get scryfall card
-            var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
             var currentColor = Console.ForegroundColor;
-
-            Console.ForegroundColor = GetColorByRarity(scryfallCard.Rarity);
-            Console.WriteLine($"Lade {scryfallCard.Name} herunter...");
+            
+            Console.ForegroundColor = GetColorByRarity(card.Rarity);
+            Console.WriteLine($"Downloading {card.Name} ...");
 
             // check if images are present
-            if (scryfallCard.ImageUris != null)
+            if (card.ImageUris != null)
             {
-                _ = await GetImage(scryfallCard.ImageUris["png"].AbsoluteUri, scryfallCard.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
+                _ = await GetImage(card.ImageUris["png"].AbsoluteUri, card.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
             }
             else
             {
-                if (scryfallCard.CardFaces != null)
+                if (card.CardFaces != null)
                 {
-                    foreach (var item in scryfallCard.CardFaces)
+                    foreach (var item in card.CardFaces)
                     {
                         // get image uri
                         var uri = item.ImageUris["png"].AbsoluteUri;
@@ -662,13 +753,21 @@ namespace ProxyDraftor
                         var face = uri.Contains("front") ? "front" : "back";
 
                         // download image
-                        _ = await GetImage(uri, $"{scryfallCard.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
+                        _ = await GetImage(uri, $"{card.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
                     }
                 }
             }
             Console.ForegroundColor = currentColor;
 
             return true;
+        }
+
+        private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string targetDirectory)
+        {
+            // get scryfall card
+            var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
+            
+            return await GetImage(scryfallCard, targetDirectory);
         }
     }
 }
