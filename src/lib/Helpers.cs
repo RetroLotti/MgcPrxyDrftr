@@ -30,9 +30,9 @@ namespace ProxyDraftor.lib
             if (!dir.Exists) { dir.Create(); }
         }
 
-        public static Deck ReadSingleDeck(string file)
+        public static DeckRoot ReadSingleDeck(string file)
         {
-            return JsonConvert.DeserializeObject<models.Deck>(File.ReadAllText(file));
+            return JsonConvert.DeserializeObject<models.DeckRoot>(File.ReadAllText(file));
         }
 
         public static void CheckNanDeck(string fullPath)

@@ -356,5 +356,6 @@ MigrationBackup/
 /src/json/decks
 /src/bin
 /src/obj
+/src/print
 
 *.bak

@@ -17,15 +17,18 @@ namespace ProxyDraftor
 {
     class Program
     {
+        private static StateMachine StateMachine { get; set; }
+
         public static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
         private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
-        private static string JsonSetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"] ?? "sets";
-        private static string JsonDeckDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDeckDirectory"] ?? "decks";
+        private static string SetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"] ?? "sets";
+        private static string DeckDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDeckDirectory"] ?? "decks";
         private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"] ?? "booster";
         private static string ImageCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"] ?? "images";
         private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"] ?? "scryfall";
         private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"] ?? "scripts";
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
+        private static string PrintDirectory { get; set; } = ConfigurationManager.AppSettings["PrintDirectory"] ?? "print";
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
@@ -33,15 +36,15 @@ namespace ProxyDraftor
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
         private static readonly SortedList<string, models.Set> sets = new();
-        
+        private static SortedList<string, models.Deck> Decks { get; set; } = new();
+
         private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
         private static readonly WebClient client = new();
         private static readonly ApiCaller api = new();
         private static models.Settings Settings { get; set; }
 
         // decks
-        private static Dictionary<string, string> DeckList { get; set; }
-        private static Dictionary<string, string> AllDecks { get; set; }
+        private static models.DeckList DeckList { get; set; }
 
         static async Task Main()
         {
@@ -56,12 +59,18 @@ namespace ProxyDraftor
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
+            Console.WriteLine(">> Reading settings...");
             Settings = H.LoadSettings(@$"{BaseDirectory}\{JsonDirectory}\settings.json");
 
             Console.WriteLine(">> Reading sets...");
             if (UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
 
-            if(IsWindows)
+            Console.WriteLine(">> Reading decklist...");
+            LoadDeckList();
+            Console.WriteLine(">> Reading decks from disk...");
+            ReadAllDecks();
+
+            if (IsWindows)
             {
                 Console.WriteLine(">> Looking for nanDeck...");
                 H.CheckNanDeck(NanDeckPath);
@@ -71,24 +80,120 @@ namespace ProxyDraftor
                 Console.WriteLine(">> nanDeck disabled");
             }
 
-            var ok1 = H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
-            var list = JsonConvert.DeserializeObject<models.DeckList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
-            var deck1 = list.Data.Find(x => x.Name.Contains("Kazz"));
-            var ok2 = H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deck1.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deck1.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{JsonDeckDirectory}\");
-            var deck2 = JsonConvert.DeserializeObject<models.DeckRoot>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{JsonDeckDirectory}\{deck1.FileName}.json"));
-
+            //var x = await PrintDeck("Vampiric Bloodline");
 
             Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
             Console.Clear();
 
             // start drafting loop
-            await Draft();
+            //await Draft();
+            _ = EnterTheLoop();
+        }
+
+        // #############################################################
+        // START
+        // #############################################################
+        static /*async Task<bool>*/ int EnterTheLoop()
+        {
+            Console.Clear();
+            StateMachine = new StateMachine();
+
+            do
+            {
+                // check for special menu
+                // TODO
+
+                // show current menu
+                PrintMenu(StateMachine.CurrentState);
+
+                // move cursor
+                Console.SetCursorPosition(0, 10);
+                Console.Write("enter command >> ");
+
+                // determine next state
+                _ = StateMachine.MoveNext((Console.ReadKey()).KeyChar.ToString());
+
+            } while (StateMachine.CurrentState != LoopState.Exit);
+
+            return 0;
+        }
+
+        static void PrintMenu(LoopState loopState)
+        {
+            switch (loopState)
+            {
+                case LoopState.Main:
+                    H.Write("B => Draft Booster", 0, 0);
+                    H.Write("D => Create Deck", 0, 1);
+                    H.Write("S => Add or Remove Sets", 0, 2);
+                    H.Write("C => Clean Up", 0, 3);
+                    H.Write("O => Options", 0, 4);
+                    H.Write("X => Exit", 0, 6);
+                    break;
+                case LoopState.Options:
+                    H.Write("P => enable / disable automatic printing", 0, 0);
+                    H.Write("B => Back", 0, 1);
+                    break;
+                case LoopState.BoosterDraft:
+                    H.Write("B => Back", 0, 0);
+                    break;
+                case LoopState.DeckCreator:
+                    H.Write("B => Back", 0, 0);
+                    break;
+                case LoopState.DeckManager:
+                    H.Write("B => Back", 0, 0);
+                    break;
+                case LoopState.SetManager:
+                    H.Write("A => Add Set", 0, 0);
+                    H.Write("R => Remove Set", 0, 1);
+                    H.Write("B => Back", 0, 2);
+                    break;
+                case LoopState.Exit:
+                    break;
+                default:
+                    break;
+            }
+        }
+        // #############################################################
+        // END
+        // #############################################################
+
+        private static void LoadDeckList()
+        {
+            FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json");
+            if(!file.Exists)
+            {
+                var valid = H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                if(!valid)
+                {
+                    throw new Exception("Filechecksum is invalid!");
+                }
+            }
+            DeckList = JsonConvert.DeserializeObject<models.DeckList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
+        }
+
+        private static void ReadAllDecks() 
+        {
+            DirectoryInfo deckDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
+            if (deckDirectory.Exists)
+            {
+                var files = deckDirectory.GetFiles("*.json");
+                foreach (var file in files)
+                {
+                    var deck = H.ReadSingleDeck(file.FullName);
+                    Decks.Add($"{file.Name[..file.Name.IndexOf('.')]}_{deck.Data.Name}", deck.Data);
+                }
+                if (files.Length <= 0)
+                {
+                    Console.WriteLine("No Deck-Files found!");
+                }
+            }
         }
 
         private static void CheckAllDirectories()
         {
-            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{BoosterDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{ScriptDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{DraftDirectory}\");
@@ -97,7 +202,7 @@ namespace ProxyDraftor
 
         private static void ReadAllSets()
         {
-            DirectoryInfo setDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\");
+            DirectoryInfo setDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
             if(setDirectory.Exists)
             {
                 var files = setDirectory.GetFiles("*.json");
@@ -122,7 +227,7 @@ namespace ProxyDraftor
             {
                 foreach (var set in Settings.SetsToLoad)
                 {
-                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", Settings, JsonSetDirectory);
+                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", Settings, SetDirectory);
                     _ = ReadSingleSet(set);
                 }
             }
@@ -131,13 +236,13 @@ namespace ProxyDraftor
 
         static models.Set ReadSingleSetWithUpdateCheck(string setCode)
         {
-            H.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", Settings, JsonSetDirectory);
+            H.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", Settings, SetDirectory);
             return ReadSingleSet(setCode);
         }
 
         static models.Set ReadSingleSet(string setCode)
         {
-            FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\{setCode.ToUpper()}.json");
+            FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
             return ReadSingleSet(fileInfo);
         }
 
@@ -230,64 +335,62 @@ namespace ProxyDraftor
             return boosterCardIdentifier;
         }
 
-        // START
 
-        private static LoopState AppState { get; set; }
 
-        static async void EnterTheLoop()
+        static async Task<object> PrintDeck(string deckName)
         {
-            Console.Clear();
-            AppState = LoopState.Main;
+            // individual deck guid
+            Guid guid = Guid.NewGuid();
+            
+            // create folder
+            DirectoryInfo directory = new(@$"{PrintDirectory}\{DeckDirectory}\{guid}\");
+            directory.Create();
 
+            // try to get deck from the list of already downloaded decks
+            models.Deck deck = Decks.FirstOrDefault(x => x.Key.Contains(deckName)).Value;
 
-        }
-
-        static async void PrintMenu()
-        {
-            switch (AppState)
+            // deck not found
+            if (deck == null)
             {
-                case LoopState.Main:
-                    H.Write("B => Draft Booster", 0, 0);
-                    H.Write("D => Create Deck", 0, 1);
-                    H.Write("S => Add or Remove Sets", 0, 2);
-                    H.Write("C => Clean Up", 0, 3);
-                    H.Write("O => Options", 0, 4);
-                    H.Write("X => Exit", 0, 6);
-                    break;
-                case LoopState.Options:
-                    H.Write("P => enable / disable automatic printing", 0, 0);
-                    break;
-                case LoopState.BoosterDraft:
-                    break;
-                case LoopState.DeckCreator:
-                    break;
-                case LoopState.SetManager:
-                    break;
-                default:
-                    break;
+                // check if it is a legitimate deck
+                var deckFromList = DeckList.Data.Find(x => x.Name.Contains(deckName) || x.FileName.Contains(deckName));
+
+                if(deckFromList != null)
+                {
+                    // download and validate deck and checksum files
+                    var isValid = H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
+
+                    // when file is valid
+                    if(isValid)
+                    {
+                        // read json 
+                        var localDeck = JsonConvert.DeserializeObject<models.DeckRoot>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\{deckFromList.FileName}.json"));
+                        deck = localDeck.Data;
+                        
+                        // add it to the list of local decks
+                        Decks.Add($"{deckFromList.FileName}_{deck.Name}", deck);
+                    }
+                }
+                else
+                {
+                    return false;
+                }
             }
+
+            // download all cards from mainboard and sideboard
+            foreach (var card in deck.MainBoard) { await GetImage(card.Identifiers, @$"{PrintDirectory}\{DeckDirectory}\{guid}\"); }
+            foreach (var card in deck.SideBoard) { await GetImage(card.Identifiers, @$"{PrintDirectory}\{DeckDirectory}\{guid}\"); }
+
+            // create pdf
+            Process proc = CreatePdf(guid, @$"{PrintDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
+            if (proc.ExitCode == 0)
+            {
+                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                if (file.Exists) { file.MoveTo($@"{PrintDirectory}\{deck.Name.ToLowerInvariant()}_{guid}.pdf"); }
+            }
+
+            return true;
         }
-
-        public enum LoopState
-        {
-            Main,
-            Options,
-            BoosterDraft,
-            DeckCreator,
-            SetManager
-        }
-
-        // END
-
-        //static async Task<object> PrintDeck(string deckName) 
-        //{
-        //    if(AllDecks == null)
-        //    {
-        //        AllDecks = new();
-        //        H.ReadSingleDeck(deckName);
-        //    }
-        //}
-
 
         static async Task<object> Draft()
         {
@@ -373,27 +476,9 @@ namespace ProxyDraftor
                     // load images
                     foreach (var card in booster) { await GetImage(card, boosterDirectory.FullName); }
 
-                    //// copy magic back once
-                    //FileInfo backFile = new(@$"{BaseDirectory}\images\mtg.back.png");
-                    //if(backFile.Exists) { backFile.CopyTo(@$"{boosterDirectory.FullName}\{backFile.Name}"); }
-
                     if (IsWindows)
                     {
-                        Console.WriteLine("Creating PDF-file via nanDECK...");
-
-                        // prepare pdf with nandeck
-                        Process proc = new();
-                        proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-                        proc.StartInfo.CreateNoWindow = true;
-                        proc.StartInfo.FileName = "cmd.exe";
-                        proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={boosterGuid} /[boosterfolder]={BaseDirectory}\\{BoosterDirectory} /createpdf";
-                        if (Settings.AutomaticPrinting)
-                        {
-                            proc.StartInfo.Arguments += " /print";
-                        }
-                        proc.EnableRaisingEvents = true;
-                        proc.Start();
-                        proc.WaitForExit();
+                        Process proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
 
                         if (proc.ExitCode == 0)
                         {
@@ -417,6 +502,7 @@ namespace ProxyDraftor
                         Console.WriteLine("Skipping PDF-file generation...");
                     }
 
+                    // update booster count just for fun
                     H.UpdateBoosterCount(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json", 1);
 
                     // cleanup
@@ -432,6 +518,33 @@ namespace ProxyDraftor
             } while (Console.ReadKey().Key != ConsoleKey.X);
             
             return true;
+        }
+
+        /// <summary>
+        /// Create PDF using nanDeck
+        /// </summary>
+        /// <param name="guid"></param>
+        /// <param name="folder"></param>
+        /// <returns></returns>
+        private static Process CreatePdf(Guid guid, string folder, bool print)
+        {
+            Console.WriteLine("Creating PDF-file via nanDECK...");
+
+            // prepare pdf with nandeck
+            Process proc = new();
+            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.StartInfo.CreateNoWindow = true;
+            proc.StartInfo.FileName = "cmd.exe";
+            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={guid} /[boosterfolder]={folder} /createpdf";
+
+            // pdf gets printed right away when desired
+            if (print) { proc.StartInfo.Arguments += " /print"; }
+
+            proc.EnableRaisingEvents = true;
+            proc.Start();
+            proc.WaitForExit();
+            
+            return proc;
         }
 
         private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory)
