@@ -14,6 +14,13 @@ namespace ProxyDraftor.models
         public Dictionary<string, string> Statistics { get; set; }
         public List<string> SetsToLoad { get; set; }
 
+        public Settings()
+        {
+            LastUpdatesList = new();
+            Statistics = new();
+            SetsToLoad = new();
+        }
+
         public void AddSet(string setCode)
         {
             if(SetsToLoad != null && !SetsToLoad.Contains(setCode))
@@ -23,7 +30,7 @@ namespace ProxyDraftor.models
         }
         public void Save()
         {
-
+            throw new NotImplementedException();
         }
     }
 }

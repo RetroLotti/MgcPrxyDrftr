@@ -21,7 +21,7 @@ jobs:
 #    - name: Test code 
 #      run: dotnet test "./MgcPrxyDrftr" --no-restore --verbosity normal
     - name: Publish application
-      run: dotnet publish "./src" -c Release -o MgcPrxyDrftr -r win10-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true
+      run: dotnet publish "./src" -c Release -o MgcPrxyDrftr -r win10-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --no-self-contained
     - name: Upload Artifacts
       uses: actions/upload-artifact@v2
       with:

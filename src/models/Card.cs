@@ -13,6 +13,7 @@ namespace ProxyDraftor.models
         public BorderColor BorderColor { get; set; }
         public List<Color> ColorIdentity { get; set; }
         public List<Color> Colors { get; set; }
+        public int? Count { get; set; }
         public long ConvertedManaCost { get; set; }
         public long? EdhrecRank { get; set; }
         public List<Finish> Finishes { get; set; }

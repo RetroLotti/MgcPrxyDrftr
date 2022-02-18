@@ -170,14 +170,18 @@ namespace ProxyDraftor.lib
 
         public static Settings LoadSettings(string settingsFileFullPath)
         {
-            Settings setUpdates = null;
+            Settings settings;
             if (File.Exists(settingsFileFullPath))
             {
                 string json = File.ReadAllText(settingsFileFullPath);
-                setUpdates = System.Text.Json.JsonSerializer.Deserialize<Settings>(json);
+                settings = System.Text.Json.JsonSerializer.Deserialize<Settings>(json);
+            }
+            else
+            {
+                settings = new();
             }
 
-            return setUpdates;
+            return settings;
         }
 
         public static void SaveSettings(Settings settings, string settingsFileFullPath)

@@ -406,8 +406,20 @@ namespace ProxyDraftor
             }
 
             // download all cards from mainboard and sideboard
-            foreach (var card in deck.MainBoard) { await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\"); }
-            foreach (var card in deck.SideBoard) { await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\"); }
+            foreach (var card in deck.MainBoard) 
+            {
+                for (int i = 0; i < card.Count; i++)
+                {
+                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
+                }
+            }
+            foreach (var card in deck.SideBoard)
+            {
+                for (int i = 0; i < card.Count; i++)
+                {
+                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
+                }
+            }
 
             // create pdf
             Process proc = CreatePdf(guid, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
@@ -691,9 +703,12 @@ namespace ProxyDraftor
 
         private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory)
         {
+            // get unique file name guid
+            string fileName = $"{Guid.NewGuid()}.png";
+
             // check for image
             FileInfo file = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
-            if (file.Exists) { _ = file.CopyTo(targetBoosterDirectory + file.Name); return true; }
+            if (file.Exists) { _ = file.CopyTo($"{targetBoosterDirectory}{fileName}"); return true; }
 
             // check target directory
             DirectoryInfo directoryInfo = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\");
@@ -704,7 +719,7 @@ namespace ProxyDraftor
 
             // copy to booster directory
             FileInfo newFile = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
-            if (newFile.Exists) { _ = newFile.CopyTo(targetBoosterDirectory + newFile.Name); return true; }
+            if (newFile.Exists) { _ = newFile.CopyTo($"{targetBoosterDirectory}{fileName}"); return true; }
 
             return false;
         }
