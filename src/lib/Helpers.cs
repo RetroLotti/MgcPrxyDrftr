@@ -131,6 +131,7 @@ namespace ProxyDraftor.lib
                     File.Replace(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
                 }
 
+                File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
                 File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
                 File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 

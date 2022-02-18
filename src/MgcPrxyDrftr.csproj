@@ -6,7 +6,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <Authors>RetroLotti</Authors>
     <Product>Magic the Gathering Proxy Drafter</Product>
@@ -41,6 +41,7 @@
   <ItemGroup>
     <Folder Include="booster\" />
     <Folder Include="draft\" />
+    <Folder Include="json\sets\" />
     <Folder Include="print\decks\" />
     <Folder Include="print\booster\" />
     <Folder Include="print\list\" />

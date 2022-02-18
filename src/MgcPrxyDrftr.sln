@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.31702.278
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProxyDraftor", "ProxyDraftor.csproj", "{8EBE09EE-17CB-4B7C-976E-21C4F5D726CE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MgcPrxyDrftr", "MgcPrxyDrftr.csproj", "{8EBE09EE-17CB-4B7C-976E-21C4F5D726CE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -28,7 +28,7 @@ jobs:
       - name: Setup dotnet
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 5.0.405
+          dotnet-version: 6.0.x
 
       - name: Build
         shell: bash
@@ -36,7 +36,7 @@ jobs:
           tag=$(git describe --tags --abbrev=0)
           release_name="MgcPrxyDrftr-$tag-${{ matrix.target }}"
           # Build everything
-          dotnet publish src/ProxyDraftor.csproj --framework net5.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name"
+          dotnet publish src/MgcPrxyDrftr.csproj --framework net5.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name"
           # Pack files
           if [ "${{ matrix.target }}" == "win-x64" ]; then
             # Pack to zip for Windows

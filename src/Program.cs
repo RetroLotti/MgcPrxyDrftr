@@ -227,9 +227,11 @@ namespace ProxyDraftor
 
         private static void CheckAllDirectories()
         {
+            H.CheckDirectory(@$"{BaseDirectory}\{PrintDirectory}\{BoosterDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{BoosterDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{ScriptDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{DraftDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}\");
         }
@@ -253,7 +255,7 @@ namespace ProxyDraftor
 
         private static void ReadAllConfiguredSets()
         {
-            if(Settings.SetsToLoad.Count <= 0)
+            if(Settings.SetsToLoad == null || Settings.SetsToLoad.Count <= 0)
             {
                 Console.WriteLine("No sets configured!");
             }
@@ -261,11 +263,13 @@ namespace ProxyDraftor
             {
                 foreach (var set in Settings.SetsToLoad)
                 {
+                    FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{set}.json");
+                    // force reread when file does no longer exist
+                    if(!file.Exists) { Settings.LastUpdatesList[set] = DateTime.Now.AddDays(-2); }
                     H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", Settings, SetDirectory);
                     _ = ReadSingleSet(set);
                 }
             }
-            
         }
 
         static models.Set ReadSingleSetWithUpdateCheck(string setCode)
@@ -318,14 +322,6 @@ namespace ProxyDraftor
             Dictionary<models.Contents, float> blueprint = new();
             foreach (var item in set.Data.Booster.Default.Boosters) { blueprint.Add(item.Contents, (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight); }
             var booster = blueprint.RandomElementByWeight(e => e.Value);
-
-            // REMOVE
-#warning "I need to remove this"
-            if (setCode.ToLower().Equals("vma"))
-            {
-                // just for Vintage Masters I "fixed" it to "Special"-Booster to grant everybody Power Nine Cards
-                booster = new(set.Data.Booster.Default.Boosters[0].Contents, set.Data.Booster.Default.Boosters[0].Weight);
-            }
 
             // determine booster contents
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
