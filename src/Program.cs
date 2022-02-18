@@ -432,13 +432,28 @@ namespace ProxyDraftor
             return true;
         }
 
-        static async Task<object> PrintRawList(string listName)
+        static async Task<object> PrintRawList(string listFileName)
         {
+            // get new list id
             Guid guid = Guid.NewGuid();
+            Guid subGuid = Guid.NewGuid();
+
+            // create directory
             DirectoryInfo directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\");
             directory.Create();
 
-            var lines = File.ReadAllLines(@$"{BaseDirectory}\{JsonDirectory}\{listName}.txt");
+            // read all lines
+            var lines = File.ReadAllLines(@$"{BaseDirectory}\{JsonDirectory}\{listFileName}");
+            bool isLargeList = lines.Length > 90;
+            int lineCounter = 0;
+
+            // if is large then add subfolder
+            if(isLargeList)
+            {
+                directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\{subGuid}\");
+                directory.Create();
+            }
+
             foreach (var line in lines)
             {
                 _ = int.TryParse(line[..1], out int cardCount);
@@ -448,16 +463,32 @@ namespace ProxyDraftor
                 var card = await api.GetCardByNameAsync(cardName, cardSet);
                 if (card != null)
                 {
+                    lineCounter++;
+                    if (lineCounter == 91)
+                    {
+                        subGuid = Guid.NewGuid();
+                        directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\{subGuid}\");
+                        directory.Create();
+                        lineCounter = 1;
+                    }
+                    
                     _ = await GetImage(card, directory.FullName);
                 }
             }
 
-            // create pdf
-            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{PrintDirectory}\list\", Settings.AutomaticPrinting);
-            if (proc.ExitCode == 0)
+            DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\");
+            int count = 1;
+
+            foreach (var dir in directoryInfo.GetDirectories())
             {
-                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{PrintDirectory}\{listName.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
+                // create pdf
+                Process proc = CreatePdf(dir.FullName, Settings.AutomaticPrinting);
+                if (proc.ExitCode == 0)
+                {
+                    FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{PrintDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
+                }
+                count++;
             }
 
             return true;
@@ -672,6 +703,27 @@ namespace ProxyDraftor
             } while (Console.ReadKey().Key != ConsoleKey.X);
             
             return true;
+        }
+
+        private static Process CreatePdf(string folder, bool print)
+        {
+            Console.WriteLine("Creating PDF-file via nanDECK...");
+
+            // prepare pdf with nandeck
+            Process proc = new();
+            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+            proc.StartInfo.CreateNoWindow = true;
+            proc.StartInfo.FileName = "cmd.exe";
+            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[boosterfolder]={folder} /createpdf";
+
+            // pdf gets printed right away when desired
+            if (print) { proc.StartInfo.Arguments += " /print"; }
+
+            proc.EnableRaisingEvents = true;
+            proc.Start();
+            proc.WaitForExit();
+
+            return proc;
         }
 
         /// <summary>
