@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProxyDraftor.models
+namespace MgcPrxyDrftr.models
 {
     public class SetNew
     {
@@ -13,7 +13,7 @@ namespace ProxyDraftor.models
         public SetDataNew Data { get; set; }
     }
 
-    public class SetDataNew : Data
+    public class SetDataNew
     {
         [JsonProperty("baseSetSize")]
         public int BaseSetSize { get; set; }

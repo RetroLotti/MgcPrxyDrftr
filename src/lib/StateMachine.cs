@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProxyDraftor.lib
+namespace MgcPrxyDrftr.lib
 {
     public enum LoopState
     {
@@ -38,12 +38,11 @@ namespace ProxyDraftor.lib
 
             public override bool Equals(object obj)
             {
-                StateTransition other = obj as StateTransition;
-                return other != null && this.CurrentState == other.CurrentState && this.Command == other.Command;
+                return obj is StateTransition other && CurrentState == other.CurrentState && Command == other.Command;
             }
         }
 
-        Dictionary<StateTransition, LoopState> transitions;
+        private readonly Dictionary<StateTransition, LoopState> transitions;
         public LoopState CurrentState { get; private set; }
 
         public StateMachine()

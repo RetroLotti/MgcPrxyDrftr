@@ -3,7 +3,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace ProxyDraftor.lib
+namespace MgcPrxyDrftr.lib
 {
     public static class IEnumerableExtensions
     {

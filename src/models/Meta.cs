@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 
-namespace ProxyDraftor.models
+namespace MgcPrxyDrftr.models
 {
     public class Meta
     {

@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-using ProxyDraftor.models;
+using MgcPrxyDrftr.models;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -9,8 +9,9 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
+using System.Net.Http;
 
-namespace ProxyDraftor.lib
+namespace MgcPrxyDrftr.lib
 {
     public static class Helpers
     {
@@ -98,7 +99,7 @@ namespace ProxyDraftor.lib
         {
             WebClient webClient = new();
             string currentFileText = string.Empty;
-            Set currentSet = null;
+            SetRoot currentSet;
 
             // download content file
             webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json"), @$"{fullJsonPath}\{setCode.ToUpper()}.json");
@@ -117,8 +118,8 @@ namespace ProxyDraftor.lib
                     currentFileText = File.ReadAllText(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
                 }
                 
-                var downloadSet = JsonConvert.DeserializeObject<Set>(downloadedFileText);
-                currentSet = JsonConvert.DeserializeObject<Set>(currentFileText);
+                var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);
+                currentSet = JsonConvert.DeserializeObject<SetRoot>(currentFileText);
 
                 if(currentSet == null)
                 {

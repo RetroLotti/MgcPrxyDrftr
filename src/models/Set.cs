@@ -6,15 +6,15 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ProxyDraftor.models
+namespace MgcPrxyDrftr.models
 {
-    public class Set
+    public class SetRoot
     {
         public Meta Meta { get; set; }
-        public SetData Data { get; set; }
+        public Set Data { get; set; }
     }
 
-    public class SetData : Data
+    public class Set
     {
         public long BaseSetSize { get; set; }
         public string Block { get; set; }

@@ -1,6 +1,6 @@
 ﻿using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
-using ProxyDraftor.lib;
+using MgcPrxyDrftr.lib;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
@@ -11,9 +11,9 @@ using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using H = ProxyDraftor.lib.Helpers;
+using H = MgcPrxyDrftr.lib.Helpers;
 
-namespace ProxyDraftor
+namespace MgcPrxyDrftr
 {
     class Program
     {
@@ -38,7 +38,7 @@ namespace ProxyDraftor
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
         private static readonly SortedList<string, string> releaseTimelineSets = new();
-        private static readonly SortedList<string, models.Set> sets = new();
+        private static readonly SortedList<string, models.SetRoot> sets = new();
         private static SortedList<string, models.Deck> Decks { get; set; } = new();
 
         private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
@@ -50,6 +50,8 @@ namespace ProxyDraftor
 
         // decks
         private static models.DeckList DeckList { get; set; }
+        // sets
+        private static models.SetList SetList { get; set; }
 
         static async Task Main()
         {
@@ -69,7 +71,9 @@ namespace ProxyDraftor
             Console.WriteLine(">> Reading settings...");
             Settings = H.LoadSettings(@$"{BaseDirectory}\{JsonDirectory}\settings.json");
 
-            Console.WriteLine(">> Reading sets...");
+            Console.WriteLine(">> Reading setlist...");
+            LoadSetList();
+            Console.WriteLine(">> Reading sets from disk...");
             if (UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
 
             Console.WriteLine(">> Reading decklist...");
@@ -226,6 +230,20 @@ namespace ProxyDraftor
             DeckList = JsonConvert.DeserializeObject<models.DeckList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
         }
 
+        private static void LoadSetList()
+        {
+            FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\SetList.json");
+            if (!file.Exists)
+            {
+                var valid = H.DownloadAndValidateFile("https://mtgjson.com/api/v5/SetList.json", "https://mtgjson.com/api/v5/SetList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                if (!valid)
+                {
+                    throw new Exception("Filechecksum is invalid!");
+                }
+            }
+            SetList = JsonConvert.DeserializeObject<models.SetList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\SetList.json"));
+        }
+
         private static void ReadAllDecks() 
         {
             DirectoryInfo deckDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
@@ -295,22 +313,22 @@ namespace ProxyDraftor
             }
         }
 
-        static models.Set ReadSingleSetWithUpdateCheck(string setCode)
+        static models.SetRoot ReadSingleSetWithUpdateCheck(string setCode)
         {
             H.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", Settings, SetDirectory);
             return ReadSingleSet(setCode);
         }
 
-        static models.Set ReadSingleSet(string setCode)
+        static models.SetRoot ReadSingleSet(string setCode)
         {
             FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
             return ReadSingleSet(fileInfo);
         }
 
-        static models.Set ReadSingleSet(FileInfo fileInfo)
+        static models.SetRoot ReadSingleSet(FileInfo fileInfo)
         {
             var txt = File.ReadAllText(fileInfo.FullName);
-            var o = JsonConvert.DeserializeObject<models.Set>(txt);
+            var o = JsonConvert.DeserializeObject<models.SetRoot>(txt);
 
             if (!sets.ContainsKey(o.Data.Code))
             {

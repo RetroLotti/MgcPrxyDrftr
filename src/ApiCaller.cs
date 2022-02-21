@@ -4,7 +4,7 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 
-namespace ProxyDraftor
+namespace MgcPrxyDrftr
 {
     public class ApiCaller
     {
