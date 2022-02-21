@@ -144,6 +144,15 @@ namespace MgcPrxyDrftr
                 {
                     // move to next state
                     _ = StateMachine.MoveNext(command);
+
+                    switch(command.ToLower())
+                    {
+                        case "c":
+                            _ = ReadClipboardAndDownload();
+                            break;
+                        default:
+                            break;
+                    }
                 }
                 else
                 {
@@ -178,7 +187,7 @@ namespace MgcPrxyDrftr
                     H.Write("D => Create Deck", 0, 2);
                     H.Write("S => Add or Remove Sets", 0, 3);
                     H.Write("R => Print Raw List", 0, 4);
-                    H.Write("C => Clean Up", 0, 5);
+                    H.Write("C => Clipboard", 0, 5);
                     H.Write("O => Options", 0, 6);
                     H.Write("X => Exit", 0, 8);
                     break;
@@ -218,6 +227,47 @@ namespace MgcPrxyDrftr
         // #############################################################
         // END
         // #############################################################
+
+        // 1 [NEO] Ambitious Assault
+        private static async Task<bool> ReadClipboardAndDownload()
+        {
+            TextCopy.Clipboard clipboard = new();
+
+            // get new list id
+            Guid guid = Guid.NewGuid();
+            //Guid subGuid = Guid.NewGuid();
+            
+            var rawCardString = clipboard.GetText();
+            var cardList = rawCardString.Split("\r\n");
+
+            // create directory
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\");
+            directory.Create();
+
+            foreach (var card in cardList)
+            {
+                _ = int.TryParse(card[..1], out int cardCount);
+                string cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
+                string cardName = card.Substring(card.IndexOf(']')+1).Trim();
+
+                var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet);
+
+                for (int i = 0; i < cardCount; i++)
+                {
+                    _ = await GetImage(scryfallCard, directory.FullName);
+                }
+            }
+
+            // create pdf
+            Process proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
+            if (proc.ExitCode == 0)
+            {
+                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\clipboard_{guid}.pdf"); }
+            }
+            
+            return true;
+        }
 
         private static void LoadDeckList()
         {

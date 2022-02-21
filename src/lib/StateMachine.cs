@@ -53,6 +53,7 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.Main, "x"), LoopState.Exit },
                 { new StateTransition(LoopState.Main, "b"), LoopState.BoosterDraft },
                 { new StateTransition(LoopState.Main, "d"), LoopState.DeckCreator },
+                { new StateTransition(LoopState.Main, "c"), LoopState.Main },
                 { new StateTransition(LoopState.Main, "o"), LoopState.Options },
                 { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
                 { new StateTransition(LoopState.Options, "p"), LoopState.Options },

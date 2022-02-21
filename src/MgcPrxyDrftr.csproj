@@ -13,6 +13,8 @@
     <SignAssembly>false</SignAssembly>
     <AssemblyOriginatorKeyFile>ProxyDrator.snk</AssemblyOriginatorKeyFile>
     <DelaySign>false</DelaySign>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.ico</PackageIcon>
   </PropertyGroup>
   
   <ItemGroup>
@@ -20,6 +22,7 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
+    <PackageReference Include="TextCopy" Version="6.1.0" />
     <PackageReference Include="WolfCurses" Version="2018.9.12.1" />
   </ItemGroup>
 
@@ -29,6 +32,10 @@
     </None>
     <None Update="ext\nanDeck\nandeck.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="icon.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
     </None>
     <None Update="scripts\booster.v1.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -46,6 +53,13 @@
     <Folder Include="temporary\decks\" />
     <Folder Include="temporary\draft\" />
     <Folder Include="temporary\lists\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>
