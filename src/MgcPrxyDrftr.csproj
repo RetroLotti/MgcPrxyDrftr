@@ -16,10 +16,10 @@
   </PropertyGroup>
   
   <ItemGroup>
-    <PackageReference Include="MtgApiManager.Lib" Version="2.3.1" />
+    <PackageReference Include="MtgApiManager.Lib" Version="2.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="ScryfallAPI.Client" Version="2.0.5" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="5.0.0" />
+    <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
     <PackageReference Include="WolfCurses" Version="2018.9.12.1" />
   </ItemGroup>
 
@@ -39,12 +39,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="booster\" />
-    <Folder Include="draft\" />
     <Folder Include="json\sets\" />
-    <Folder Include="print\decks\" />
-    <Folder Include="print\booster\" />
-    <Folder Include="print\list\" />
+    <Folder Include="output\list\" />
+    <Folder Include="output\draft\" />
+    <Folder Include="temporary\booster\" />
+    <Folder Include="temporary\decks\" />
+    <Folder Include="temporary\draft\" />
+    <Folder Include="temporary\lists\" />
   </ItemGroup>
 
 </Project>

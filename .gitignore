@@ -348,14 +348,11 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
-/src/images/scryfall
-/src/booster
-/src/draft
+/src/cache/scryfall
 /src/json
-/src/json/sets
-/src/json/decks
 /src/bin
 /src/obj
-/src/print
+/src/output
+/src/temporary
 
 *.bak

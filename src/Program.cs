@@ -21,15 +21,17 @@ namespace ProxyDraftor
 
         public static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
         private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
-        private static string SetDirectory { get; set; } = ConfigurationManager.AppSettings["JsonSetDirectory"] ?? "sets";
-        private static string DeckDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDeckDirectory"] ?? "decks";
+        private static string SetDirectory { get; set; } = ConfigurationManager.AppSettings["SetDirectory"] ?? "sets";
+        private static string DeckDirectory { get; set; } = ConfigurationManager.AppSettings["DeckDirectory"] ?? "decks";
         private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"] ?? "booster";
-        private static string ImageCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"] ?? "images";
+        private static string CacheDirectory { get; set; } = ConfigurationManager.AppSettings["ImageCacheDirectory"] ?? "images";
         private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"] ?? "scryfall";
         private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"] ?? "scripts";
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
-        private static string PrintDirectory { get; set; } = ConfigurationManager.AppSettings["PrintDirectory"] ?? "print";
+        private static string OutputDirectory { get; set; } = ConfigurationManager.AppSettings["OutputDirectory"] ?? "output";
         private static string FileDirectory { get; set; } = ConfigurationManager.AppSettings["FileDirectory"] ?? "files";
+        private static string TemporaryDirectory { get; set; } = ConfigurationManager.AppSettings["TemporaryDirectory"] ?? "temporary";
+        private static string ListDirectory { get; set; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
@@ -180,6 +182,7 @@ namespace ProxyDraftor
                 case LoopState.BoosterDraft:
                     H.Write("A => List all sets", 0, 1);
                     H.Write("L => List downloaded sets", 0, 2);
+                    H.Write(">>> => Format: {SetCode}|{HowManyBoosters}", 0, 6);
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckCreator:
@@ -243,13 +246,17 @@ namespace ProxyDraftor
 
         private static void CheckAllDirectories()
         {
-            H.CheckDirectory(@$"{BaseDirectory}\{PrintDirectory}\{BoosterDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{DraftDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{BoosterDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{DraftDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{FileDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}\");
         }
 
         private static void ReadAllSets()
@@ -387,7 +394,7 @@ namespace ProxyDraftor
             Guid guid = Guid.NewGuid();
             
             // create folder
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
             directory.Create();
 
             // try to get deck from the list of already downloaded decks
@@ -432,23 +439,23 @@ namespace ProxyDraftor
 
                 for (int i = 0; i < card.Count; i++)
                 {
-                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
+                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
                 }
             }
             foreach (var card in deck.SideBoard)
             {
                 for (int i = 0; i < card.Count; i++)
                 {
-                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
+                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
                 }
             }
 
             // create pdf
-            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
+            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
             if (proc.ExitCode == 0)
             {
                 FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{PrintDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
+                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
             }
 
             return true;
@@ -470,7 +477,7 @@ namespace ProxyDraftor
             Guid subGuid = Guid.NewGuid();
 
             // create directory
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\");
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\");
             directory.Create();
 
             // read all lines
@@ -481,7 +488,7 @@ namespace ProxyDraftor
             // if is large then add subfolder
             if(isLargeList)
             {
-                directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\{subGuid}\");
+                directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\{subGuid}\");
                 directory.Create();
             }
 
@@ -498,7 +505,7 @@ namespace ProxyDraftor
                     if (lineCounter == 91)
                     {
                         subGuid = Guid.NewGuid();
-                        directory = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\{subGuid}\");
+                        directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\{subGuid}\");
                         directory.Create();
                         lineCounter = 1;
                     }
@@ -507,7 +514,7 @@ namespace ProxyDraftor
                 }
             }
 
-            DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{PrintDirectory}\list\{guid}\");
+            DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\");
             int count = 1;
 
             foreach (var dir in directoryInfo.GetDirectories())
@@ -517,7 +524,7 @@ namespace ProxyDraftor
                 if (proc.ExitCode == 0)
                 {
                     FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{PrintDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
+                    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
                 }
                 count++;
             }
@@ -530,7 +537,7 @@ namespace ProxyDraftor
         /// </summary>
         /// <param name="draftString">set + count i.e. NEO|6</param>
         /// <returns></returns>
-        static async Task<bool> Draft(string draftString)
+        private static async Task<bool> Draft(string draftString)
         {
             ISetService setService = serviceProvider.GetSetService();
             string setCode = draftString.Split('|')[0];
@@ -548,11 +555,12 @@ namespace ProxyDraftor
             Console.ReadKey();
 
             // create new draft folder
-            DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             if (!draftDirectory.Exists) { draftDirectory.Create(); }
 
             for (int i = 1; i <= boosterCount; i++)
             {
+                Console.Clear();
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
@@ -562,7 +570,7 @@ namespace ProxyDraftor
                 var boosterGuid = Guid.NewGuid();
 
                 // create directory
-                DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{BoosterDirectory}\{boosterGuid}\");
+                DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
                 if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
 
                 Console.WriteLine("Downloading images...");
@@ -573,7 +581,7 @@ namespace ProxyDraftor
 
                 if (IsWindows)
                 {
-                    Process proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+                    Process proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\\{TemporaryDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
 
                     if (proc.ExitCode == 0)
                     {
@@ -669,7 +677,7 @@ namespace ProxyDraftor
                 Console.Clear();
 
                 // create new draft folder
-                DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+                DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
                 if(!draftDirectory.Exists) { draftDirectory.Create(); }
 
                 for (int i = 1; i <= boosterCount; i++)
@@ -683,7 +691,7 @@ namespace ProxyDraftor
                     var boosterGuid = Guid.NewGuid();
 
                     // create directory
-                    DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{BoosterDirectory}\{boosterGuid}\");
+                    DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
                     if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
 
                     Console.WriteLine("Downloading images...");
@@ -694,7 +702,7 @@ namespace ProxyDraftor
 
                     if (IsWindows)
                     {
-                        Process proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+                        Process proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\\{OutputDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
 
                         if (proc.ExitCode == 0)
                         {
@@ -832,7 +840,7 @@ namespace ProxyDraftor
             // check if images are present
             if (card.ImageUris != null)
             {
-                _ = await GetImage(card.ImageUris["png"].AbsoluteUri, card.Id.ToString(), "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
+                _ = await GetImage(card.ImageUris["png"].AbsoluteUri, card.Id.ToString(), "png", @$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
             }
             else
             {
@@ -847,7 +855,7 @@ namespace ProxyDraftor
                         var face = uri.Contains("front") ? "front" : "back";
 
                         // download image
-                        _ = await GetImage(uri, $"{card.Id}_{face}", "png", @$"{BaseDirectory}\{ImageCacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
+                        _ = await GetImage(uri, $"{card.Id}_{face}", "png", @$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}", targetDirectory);
                     }
                 }
             }
