@@ -354,5 +354,6 @@ MigrationBackup/
 /src/obj
 /src/output
 /src/temporary
+/src/files
 
 *.bak
