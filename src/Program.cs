@@ -65,6 +65,9 @@ namespace MgcPrxyDrftr
             //H.Write("╝", Console.WindowWidth - 1, 1);
             Console.SetCursorPosition(0, 6);
 
+            Console.WriteLine(">> Pre-Clean-Up...");
+            CleanFolders();
+
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
@@ -888,6 +891,26 @@ namespace MgcPrxyDrftr
             var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
             
             return await GetImage(scryfallCard, targetDirectory);
+        }
+
+        private static void CleanFolders()
+        {
+            DirectoryInfo temporaryDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\");
+            DeleteDirectories(temporaryDirectory, "*.*");
+
+            DirectoryInfo jsonDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\");
+            DeleteDirectories(jsonDirectory, "*.sha256");
+        }
+
+        private static void DeleteDirectories(DirectoryInfo directory, string filePattern)
+        {
+            DeleteFilesInDirectory(directory, filePattern);
+            foreach (var subDirectory in directory.GetDirectories()) { DeleteDirectories(subDirectory, filePattern); }
+        }
+
+        private static void DeleteFilesInDirectory(DirectoryInfo directory, string filePattern)
+        {
+            foreach (var file in directory.GetFiles(filePattern)) { file.Delete(); }
         }
     }
 }
