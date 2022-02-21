@@ -29,6 +29,7 @@ namespace ProxyDraftor
         private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"] ?? "scripts";
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
         private static string PrintDirectory { get; set; } = ConfigurationManager.AppSettings["PrintDirectory"] ?? "print";
+        private static string FileDirectory { get; set; } = ConfigurationManager.AppSettings["FileDirectory"] ?? "files";
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
@@ -43,18 +44,22 @@ namespace ProxyDraftor
         private static readonly ApiCaller api = new();
         private static models.Settings Settings { get; set; }
 
+        private static string Language { get; set; } = "de";
+
         // decks
         private static models.DeckList DeckList { get; set; }
 
         static async Task Main()
         {
-            H.Write("╔═", 0, 0);
-            H.Write("Preparing application", (Console.WindowWidth / 2) - ("Preparing application".Length / 2), 0);
-            H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
-            H.Write("╚", 0, 1);
-            H.Write("".PadRight(Console.WindowWidth - 2, '═'), 1, 1);
-            H.Write("╝", Console.WindowWidth - 1, 1);
-            Console.SetCursorPosition(0, 2);
+            WriteHeader();
+
+            //H.Write("╔═", 0, 0);
+            //H.Write("Preparing application", (Console.WindowWidth / 2) - ("Preparing application".Length / 2), 0);
+            //H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
+            //H.Write("╚", 0, 1);
+            //H.Write("".PadRight(Console.WindowWidth - 2, '═'), 1, 1);
+            //H.Write("╝", Console.WindowWidth - 1, 1);
+            Console.SetCursorPosition(0, 6);
 
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
@@ -90,6 +95,17 @@ namespace ProxyDraftor
 #else
             await Draft();
 #endif
+        }
+
+        static void WriteHeader()
+        {
+            // MGCPRXYDRFTR
+            H.Write("XX XX  XXX  XX  XXX  XXX  X   X X   X XXX  XXX  XXXX XXX XXX", 0, 1);
+            H.Write("X X X X    X  X X  X X  X  X X  X   X X  X X  X X     X  X  X", 0, 2);
+            H.Write("X   X X XX X    XXX  XXX    X    X X  X  X XXX  XXX   X  XXX", 0, 3);
+            H.Write("X   X X  X X  X X    X XX  X X    X   X  X X XX X     X  X XX", 0, 4);
+            H.Write("X   X  XXX  XX  X    X  X X   X   X   XXX  X  X X     X  X  X", 0, 5);
+
         }
 
         // #############################################################
@@ -408,6 +424,12 @@ namespace ProxyDraftor
             // download all cards from mainboard and sideboard
             foreach (var card in deck.MainBoard) 
             {
+                //// check for language card
+                //if(!Language.Equals("en"))
+                //{
+                //    var d = await api.GetCardByNameAndLanguageAsync(card.Name, Language, card.SetCode);
+                //}
+
                 for (int i = 0; i < card.Count; i++)
                 {
                     _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{PrintDirectory}\{DeckDirectory}\{guid}\");
@@ -432,6 +454,15 @@ namespace ProxyDraftor
             return true;
         }
 
+        /// <summary>
+        /// prints all cards from the file
+        /// Format has to be one card per line
+        /// 1 Wasteland|MPR
+        /// {count} {Name}|{SetCode}
+        /// Large lists (>90 cards) are split up into multiple files
+        /// </summary>
+        /// <param name="listFileName">Filename that should be used</param>
+        /// <returns></returns>
         static async Task<object> PrintRawList(string listFileName)
         {
             // get new list id
@@ -443,7 +474,7 @@ namespace ProxyDraftor
             directory.Create();
 
             // read all lines
-            var lines = File.ReadAllLines(@$"{BaseDirectory}\{JsonDirectory}\{listFileName}");
+            var lines = File.ReadAllLines(@$"{BaseDirectory}\{FileDirectory}\{listFileName}");
             bool isLargeList = lines.Length > 90;
             int lineCounter = 0;
 

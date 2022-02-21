@@ -35,6 +35,20 @@ namespace ProxyDraftor
             return card;
         }
 
+        public async Task<ScryfallApi.Client.Models.Card> GetCardByNameAndLanguageAsync(string cardName, string language, string setCode = "")
+        {
+            ScryfallApi.Client.Models.Card card = null;
+            //https://scryfall.com/search?order=released&q=lang%3Ade&unique=prints
+            //https://api.scryfall.com/cards/search?q=name%3DHellkite+set%3DGRN+lang%3Dde
+            HttpResponseMessage response = await client.GetAsync($"cards/search?q=name%3D{cardName}+set%3D{setCode}+lang%3D{language}");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
+            }
+            return card;
+        }
+
         public async Task<ScryfallApi.Client.Models.Card> GetCardByMultiverseIdAsync(string multiverseid)
         {
             ScryfallApi.Client.Models.Card card = null;
