@@ -55,16 +55,10 @@ namespace MgcPrxyDrftr
 
         static async Task Main()
         {
+            if(IsWindows) { Console.SetWindowSize(136, 40); }
+
             WriteHeader();
-
-            //H.Write("╔═", 0, 0);
-            //H.Write("Preparing application", (Console.WindowWidth / 2) - ("Preparing application".Length / 2), 0);
-            //H.Write("═╗", Console.WindowWidth - "═╗".Length, 0);
-            //H.Write("╚", 0, 1);
-            //H.Write("".PadRight(Console.WindowWidth - 2, '═'), 1, 1);
-            //H.Write("╝", Console.WindowWidth - 1, 1);
-            Console.SetCursorPosition(0, 6);
-
+            
             Console.WriteLine(">> Pre-Clean-Up...");
             CleanFolders();
 
@@ -98,23 +92,28 @@ namespace MgcPrxyDrftr
             Thread.Sleep(666);
             Console.Clear();
 
-            // start drafting loop
-#if DEBUG
+            // start application loop
             _ = await EnterTheLoop();
-#else
-            await Draft();
-#endif
+
+            //#if DEBUG
+            //            _ = await EnterTheLoop();
+            //#else
+            //            await Draft();
+            //#endif
         }
 
         static void WriteHeader()
         {
-            // MGCPRXYDRFTR
-            H.Write("XX XX  XXX  XX  XXX  XXX  X   X X   X XXX  XXX  XXXX XXX XXX", 0, 1);
-            H.Write("X X X X    X  X X  X X  X  X X  X   X X  X X  X X     X  X  X", 0, 2);
-            H.Write("X   X X XX X    XXX  XXX    X    X X  X  X XXX  XXX   X  XXX", 0, 3);
-            H.Write("X   X X  X X  X X    X XX  X X    X   X  X X XX X     X  X XX", 0, 4);
-            H.Write("X   X  XXX  XX  X    X  X X   X   X   XXX  X  X X     X  X  X", 0, 5);
+            H.Write(" ****     ****   ********    ******        *******  *******   **     ** **    **       *******   *******   ******** ********** *******  ", 0, 1);
+            H.Write("/**/**   **/**  **//////**  **////**      /**////**/**////** //**   ** //**  **       /**////** /**////** /**///// /////**/// /**////** ", 0, 2);
+            H.Write("/**//** ** /** **      //  **    //       /**   /**/**   /**  //** **   //****        /**    /**/**   /** /**          /**    /**   /** ", 0, 3);
+            H.Write("/** //***  /**/**         /**        *****/******* /*******    //***     //**    *****/**    /**/*******  /*******     /**    /*******  ", 0, 4);
+            H.Write("/**  //*   /**/**    *****/**       ///// /**////  /**///**     **/**     /**   ///// /**    /**/**///**  /**////      /**    /**///**  ", 0, 5);
+            H.Write("/**   /    /**//**  ////**//**    **      /**      /**  //**   ** //**    /**         /**    ** /**  //** /**          /**    /**  //** ", 0, 6);
+            H.Write("/**        /** //********  //******       /**      /**   //** **   //**   /**         /*******  /**   //**/**          /**    /**   //**", 0, 7);
+            H.Write("//         //   ////////    //////        //       //     // //     //    //          ///////   //     // //           //     //     // ", 0, 8);
 
+            Console.SetCursorPosition(0, 10);
         }
 
         // #############################################################
@@ -150,12 +149,37 @@ namespace MgcPrxyDrftr
                         case "c":
                             _ = ReadClipboardAndDownload();
                             break;
+                        case "a":
+                            if(StateMachine.CurrentState == LoopState.DeckCreator)
+                            {
+                                foreach(var deck in DeckList.Data)
+                                {
+                                    Console.WriteLine(deck.Name);
+                                }
+                                Console.Write("Press any key to continue...");
+                                _ = Console.ReadKey();
+                            }
+                            break;
+                        case "l":
+                            if (StateMachine.CurrentState == LoopState.DeckCreator)
+                            {
+                                foreach (var deck in Decks)
+                                {
+                                    Console.WriteLine(deck.Value.Name);
+                                }
+                                Console.Write("Press any key to continue...");
+                                _ = Console.ReadKey();
+                            }
+                            break;
                         default:
                             break;
                     }
                 }
                 else
                 {
+                    // clear the screen
+                    Console.Clear();
+
                     // handle entered string
                     switch (StateMachine.CurrentState)
                     {
@@ -204,6 +228,7 @@ namespace MgcPrxyDrftr
                 case LoopState.DeckCreator:
                     H.Write("A => List all decks", 0, 1);
                     H.Write("L => List downloaded decks", 0, 2);
+                    H.Write("E => enable / disable basic land download", 0, 6);
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckManager:

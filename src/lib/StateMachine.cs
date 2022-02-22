@@ -56,10 +56,16 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.Main, "c"), LoopState.Main },
                 { new StateTransition(LoopState.Main, "o"), LoopState.Options },
                 { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
-                { new StateTransition(LoopState.Options, "p"), LoopState.Options },
-                { new StateTransition(LoopState.DeckCreator, "b"), LoopState.Main },
+
                 { new StateTransition(LoopState.BoosterDraft, "b"), LoopState.Main },
+
+                { new StateTransition(LoopState.Options, "p"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "b"), LoopState.Main },
+
+                { new StateTransition(LoopState.DeckCreator, "a"), LoopState.DeckCreator },
+                { new StateTransition(LoopState.DeckCreator, "l"), LoopState.DeckCreator },
+                { new StateTransition(LoopState.DeckCreator, "b"), LoopState.Main },
+
                 { new StateTransition(LoopState.RawListManager, "b"), LoopState.Main },
             };
         }

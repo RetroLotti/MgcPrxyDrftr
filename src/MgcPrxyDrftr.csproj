@@ -47,7 +47,6 @@
 
   <ItemGroup>
     <Folder Include="json\sets\" />
-    <Folder Include="output\list\" />
     <Folder Include="output\draft\" />
     <Folder Include="temporary\booster\" />
     <Folder Include="temporary\decks\" />
