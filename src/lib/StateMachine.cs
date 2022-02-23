@@ -15,6 +15,7 @@ namespace MgcPrxyDrftr.lib
         DeckManager,
         SetManager,
         RawListManager,
+        FolderPrint,
         Exit
     }
 
@@ -56,8 +57,11 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.Main, "c"), LoopState.Main },
                 { new StateTransition(LoopState.Main, "o"), LoopState.Options },
                 { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
+                { new StateTransition(LoopState.Main, "f"), LoopState.FolderPrint },
 
                 { new StateTransition(LoopState.BoosterDraft, "b"), LoopState.Main },
+
+                { new StateTransition(LoopState.FolderPrint, "b"), LoopState.Main },
 
                 { new StateTransition(LoopState.Options, "p"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "e"), LoopState.Options },

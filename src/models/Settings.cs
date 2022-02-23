@@ -39,6 +39,13 @@ namespace MgcPrxyDrftr.models
                 SetsToLoad.Add(setCode);
             }
         }
+        public void RemoveSet(string setCode)
+        {
+            if(SetsToLoad != null && SetsToLoad.Contains(setCode))
+            {
+                SetsToLoad.Remove(setCode);
+            }
+        }
         public void Save()
         {
             string json = System.Text.Json.JsonSerializer.Serialize(this);

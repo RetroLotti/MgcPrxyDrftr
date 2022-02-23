@@ -56,7 +56,7 @@ namespace MgcPrxyDrftr
 
         static async Task Main()
         {
-            if(IsWindows) { Console.SetWindowSize(136, 40); }
+            if(IsWindows) { Console.SetWindowSize(136, 50); }
 
             WriteHeader();
             
@@ -123,11 +123,14 @@ namespace MgcPrxyDrftr
                 // clear the screen
                 Console.Clear();
 
+                // show header
+                WriteHeader();
+
                 // show current menu
-                PrintMenu(StateMachine.CurrentState);
+                PrintMenu(StateMachine.CurrentState, 0, 10);
 
                 // move cursor
-                Console.SetCursorPosition(0, 10);
+                Console.SetCursorPosition(0, 20);
                 Console.Write(">>> ");
 
                 // read entered string
@@ -170,14 +173,14 @@ namespace MgcPrxyDrftr
                             if (StateMachine.CurrentState == LoopState.Options)
                             {
                                 Settings.DownloadBasicLands = !Settings.DownloadBasicLands;
-                                H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+                                Settings.Save();
                             }
                             break;
                         case "p":
                             if (StateMachine.CurrentState == LoopState.Options)
                             {
                                 Settings.AutomaticPrinting = !Settings.AutomaticPrinting;
-                                H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+                                Settings.Save();
                             }
                             break;
                         default:
@@ -201,6 +204,9 @@ namespace MgcPrxyDrftr
                         case LoopState.RawListManager:
                             _ = await PrintRawList(command);
                             break;
+                        case LoopState.FolderPrint:
+                            _ = PrintDirectory(command);
+                            break;
                         default:
                             break;
                     }
@@ -211,46 +217,47 @@ namespace MgcPrxyDrftr
             return 0;
         }
 
-        static void PrintMenu(LoopState loopState)
+        static void PrintMenu(LoopState loopState, int startLeftPosition, int startTopPosition)
         {
             switch (loopState)
             {
                 case LoopState.Main:
-                    H.Write("B => Draft Booster", 0, 1);
-                    H.Write("D => Create Deck", 0, 2);
-                    H.Write("S => Add or Remove Sets", 0, 3);
-                    H.Write("R => Print Raw List", 0, 4);
-                    H.Write("C => Clipboard", 0, 5);
-                    H.Write("O => Options", 0, 6);
-                    H.Write("X => Exit", 0, 8);
+                    H.Write("B => Draft Booster", startLeftPosition, startTopPosition + 1);
+                    H.Write("D => Create Deck", startLeftPosition, startTopPosition + 2);
+                    H.Write("S => Add or Remove Sets", startLeftPosition, startTopPosition + 3);
+                    H.Write("R => Print Raw List", startLeftPosition, startTopPosition + 4);
+                    H.Write("C => Clipboard", startLeftPosition, startTopPosition + 5);
+                    H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
+                    H.Write("O => Options", startLeftPosition, startTopPosition + 7);
+                    H.Write("X => Exit", startLeftPosition, startTopPosition + 9);
                     break;
                 case LoopState.Options:
-                    H.Write($"P => enable / disable automatic printing [{(Settings.AutomaticPrinting ? "enabled" : "disabled")}]", 0, 1);
-                    H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", 0, 2);
-                    H.Write("B => Back", 0, 8);
+                    H.Write($"P => enable / disable automatic printing [{(Settings.AutomaticPrinting ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 1);
+                    H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 2);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.BoosterDraft:
-                    H.Write("A => List all sets", 0, 1);
-                    H.Write("L => List downloaded sets", 0, 2);
-                    H.Write("Format: {SetCode}|{HowManyBoosters}", 0, 6);
-                    H.Write("B => Back", 0, 8);
+                    H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
+                    H.Write("L => List downloaded sets", startLeftPosition, startTopPosition + 2);
+                    H.Write("Format: {SetCode}|{HowManyBoosters}", startLeftPosition, startTopPosition + 6);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.DeckCreator:
-                    H.Write("A => List all decks", 0, 1);
-                    H.Write("L => List downloaded decks", 0, 2);
-                    H.Write("B => Back", 0, 8);
+                    H.Write("A => List all decks", startLeftPosition, startTopPosition + 1);
+                    H.Write("L => List downloaded decks", startLeftPosition, startTopPosition + 2);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.DeckManager:
-                    H.Write("C => Print Clipboard (later create a deck from it)", 0, 1);
-                    H.Write("B => Back", 0, 8);
+                    H.Write("C => Print Clipboard (later create a deck from it)", startLeftPosition, startTopPosition + 1);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.SetManager:
-                    H.Write("A => Add Set", 0, 1);
-                    H.Write("R => Remove Set", 0, 2);
-                    H.Write("B => Back", 0, 8);
+                    H.Write("A => Add Set", startLeftPosition, startTopPosition + 1);
+                    H.Write("R => Remove Set", startLeftPosition, startTopPosition + 2);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.RawListManager:
-                    H.Write("B => Back", 0, 8);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.Exit:
                     break;
@@ -645,6 +652,23 @@ namespace MgcPrxyDrftr
                 count++;
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// Create pdf from all cards in the given directory
+        /// </summary>
+        /// <param name="directoryPath"></param>
+        /// <returns></returns>
+        static bool PrintDirectory(string directoryPath)
+        {
+            // create pdf
+            Process proc = CreatePdf(@$"{directoryPath}\", Settings.AutomaticPrinting);
+            if (proc.ExitCode == 0)
+            {
+                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
+            }
             return true;
         }
 
