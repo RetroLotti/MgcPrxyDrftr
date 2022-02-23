@@ -52,7 +52,7 @@ namespace MgcPrxyDrftr.lib
         {
             if (settings == null)
             {
-                settings = new Settings();
+                settings = new Settings(@$"{fullJsonPath}\settings.json");
                 settings.Statistics = new();
                 settings.LastUpdatesList = new();
             }
@@ -70,7 +70,8 @@ namespace MgcPrxyDrftr.lib
             {
                 DownloadSetFile(setCode, fullJsonPath, setFolder);
                 settings.LastUpdatesList[setCode] = DateTime.Now;
-                SaveSettings(settings, @$"{fullJsonPath}\settings.json");
+                //SaveSettings(settings, @$"{fullJsonPath}\settings.json");
+                settings.Save();
             }
 
             return true;
@@ -179,7 +180,7 @@ namespace MgcPrxyDrftr.lib
             }
             else
             {
-                settings = new();
+                settings = new(settingsFileFullPath);
             }
 
             return settings;
@@ -206,7 +207,7 @@ namespace MgcPrxyDrftr.lib
         {
             if(settings == null)
             {
-                settings = new();
+                settings = new(settingsFileFullPath);
                 settings.Statistics = new();
                 settings.LastUpdatesList = new();
             }
@@ -219,48 +220,13 @@ namespace MgcPrxyDrftr.lib
             {
                 int newValue = int.Parse(currentValue) + value;
                 UpdateStatistics(settings, "booster", newValue.ToString());
-                SaveSettings(settings, settingsFileFullPath);
+                settings.Save();
             }
             else
             {
                 UpdateStatistics(settings, "booster", value.ToString());
-                SaveSettings(settings, settingsFileFullPath);
+                settings.Save();
             }
         }
-
-        //static bool Test()
-        //{
-        //    //DirectoryInfo setDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{JsonSetDirectory}\");
-        //    //if (setDirectory.Exists)
-        //    //{
-        //    //    var files = setDirectory.GetFiles("*.json");
-        //    //    foreach (var file in files)
-        //    //    {
-        //    //        var txt = File.ReadAllText(file.FullName);
-        //    //        dynamic set = JObject.Parse(txt);
-
-        //    //        foreach (var item in set.data.booster)
-        //    //        {
-        //    //            foreach (var boosters in item.Value)
-        //    //            {
-        //    //                foreach (var content in boosters.Value)
-        //    //                {
-        //    //                    //((JProperty)content.contents.First).Value
-        //    //                    foreach (var sheet in ((JObject)content.contents))
-        //    //                    {
-        //    //                        var s = Type.GetType("ProxyDraftor.models.Sheets").GetProperties().Where(x => x.Name.ToLower().Equals(sheet.Key.ToLower())).FirstOrDefault();
-        //    //                        if (s == null)
-        //    //                        {
-        //    //                            Console.WriteLine($"Sheet {sheet} nicht gefunden!");
-        //    //                        }
-        //    //                    }
-        //    //                }
-        //    //            }
-        //    //        }
-
-        //    //    }
-        //    //}
-        //    return true;
-        //}
     }
 }

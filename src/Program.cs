@@ -34,6 +34,7 @@ namespace MgcPrxyDrftr
         private static string ListDirectory { get; set; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
+        private static string SettingsPath { get; set; } = $"{BaseDirectory}\\{ConfigurationManager.AppSettings["SettingsPath"]}";
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -66,7 +67,7 @@ namespace MgcPrxyDrftr
             CheckAllDirectories();
 
             Console.WriteLine(">> Reading settings...");
-            Settings = H.LoadSettings(@$"{BaseDirectory}\{JsonDirectory}\settings.json");
+            Settings = H.LoadSettings(SettingsPath);
 
             Console.WriteLine(">> Reading setlist...");
             LoadSetList();
@@ -94,12 +95,6 @@ namespace MgcPrxyDrftr
 
             // start application loop
             _ = await EnterTheLoop();
-
-            //#if DEBUG
-            //            _ = await EnterTheLoop();
-            //#else
-            //            await Draft();
-            //#endif
         }
 
         static void WriteHeader()
@@ -171,6 +166,20 @@ namespace MgcPrxyDrftr
                                 _ = Console.ReadKey();
                             }
                             break;
+                        case "e":
+                            if (StateMachine.CurrentState == LoopState.Options)
+                            {
+                                Settings.DownloadBasicLands = !Settings.DownloadBasicLands;
+                                H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+                            }
+                            break;
+                        case "p":
+                            if (StateMachine.CurrentState == LoopState.Options)
+                            {
+                                Settings.AutomaticPrinting = !Settings.AutomaticPrinting;
+                                H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+                            }
+                            break;
                         default:
                             break;
                     }
@@ -216,19 +225,19 @@ namespace MgcPrxyDrftr
                     H.Write("X => Exit", 0, 8);
                     break;
                 case LoopState.Options:
-                    H.Write("P => enable / disable automatic printing", 0, 1);
+                    H.Write($"P => enable / disable automatic printing [{(Settings.AutomaticPrinting ? "enabled" : "disabled")}]", 0, 1);
+                    H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", 0, 2);
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.BoosterDraft:
                     H.Write("A => List all sets", 0, 1);
                     H.Write("L => List downloaded sets", 0, 2);
-                    H.Write(">>> => Format: {SetCode}|{HowManyBoosters}", 0, 6);
+                    H.Write("Format: {SetCode}|{HowManyBoosters}", 0, 6);
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckCreator:
                     H.Write("A => List all decks", 0, 1);
                     H.Write("L => List downloaded decks", 0, 2);
-                    H.Write("E => enable / disable basic land download", 0, 6);
                     H.Write("B => Back", 0, 8);
                     break;
                 case LoopState.DeckManager:
@@ -266,11 +275,12 @@ namespace MgcPrxyDrftr
             var cardList = rawCardString.Split("\r\n");
 
             // create directory
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\");
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
             directory.Create();
 
             foreach (var card in cardList)
             {
+                // 1 [VOC] Azorius Signet
                 _ = int.TryParse(card[..1], out int cardCount);
                 string cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
                 string cardName = card.Substring(card.IndexOf(']')+1).Trim();
@@ -342,17 +352,21 @@ namespace MgcPrxyDrftr
 
         private static void CheckAllDirectories()
         {
+            H.CheckDirectory(@$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}\");
+
+            H.CheckDirectory(@$"{BaseDirectory}\{FileDirectory}\");
+
+            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
+
+            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\");
+            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\");
+
             H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{DraftDirectory}\");
             H.CheckDirectory(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{FileDirectory}\");
-            H.CheckDirectory(@$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}\");
         }
 
         private static void ReadAllSets()
@@ -490,7 +504,7 @@ namespace MgcPrxyDrftr
             Guid guid = Guid.NewGuid();
             
             // create folder
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
             directory.Create();
 
             // try to get deck from the list of already downloaded decks
@@ -535,23 +549,28 @@ namespace MgcPrxyDrftr
 
                 for (int i = 0; i < card.Count; i++)
                 {
-                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
+                    // TODO check basix lands download setting
+                    //if ((Settings.DownloadBasicLands && card.Types.Contains(models.Type.Land) && card.Supertypes.Contains(models.Supertype.Basic)))
+                    //{
+                    //    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
+                    //}
+                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
                 }
             }
             foreach (var card in deck.SideBoard)
             {
                 for (int i = 0; i < card.Count; i++)
                 {
-                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
+                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
                 }
             }
 
             // create pdf
-            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
+            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
             if (proc.ExitCode == 0)
             {
                 FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
+                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
             }
 
             return true;
@@ -573,7 +592,7 @@ namespace MgcPrxyDrftr
             Guid subGuid = Guid.NewGuid();
 
             // create directory
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\");
+            DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
             directory.Create();
 
             // read all lines
@@ -584,12 +603,13 @@ namespace MgcPrxyDrftr
             // if is large then add subfolder
             if(isLargeList)
             {
-                directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\{subGuid}\");
+                directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
                 directory.Create();
             }
 
             foreach (var line in lines)
             {
+                // 1 Azorius Signet|VOC
                 _ = int.TryParse(line[..1], out int cardCount);
                 string cardName = line[2..].Split('|')[0];
                 string cardSet = line[2..].Split('|')[1];
@@ -601,7 +621,7 @@ namespace MgcPrxyDrftr
                     if (lineCounter == 91)
                     {
                         subGuid = Guid.NewGuid();
-                        directory = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\{subGuid}\");
+                        directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
                         directory.Create();
                         lineCounter = 1;
                     }
@@ -610,7 +630,7 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{OutputDirectory}\list\{guid}\");
+            DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
             int count = 1;
 
             foreach (var dir in directoryInfo.GetDirectories())
@@ -620,7 +640,7 @@ namespace MgcPrxyDrftr
                 if (proc.ExitCode == 0)
                 {
                     FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
+                    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
                 }
                 count++;
             }
@@ -980,12 +1000,19 @@ namespace MgcPrxyDrftr
         private static void DeleteDirectories(DirectoryInfo directory, string filePattern)
         {
             DeleteFilesInDirectory(directory, filePattern);
-            foreach (var subDirectory in directory.GetDirectories()) { DeleteDirectories(subDirectory, filePattern); }
+
+            if (directory.Exists) 
+            { 
+                foreach (var subDirectory in directory.GetDirectories()) { DeleteDirectories(subDirectory, filePattern); }
+            }
         }
 
         private static void DeleteFilesInDirectory(DirectoryInfo directory, string filePattern)
         {
-            foreach (var file in directory.GetFiles(filePattern)) { file.Delete(); }
+            if(directory.Exists)
+            {
+                foreach (var file in directory.GetFiles(filePattern)) { file.Delete(); }
+            }
         }
     }
 }
