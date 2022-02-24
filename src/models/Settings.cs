@@ -1,4 +1,6 @@
-﻿using System;
+﻿using MgcPrxyDrftr.lib;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -16,20 +18,11 @@ namespace MgcPrxyDrftr.models
         public Dictionary<string, string> Statistics { get; set; }
         public List<string> SetsToLoad { get; set; }
 
-        public string OwnPath { get; private set; }
-
         public Settings()
         {
             LastUpdatesList = new();
             Statistics = new();
             SetsToLoad = new();
-        }
-        public Settings(string settingsPath)
-        {
-            LastUpdatesList = new();
-            Statistics = new();
-            SetsToLoad = new();
-            OwnPath = settingsPath;
         }
 
         public void AddSet(string setCode)
@@ -49,7 +42,56 @@ namespace MgcPrxyDrftr.models
         public void Save()
         {
             string json = System.Text.Json.JsonSerializer.Serialize(this);
-            File.WriteAllText(OwnPath, json);
+            File.WriteAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\settings.json", json);
+        }
+        public void Load()
+        {
+            if (File.Exists(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\settings.json"))
+            {
+                string json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\settings.json");
+                JsonConvert.PopulateObject(json, this);
+            }
+        }
+        public bool CheckLastUpdate(string setCode, string fullJsonPath, string setFolder)
+        {
+            if (!LastUpdatesList.ContainsKey(setCode))
+            {
+                LastUpdatesList.Add(setCode, DateTime.Now.AddDays(-2));
+            }
+
+            if (LastUpdatesList[setCode].AddDays(1) < DateTime.Now)
+            {
+                Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
+                LastUpdatesList[setCode] = DateTime.Now;
+                Save();
+            }
+
+            return true;
+        }
+        public void UpdateStatistics(string stat, string value)
+        {
+            if (Statistics.ContainsKey(stat))
+            {
+                Statistics[stat] = value;
+            }
+            else
+            {
+                Statistics.Add(stat, value);
+            }
+        }
+        public void UpdateBoosterCount(int value)
+        {
+            if (Statistics.TryGetValue("booster", out string currentValue))
+            {
+                int newValue = int.Parse(currentValue) + value;
+                UpdateStatistics("booster", newValue.ToString());
+                Save();
+            }
+            else
+            {
+                UpdateStatistics("booster", value.ToString());
+                Save();
+            }
         }
     }
 }

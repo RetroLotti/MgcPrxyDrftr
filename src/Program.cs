@@ -33,8 +33,8 @@ namespace MgcPrxyDrftr
         private static string TemporaryDirectory { get; set; } = ConfigurationManager.AppSettings["TemporaryDirectory"] ?? "temporary";
         private static string ListDirectory { get; set; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
+        private static string DefaultScriptNameNoGuid { get; set; } = ConfigurationManager.AppSettings["DefaultScriptNameNoGuid"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
-        private static string SettingsPath { get; set; } = $"{BaseDirectory}\\{ConfigurationManager.AppSettings["SettingsPath"]}";
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -67,7 +67,8 @@ namespace MgcPrxyDrftr
             CheckAllDirectories();
 
             Console.WriteLine(">> Reading settings...");
-            Settings = H.LoadSettings(SettingsPath);
+            Settings = new models.Settings();
+            Settings.Load();
 
             Console.WriteLine(">> Reading setlist...");
             LoadSetList();
@@ -406,7 +407,7 @@ namespace MgcPrxyDrftr
                     FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{set}.json");
                     // force reread when file does no longer exist
                     if(!file.Exists) { Settings.LastUpdatesList[set] = DateTime.Now.AddDays(-2); }
-                    H.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", Settings, SetDirectory);
+                    Settings.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
                     _ = ReadSingleSet(set);
                 }
             }
@@ -414,7 +415,7 @@ namespace MgcPrxyDrftr
 
         static models.SetRoot ReadSingleSetWithUpdateCheck(string setCode)
         {
-            H.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", Settings, SetDirectory);
+            Settings.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
             return ReadSingleSet(setCode);
         }
 
@@ -607,12 +608,8 @@ namespace MgcPrxyDrftr
             bool isLargeList = lines.Length > 90;
             int lineCounter = 0;
 
-            // if is large then add subfolder
-            if(isLargeList)
-            {
-                directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
-                directory.Create();
-            }
+            directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
+            directory.Create();
 
             foreach (var line in lines)
             {
@@ -643,7 +640,7 @@ namespace MgcPrxyDrftr
             foreach (var dir in directoryInfo.GetDirectories())
             {
                 // create pdf
-                Process proc = CreatePdf(dir.FullName, Settings.AutomaticPrinting);
+                Process proc = CreatePdf(@$"{dir.FullName}", Settings.AutomaticPrinting);
                 if (proc.ExitCode == 0)
                 {
                     FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
@@ -663,10 +660,10 @@ namespace MgcPrxyDrftr
         static bool PrintDirectory(string directoryPath)
         {
             // create pdf
-            Process proc = CreatePdf(@$"{directoryPath}\", Settings.AutomaticPrinting);
+            Process proc = CreatePdf(@$"{directoryPath}", Settings.AutomaticPrinting);
             if (proc.ExitCode == 0)
             {
-                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
                 if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
             }
             return true;
@@ -687,7 +684,7 @@ namespace MgcPrxyDrftr
             Settings.LastGeneratedSet = setCode;
             ReadSingleSetWithUpdateCheck(set.Code);
             Settings.AddSet(set.Code);
-            H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
+            Settings.Save();
             int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
             Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
             Console.CursorVisible = false;
@@ -746,7 +743,7 @@ namespace MgcPrxyDrftr
                 }
 
                 // update booster count just for fun
-                H.UpdateBoosterCount(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json", 1);
+                Settings.UpdateBoosterCount(1);
 
                 // cleanup
                 if (IsWindows) { boosterDirectory.Delete(true); }
@@ -783,7 +780,7 @@ namespace MgcPrxyDrftr
 
                     // save last used set
                     Settings.LastGeneratedSet = setCode;
-                    H.SaveSettings(Settings, $@"{BaseDirectory}\{JsonDirectory}\settings.json");
+                    Settings.Save();
                     
                     Console.WriteLine("");
                     if (set == null)
@@ -802,8 +799,8 @@ namespace MgcPrxyDrftr
                 ReadSingleSetWithUpdateCheck(set.Code);
                 
                 Settings.AddSet(set.Code);
-                H.SaveSettings(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json");
-                
+                Settings.Save();
+
                 Console.WriteLine("");
                 Console.Write("How many boosters shall be created? [1] > ");
                 var count = Console.ReadLine();
@@ -867,7 +864,7 @@ namespace MgcPrxyDrftr
                     }
 
                     // update booster count just for fun
-                    H.UpdateBoosterCount(Settings, @$"{BaseDirectory}\{JsonDirectory}\settings.json", 1);
+                    Settings.UpdateBoosterCount(1);
 
                     // cleanup
                     if (IsWindows) { boosterDirectory.Delete(true); }
@@ -893,8 +890,8 @@ namespace MgcPrxyDrftr
             proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.FileName = "cmd.exe";
-            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[boosterfolder]={folder} /createpdf";
-
+            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptNameNoGuid}.nde\" /[cardfolder]={folder} /createpdf";
+           
             // pdf gets printed right away when desired
             if (print) { proc.StartInfo.Arguments += " /print"; }
 

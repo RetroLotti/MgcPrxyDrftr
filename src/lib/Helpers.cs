@@ -47,35 +47,6 @@ namespace MgcPrxyDrftr.lib
                 ConfigurationManager.AppSettings["NanDeckFullPath"] = fullPath;
             }
         }
-        
-        public static bool CheckLastUpdate(string setCode, string fullJsonPath, Settings settings, string setFolder)
-        {
-            if (settings == null)
-            {
-                settings = new Settings(@$"{fullJsonPath}\settings.json");
-                settings.Statistics = new();
-                settings.LastUpdatesList = new();
-            }
-            else if (settings.LastUpdatesList == null)
-            {
-                settings.LastUpdatesList = new();
-            }
-
-            if (!settings.LastUpdatesList.ContainsKey(setCode))
-            {
-                settings.LastUpdatesList.Add(setCode, DateTime.Now.AddDays(-2));
-            }
-
-            if (settings.LastUpdatesList[setCode].AddDays(1) < DateTime.Now)
-            {
-                DownloadSetFile(setCode, fullJsonPath, setFolder);
-                settings.LastUpdatesList[setCode] = DateTime.Now;
-                //SaveSettings(settings, @$"{fullJsonPath}\settings.json");
-                settings.Save();
-            }
-
-            return true;
-        }
 
         /// <summary>
         /// Generic method to download the given file and validate sha256 hash
@@ -96,7 +67,7 @@ namespace MgcPrxyDrftr.lib
             return ValidateFiles(@$"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
         }
 
-        private static void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
+        public static void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
         {
             WebClient webClient = new();
             string currentFileText = string.Empty;
@@ -170,63 +141,7 @@ namespace MgcPrxyDrftr.lib
             return checksum.ToLower();
         }
 
-        public static Settings LoadSettings(string settingsFileFullPath)
-        {
-            Settings settings;
-            if (File.Exists(settingsFileFullPath))
-            {
-                string json = File.ReadAllText(settingsFileFullPath);
-                settings = System.Text.Json.JsonSerializer.Deserialize<Settings>(json);
-            }
-            else
-            {
-                settings = new(settingsFileFullPath);
-            }
 
-            return settings;
-        }
 
-        public static void SaveSettings(Settings settings, string settingsFileFullPath)
-        {
-            string json = System.Text.Json.JsonSerializer.Serialize(settings);
-            File.WriteAllText(settingsFileFullPath, json);
-        }
-
-        public static void UpdateStatistics(Settings settings, string stat, string value)
-        {
-            if (settings.Statistics.ContainsKey(stat))
-            {
-                settings.Statistics[stat] = value;
-            }
-            else
-            {
-                settings.Statistics.Add(stat, value);
-            }
-        }
-        public static void UpdateBoosterCount(Settings settings, string settingsFileFullPath, int value)
-        {
-            if(settings == null)
-            {
-                settings = new(settingsFileFullPath);
-                settings.Statistics = new();
-                settings.LastUpdatesList = new();
-            }
-            else if(settings.Statistics == null)
-            {
-                settings.Statistics = new();
-            }
-
-            if(settings.Statistics.TryGetValue("booster", out string currentValue))
-            {
-                int newValue = int.Parse(currentValue) + value;
-                UpdateStatistics(settings, "booster", newValue.ToString());
-                settings.Save();
-            }
-            else
-            {
-                UpdateStatistics(settings, "booster", value.ToString());
-                settings.Save();
-            }
-        }
     }
 }

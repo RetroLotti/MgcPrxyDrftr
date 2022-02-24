@@ -49,7 +49,7 @@
     <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
-    <Folder Include="output\lists\" />
+    <Folder Include="output\list\" />
     <Folder Include="temporary\booster\" />
     <Folder Include="temporary\decks\" />
     <Folder Include="temporary\draft\" />
