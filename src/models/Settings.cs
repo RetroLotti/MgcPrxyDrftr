@@ -42,13 +42,13 @@ namespace MgcPrxyDrftr.models
         public void Save()
         {
             string json = System.Text.Json.JsonSerializer.Serialize(this);
-            File.WriteAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\settings.json", json);
+            File.WriteAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json", json);
         }
         public void Load()
         {
-            if (File.Exists(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\settings.json"))
+            if (File.Exists(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
             {
-                string json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\settings.json");
+                string json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
                 JsonConvert.PopulateObject(json, this);
             }
         }

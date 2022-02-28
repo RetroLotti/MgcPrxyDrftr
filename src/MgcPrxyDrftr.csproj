@@ -16,6 +16,12 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.ico</PackageIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="output\list\**" />
+    <EmbeddedResource Remove="output\list\**" />
+    <None Remove="output\list\**" />
+  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.2" />
@@ -46,10 +52,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="cache\scryfall\" />
     <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
-    <Folder Include="output\list\" />
+    <Folder Include="output\lists\" />
     <Folder Include="temporary\booster\" />
     <Folder Include="temporary\decks\" />
     <Folder Include="temporary\draft\" />

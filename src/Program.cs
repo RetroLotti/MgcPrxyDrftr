@@ -360,6 +360,8 @@ namespace MgcPrxyDrftr
 
         private static void CheckAllDirectories()
         {
+            H.CheckDirectory(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\");
+
             H.CheckDirectory(@$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}\");
 
             H.CheckDirectory(@$"{BaseDirectory}\{FileDirectory}\");
