@@ -59,6 +59,9 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
                 { new StateTransition(LoopState.Main, "f"), LoopState.FolderPrint },
 
+                { new StateTransition(LoopState.BoosterDraft, "a"), LoopState.BoosterDraft },
+                { new StateTransition(LoopState.BoosterDraft, "l"), LoopState.BoosterDraft },
+                { new StateTransition(LoopState.BoosterDraft, "g"), LoopState.BoosterDraft },
                 { new StateTransition(LoopState.BoosterDraft, "b"), LoopState.Main },
 
                 { new StateTransition(LoopState.FolderPrint, "b"), LoopState.Main },

@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using H = MgcPrxyDrftr.lib.Helpers;
+using System.Text;
 
 namespace MgcPrxyDrftr
 {
@@ -95,7 +96,91 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
             // start application loop
-            _ = await EnterTheLoop();
+            //_ = await EnterTheLoop();
+
+            GenerateCubeDraftBooster();
+        }
+
+        static void GenerateCubeDraftBooster()
+        {
+            Console.CursorVisible = false;
+
+            do
+            {
+                var dict = GenerateBoosterPlain("NEO");
+                var guid = Guid.NewGuid();
+
+                // prepare string
+                StringBuilder build = new();
+                build.AppendLine("   R    G    B    W    U    E ");
+                build.AppendLine("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗");
+                build.AppendLine($"C ║{(dict.ContainsKey("C Red") ? dict["C Red"] : "-")}║  ║{(dict.ContainsKey("C Green") ? dict["C Green"] : "-")}║  ║{(dict.ContainsKey("C Black") ? dict["C Black"] : "-")}║  ║{(dict.ContainsKey("C White") ? dict["C White"] : "-")}║  ║{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "-")}║  ║{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "-")}║");
+                build.AppendLine("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝");
+                build.AppendLine("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗");
+                build.AppendLine($"U ║{(dict.ContainsKey("U Red") ? dict["U Red"] : "-")}║  ║{(dict.ContainsKey("U Green") ? dict["U Green"] : "-")}║  ║{(dict.ContainsKey("U Black") ? dict["U Black"] : "-")}║  ║{(dict.ContainsKey("U White") ? dict["U White"] : "-")}║  ║{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "-")}║  ║{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "-")}║");
+                build.AppendLine("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝");
+                build.AppendLine("R ╔═╗                         ");
+                build.AppendLine($"/ ║{(dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ");
+                build.AppendLine("M ╚═╝                         ");
+
+                Console.Clear();
+
+                Console.SetCursorPosition(50, 10);
+                Console.ForegroundColor = ConsoleColor.White;
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.Write("   ");
+
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.Write("R");
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.Write("   ");
+
+                Console.BackgroundColor = ConsoleColor.Green;
+                Console.Write("G");
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.Write("   B    ");
+
+                Console.BackgroundColor = ConsoleColor.White;
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.Write("W");
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("   ");
+
+                Console.BackgroundColor = ConsoleColor.Blue;
+                Console.Write("U");
+
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.Write("   ");
+
+                Console.BackgroundColor = ConsoleColor.Yellow;
+                Console.ForegroundColor = ConsoleColor.Black;
+                Console.WriteLine("E");
+                Console.BackgroundColor = ConsoleColor.Black;
+
+                //H.Write("   R    G    B    W    U    E ", 50, 10);
+                //H.Write("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗", 50, 11);
+                //H.Write($"C ║{(dict.ContainsKey("C Red") ? dict["C Red"] : "-")}║  ║{(dict.ContainsKey("C Green") ? dict["C Green"] : "-")}║  ║{(dict.ContainsKey("C Black") ? dict["C Black"] : "-")}║  ║{(dict.ContainsKey("C White") ? dict["C White"] : "-")}║  ║{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "-")}║  ║{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "-")}║", 50, 12);
+                //H.Write("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝", 50, 13);
+                //H.Write("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗", 50, 14);
+                //H.Write($"U ║{(dict.ContainsKey("U Red") ? dict["U Red"] : "-")}║  ║{(dict.ContainsKey("U Green") ? dict["U Green"] : "-")}║  ║{(dict.ContainsKey("U Black") ? dict["U Black"] : "-")}║  ║{(dict.ContainsKey("U White") ? dict["U White"] : "-")}║  ║{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "-")}║  ║{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "-")}║", 50, 15);
+                //H.Write("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝", 50, 16);
+                //H.Write("R ╔═╗                         ", 50, 17);
+                //H.Write($"/ ║{(dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ", 50, 18);
+                //H.Write("M ╚═╝                         ", 50, 19);
+                //H.Write("                              ", 50, 20);
+                //H.Write($"ID: {guid.ToString().Split('-')[0]}", 68, 21);
+
+                //FileInfo fileInfo = new(@$"{BaseDirectory}\{OutputDirectory}\{guid.ToString().Split('-')[0]}.txt");
+                FileInfo fileInfo = new(@$"C:\Users\clotterstedt\Desktop\Neuer Ordner (2)\{guid.ToString().Split('-')[0]}.txt");
+                StreamWriter writer = fileInfo.AppendText();
+                writer.WriteLine(build.ToString());
+                writer.Close();
+            } while (Console.ReadKey().Key != ConsoleKey.X);
         }
 
         static void WriteHeader()
@@ -240,6 +325,7 @@ namespace MgcPrxyDrftr
                 case LoopState.BoosterDraft:
                     H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
                     H.Write("L => List downloaded sets", startLeftPosition, startTopPosition + 2);
+                    //H.Write("G => Create general draft booster", startLeftPosition, startTopPosition + 3);
                     H.Write("Format: {SetCode}|{HowManyBoosters}", startLeftPosition, startTopPosition + 6);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
@@ -443,6 +529,139 @@ namespace MgcPrxyDrftr
             }
                 
             return o;
+        }
+
+        //static string GenerateBoosterPlain(string setCode)
+        static SortedDictionary<string, int> GenerateBoosterPlain(string setCode)
+        {
+            List<Guid> boosterCards = new();
+            List<models.CardIdentifiers> boosterCardIdentifier = new();
+            var set = sets[setCode.ToUpper()];
+
+            // create Hashtable for cards identified by scryfall id
+            SortedDictionary<Guid, models.Card> cards = new();
+            foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && (item.Side == null || item.Side == models.Side.A)) cards.Add(item.Uuid, item); }
+
+            // check for available booster blueprints
+            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0)
+            {
+                return null;
+            }
+
+            // determine booster blueprint
+            Dictionary<models.Contents, float> blueprint = new();
+            foreach (var item in set.Data.Booster.Default.Boosters) { blueprint.Add(item.Contents, (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight); }
+            var booster = blueprint.RandomElementByWeight(e => e.Value);
+
+            // determine booster contents
+            foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
+            {
+                // how many cards should be added for this sheet
+                long cardCount = (long)sheet.GetValue(booster.Key, null);
+
+                // name of the sheet
+                string sheetName = sheet.Name;
+
+                // temporary sheet
+                Dictionary<Guid, float> temporarySheet = new();
+
+                // get the actual sheet
+                var actualSheetReflection = set.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Data.Booster.Default.Sheets));
+
+                // add all cards to a temporary list with correct weight
+                foreach (var item in actualSheet.Cards)
+                {
+                    temporarySheet.Add(Guid.Parse(item.Key), (float)item.Value / (float)actualSheet.TotalWeight);
+                }
+
+                // get cards from sheet and add to booster
+                for (int i = 0; i < cardCount; i++)
+                {
+                    // reset card id
+                    Guid card = Guid.Empty;
+
+                    // prevent added duplicate cards
+                    do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
+
+                    // add card to booster
+                    boosterCards.Add(card);
+                }
+            }
+
+            // just for some fun
+            string s = string.Empty;
+            List<string> generalCards = new();
+            SortedDictionary<string, int> generalCardDictionary = new();
+            for (int i = 0; i < boosterCards.Count; i++)
+            {
+                string colorIdent = string.Empty;
+
+                if (cards[boosterCards[i]].ColorIdentity.Count == 1)
+                {
+                    foreach (var item in cards[boosterCards[i]].ColorIdentity)
+                    {
+                        switch (item.ToString())
+                        {
+                            case "B":
+                                colorIdent += "Black";
+                                break;
+                            case "U":
+                                colorIdent += "Blue";
+                                break;
+                            case "R":
+                                colorIdent += "Red";
+                                break;
+                            case "G":
+                                colorIdent += "Green";
+                                break;
+                            case "W":
+                                colorIdent += "White";
+                                break;
+                        }
+                    }
+                }
+                //else if (cards[boosterCards[i]].ColorIdentity.Count > 1)
+                //{
+                //    colorIdent += "Multi";
+                //}
+                else
+                {
+                    //colorIdent += "Clrls";
+                    colorIdent += ".Else";
+                }
+
+                if(cards[boosterCards[i]].Rarity == models.Rarity.Rare || cards[boosterCards[i]].Rarity == models.Rarity.Mythic)
+                {
+                    if (generalCardDictionary.ContainsKey("R/M"))
+                    {
+                        generalCardDictionary["R/M"]++;
+                    }
+                    else
+                    {
+                        generalCardDictionary.Add("R/M", 1);
+                    }
+                }
+                else
+                {
+                    if (!generalCardDictionary.ContainsKey($"{cards[boosterCards[i]].Rarity.ToString()[..1]} {colorIdent}"))
+                    {
+                        generalCardDictionary.Add($"{cards[boosterCards[i]].Rarity.ToString()[..1]} {colorIdent}", 1);
+                    }
+                    else
+                    {
+                        generalCardDictionary[$"{cards[boosterCards[i]].Rarity.ToString()[..1]} {colorIdent}"]++;
+                    }
+                }
+            }
+
+            foreach (var item in generalCardDictionary)
+            {
+                s += $"{item.Key}\t{item.Value}\n";
+            }
+
+            //return s;
+            return generalCardDictionary;
         }
 
         static List<models.CardIdentifiers> GenerateBooster(string setCode)
