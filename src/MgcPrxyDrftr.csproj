@@ -22,6 +22,10 @@
     <EmbeddedResource Remove="output\list\**" />
     <None Remove="output\list\**" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="ext\nanDeck\nandeck.ini" />
+  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.2" />
@@ -34,9 +38,6 @@
 
   <ItemGroup>
     <None Update="ext\nanDeck\nanDECK.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
-    <None Update="ext\nanDeck\nandeck.ini">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="icon.ico">

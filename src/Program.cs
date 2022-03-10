@@ -94,11 +94,27 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
             Console.Clear();
-
-            // start application loop
-            //_ = await EnterTheLoop();
-
+#if DEBUG
             GenerateCubeDraftBooster();
+#else
+            // start application loop
+            _ = await EnterTheLoop();
+#endif
+        }
+
+        static void Write(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
+        {
+            if (Console.BackgroundColor != backgroundColor) { Console.BackgroundColor = backgroundColor; }
+            if (Console.ForegroundColor != foregroundColor) { Console.ForegroundColor = foregroundColor; }
+
+            Console.Write(text);
+        }
+        static void WriteLine(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
+        {
+            if (Console.BackgroundColor != backgroundColor) { Console.BackgroundColor = backgroundColor; }
+            if (Console.ForegroundColor != foregroundColor) { Console.ForegroundColor = foregroundColor; }
+
+            Console.WriteLine(text);
         }
 
         static void GenerateCubeDraftBooster()
@@ -126,57 +142,116 @@ namespace MgcPrxyDrftr
                 Console.Clear();
 
                 Console.SetCursorPosition(50, 10);
-                Console.ForegroundColor = ConsoleColor.White;
+                Write("   ");
+                Write("R", ConsoleColor.Red);
+                Write("    ");
+                Write("G", ConsoleColor.DarkGreen);
+                Write("    ");
+                Write("B", ConsoleColor.DarkMagenta);
+                Write("    ");
+                Write("W", ConsoleColor.White, ConsoleColor.Black);
+                Write("    ");
+                Write("U", ConsoleColor.Blue);
+                Write("    ");
+                WriteLine("E", ConsoleColor.Yellow, ConsoleColor.Black);
 
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.Write("   ");
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("  ╔═╗  ", ConsoleColor.Black, ConsoleColor.Red);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.White);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.Blue);
+                WriteLine("╔═╗", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.BackgroundColor = ConsoleColor.Red;
-                Console.Write("R");
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("C ", ConsoleColor.Black, ConsoleColor.Gray);
+                Write("║", ConsoleColor.Black, ConsoleColor.Red);
+                Write(dict.ContainsKey("C Red") ? dict["C Red"].ToString() : "-", ConsoleColor.Red);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.Red);
 
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.Write("   ");
+                Write("║", ConsoleColor.Black, ConsoleColor.DarkGreen);
+                Write(dict.ContainsKey("C Green") ? dict["C Green"].ToString() : "-", ConsoleColor.DarkGreen);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
 
-                Console.BackgroundColor = ConsoleColor.Green;
-                Console.Write("G");
+                Write("║", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+                Write(dict.ContainsKey("C Black") ? dict["C Black"].ToString() : "-", ConsoleColor.DarkMagenta);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
 
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.Write("   B    ");
+                Write("║", ConsoleColor.Black, ConsoleColor.White);
+                Write(dict.ContainsKey("C White") ? dict["C White"].ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.White);
 
-                Console.BackgroundColor = ConsoleColor.White;
-                Console.ForegroundColor = ConsoleColor.Black;
-                Console.Write("W");
+                Write("║", ConsoleColor.Black, ConsoleColor.Blue);
+                Write(dict.ContainsKey("C Blue") ? dict["C Blue"].ToString() : "-", ConsoleColor.Blue, ConsoleColor.White);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.Blue);
 
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write("   ");
+                Write("║", ConsoleColor.Black, ConsoleColor.Yellow);
+                Write(dict.ContainsKey("C .Else") ? dict["C .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
+                WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.BackgroundColor = ConsoleColor.Blue;
-                Console.Write("U");
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("  ╚═╝  ", ConsoleColor.Black, ConsoleColor.Red);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.White);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.Blue);
+                WriteLine("╚═╝", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.BackgroundColor = ConsoleColor.Black;
-                Console.Write("   ");
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("  ╔═╗  ", ConsoleColor.Black, ConsoleColor.Red);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.White);
+                Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.Blue);
+                WriteLine("╔═╗", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.BackgroundColor = ConsoleColor.Yellow;
-                Console.ForegroundColor = ConsoleColor.Black;
-                Console.WriteLine("E");
-                Console.BackgroundColor = ConsoleColor.Black;
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("U ", ConsoleColor.Black, ConsoleColor.White);
+                Write("║", ConsoleColor.Black, ConsoleColor.Red);
+                Write(dict.ContainsKey("U Red") ? dict["U Red"].ToString() : "-", ConsoleColor.Red);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.Red);
 
-                //H.Write("   R    G    B    W    U    E ", 50, 10);
-                //H.Write("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗", 50, 11);
-                //H.Write($"C ║{(dict.ContainsKey("C Red") ? dict["C Red"] : "-")}║  ║{(dict.ContainsKey("C Green") ? dict["C Green"] : "-")}║  ║{(dict.ContainsKey("C Black") ? dict["C Black"] : "-")}║  ║{(dict.ContainsKey("C White") ? dict["C White"] : "-")}║  ║{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "-")}║  ║{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "-")}║", 50, 12);
-                //H.Write("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝", 50, 13);
-                //H.Write("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗", 50, 14);
-                //H.Write($"U ║{(dict.ContainsKey("U Red") ? dict["U Red"] : "-")}║  ║{(dict.ContainsKey("U Green") ? dict["U Green"] : "-")}║  ║{(dict.ContainsKey("U Black") ? dict["U Black"] : "-")}║  ║{(dict.ContainsKey("U White") ? dict["U White"] : "-")}║  ║{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "-")}║  ║{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "-")}║", 50, 15);
-                //H.Write("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝", 50, 16);
-                //H.Write("R ╔═╗                         ", 50, 17);
-                //H.Write($"/ ║{(dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ", 50, 18);
-                //H.Write("M ╚═╝                         ", 50, 19);
-                //H.Write("                              ", 50, 20);
-                //H.Write($"ID: {guid.ToString().Split('-')[0]}", 68, 21);
+                Write("║", ConsoleColor.Black, ConsoleColor.DarkGreen);
+                Write(dict.ContainsKey("U Green") ? dict["U Green"].ToString() : "-", ConsoleColor.DarkGreen);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
 
-                //FileInfo fileInfo = new(@$"{BaseDirectory}\{OutputDirectory}\{guid.ToString().Split('-')[0]}.txt");
-                FileInfo fileInfo = new(@$"C:\Users\clotterstedt\Desktop\Neuer Ordner (2)\{guid.ToString().Split('-')[0]}.txt");
+                Write("║", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+                Write(dict.ContainsKey("U Black") ? dict["U Black"].ToString() : "-", ConsoleColor.DarkMagenta);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+
+                Write("║", ConsoleColor.Black, ConsoleColor.White);
+                Write(dict.ContainsKey("U White") ? dict["U White"].ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.White);
+
+                Write("║", ConsoleColor.Black, ConsoleColor.Blue);
+                Write(dict.ContainsKey("U Blue") ? dict["U Blue"].ToString() : "-", ConsoleColor.Blue, ConsoleColor.White);
+                Write("║  ", ConsoleColor.Black, ConsoleColor.Blue);
+
+                Write("║", ConsoleColor.Black, ConsoleColor.Yellow);
+                Write(dict.ContainsKey("U .Else") ? dict["U .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
+                WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
+
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("  ╚═╝  ", ConsoleColor.Black, ConsoleColor.Red);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.White);
+                Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.Blue);
+                WriteLine("╚═╝", ConsoleColor.Black, ConsoleColor.Yellow);
+
+                Console.SetCursorPosition(50, Console.CursorTop);
+                WriteLine("R ╔═╗                         ", ConsoleColor.Black, ConsoleColor.Yellow);
+                Console.SetCursorPosition(50, Console.CursorTop);
+                WriteLine($"/ ║{ (dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
+                Console.SetCursorPosition(50, Console.CursorTop);
+                Write("M", ConsoleColor.Black, ConsoleColor.DarkRed);
+                WriteLine(" ╚═╝                         ", ConsoleColor.Black, ConsoleColor.Yellow);
+                Console.SetCursorPosition(50, Console.CursorTop);
+                WriteLine("                              ");
+                Console.SetCursorPosition(68, Console.CursorTop);
+                Write($"ID: {guid.ToString().Split('-')[0]}");
+
+                FileInfo fileInfo = new(@$"{BaseDirectory}\{OutputDirectory}\{guid.ToString().Split('-')[0]}.txt");
                 StreamWriter writer = fileInfo.AppendText();
                 writer.WriteLine(build.ToString());
                 writer.Close();
@@ -534,6 +609,8 @@ namespace MgcPrxyDrftr
         //static string GenerateBoosterPlain(string setCode)
         static SortedDictionary<string, int> GenerateBoosterPlain(string setCode)
         {
+            _ = ReadSingleSet("NEO");
+
             List<Guid> boosterCards = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
             var set = sets[setCode.ToUpper()];
