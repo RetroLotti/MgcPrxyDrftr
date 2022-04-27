@@ -51,13 +51,14 @@ namespace MgcPrxyDrftr.lib
             CurrentState = LoopState.Main;
             transitions = new Dictionary<StateTransition, LoopState>
             {
-                { new StateTransition(LoopState.Main, "x"), LoopState.Exit },
                 { new StateTransition(LoopState.Main, "b"), LoopState.BoosterDraft },
-                { new StateTransition(LoopState.Main, "d"), LoopState.DeckCreator },
                 { new StateTransition(LoopState.Main, "c"), LoopState.Main },
+                { new StateTransition(LoopState.Main, "d"), LoopState.DeckCreator },
+                { new StateTransition(LoopState.Main, "f"), LoopState.FolderPrint },
                 { new StateTransition(LoopState.Main, "o"), LoopState.Options },
                 { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
-                { new StateTransition(LoopState.Main, "f"), LoopState.FolderPrint },
+                { new StateTransition(LoopState.Main, "s"), LoopState.SetManager },
+                { new StateTransition(LoopState.Main, "x"), LoopState.Exit },
 
                 { new StateTransition(LoopState.BoosterDraft, "a"), LoopState.BoosterDraft },
                 { new StateTransition(LoopState.BoosterDraft, "l"), LoopState.BoosterDraft },

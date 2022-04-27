@@ -44,10 +44,22 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <None Update="scripts\booster.noguid.v1.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.noguid.v2.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.noguid.v3.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="scripts\booster.v1.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="scripts\booster.v2.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.v3.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
@@ -57,6 +69,8 @@
     <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
+    <Folder Include="output\draft\2022-03-11T08-07-46\" />
+    <Folder Include="output\draft\2022-04-11T08-32-14\" />
     <Folder Include="output\lists\" />
     <Folder Include="temporary\booster\" />
     <Folder Include="temporary\decks\" />

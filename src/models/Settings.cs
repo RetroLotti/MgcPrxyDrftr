@@ -46,7 +46,7 @@ namespace MgcPrxyDrftr.models
         }
         public void Load()
         {
-            if (File.Exists(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
+            if (File.Exists($@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
             {
                 string json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
                 JsonConvert.PopulateObject(json, this);

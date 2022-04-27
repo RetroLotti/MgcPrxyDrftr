@@ -94,12 +94,68 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Starting...");
             Thread.Sleep(666);
             Console.Clear();
+
 #if DEBUG
-            GenerateCubeDraftBooster();
+            ////GenerateCubeDraftBooster();
+            ////GenerateCubeDraftMini();
+            //_ = await EnterTheLoop();
+
+            // Magic: Online Arena
+            //_ = await DraftToSql("ARN|60");
+            //_ = await DraftToSql("LEB|36");
+            var foo = SetToSql();
 #else
             // start application loop
             _ = await EnterTheLoop();
 #endif
+        }
+
+        private static string SetToSql()
+        {
+            StringBuilder sb = new StringBuilder();
+            var boosterBlueprintCounter = 0;
+            var sheetCounter = 0;
+
+            foreach (var set in sets)
+            {
+                sb.AppendLine($"insert into rs_set (setcode, `name`, releasedate) values ('{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
+
+                foreach (var item in set.Value.Data.Cards)
+                {
+                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid) values ('{item.Name.Replace("\'", "\\\'")}', (select id from rs_set where setcode = '{item.SetCode}'), '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{item.Rarity}'));");
+                }
+
+                sb.AppendLine("commit;");
+                sb.AppendLine($"update rs_set set boostertotalweight = {set.Value.Data.Booster.Default.BoostersTotalWeight} where setcode = '{set.Value.Data.Code}';");
+
+                foreach (var booster in set.Value.Data.Booster.Default.Boosters)
+                {
+                    boosterBlueprintCounter++;
+
+                    sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, (select id from rs_set where setcode = '{set.Value.Data.Code}'), {booster.Weight});");
+
+                    foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
+                    {
+                        long cardCount = (long)sheet.GetValue(booster.Contents, null);
+                        string sheetName = sheet.Name;
+                        var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                        var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+
+                        sheetCounter++;
+
+                        sb.AppendLine($"insert into rs_sheet (id, boosterblueprintid, sheetname, cardcount, totalweight) values ({sheetCounter}, {boosterBlueprintCounter}, '{sheetName}', {cardCount}, {actualSheet.TotalWeight});");
+
+                        foreach (var card in actualSheet.Cards)
+                        {
+                            sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
+                        }
+
+                        sb.AppendLine("commit;");
+                    }
+                }
+            }
+
+            return sb.ToString();
         }
 
         static void Write(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
@@ -117,9 +173,44 @@ namespace MgcPrxyDrftr
             Console.WriteLine(text);
         }
 
+        static void GenerateCubeDraftMini()
+        {
+            Console.Clear();
+
+            DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            draftDirectory.Create();
+
+            for (int k = 0; k < 1; k++)
+            {
+                var guid = Guid.NewGuid();
+
+                FileInfo fileInfo = new(@$"{draftDirectory.FullName}\{guid}.txt");
+                StreamWriter writer = fileInfo.AppendText();
+
+                for (int i = 0; i < 36000; i++)
+                {
+                    Console.WriteLine($"{i + 1}/36000 [{k+1}]");
+
+                    var dict = GenerateBoosterPlain("NEO");
+                    writer.WriteLine($"{(dict.ContainsKey("C Red") ? dict["C Red"] : "0")}|{(dict.ContainsKey("C Green") ? dict["C Green"] : "0")}|{(dict.ContainsKey("C Black") ? dict["C Black"] : "0")}|{(dict.ContainsKey("C White") ? dict["C White"] : "0")}|{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "0")}|{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "0")}|{(dict.ContainsKey("U Red") ? dict["U Red"] : "0")}|{(dict.ContainsKey("U Green") ? dict["U Green"] : "0")}|{(dict.ContainsKey("U Black") ? dict["U Black"] : "0")}|{(dict.ContainsKey("U White") ? dict["U White"] : "0")}|{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "0")}|{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "0")}|{(dict.ContainsKey("R/M") ? dict["R/M"] : "0")}|{(dict.ContainsKey("C/U") ? dict["C/U"] : "0")}");
+
+                    Thread.Sleep(50);
+                }
+                writer.Close();
+            }
+        }
+
         static void GenerateCubeDraftBooster()
         {
             Console.CursorVisible = false;
+
+            int startPositionTop = 10;
+            int startPositionLeft = 50;
+
+            DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            draftDirectory.Create();
+
+            WriteHeader(false);
 
             do
             {
@@ -141,7 +232,7 @@ namespace MgcPrxyDrftr
 
                 Console.Clear();
 
-                Console.SetCursorPosition(50, 10);
+                Console.SetCursorPosition(startPositionLeft, startPositionTop);
                 Write("   ");
                 Write("R", ConsoleColor.Red);
                 Write("    ");
@@ -155,7 +246,7 @@ namespace MgcPrxyDrftr
                 Write("    ");
                 WriteLine("E", ConsoleColor.Yellow, ConsoleColor.Black);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("  ╔═╗  ", ConsoleColor.Black, ConsoleColor.Red);
                 Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
                 Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
@@ -163,7 +254,7 @@ namespace MgcPrxyDrftr
                 Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.Blue);
                 WriteLine("╔═╗", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("C ", ConsoleColor.Black, ConsoleColor.Gray);
                 Write("║", ConsoleColor.Black, ConsoleColor.Red);
                 Write(dict.ContainsKey("C Red") ? dict["C Red"].ToString() : "-", ConsoleColor.Red);
@@ -189,7 +280,7 @@ namespace MgcPrxyDrftr
                 Write(dict.ContainsKey("C .Else") ? dict["C .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
                 WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("  ╚═╝  ", ConsoleColor.Black, ConsoleColor.Red);
                 Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
                 Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
@@ -197,7 +288,7 @@ namespace MgcPrxyDrftr
                 Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.Blue);
                 WriteLine("╚═╝", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("  ╔═╗  ", ConsoleColor.Black, ConsoleColor.Red);
                 Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
                 Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
@@ -205,7 +296,7 @@ namespace MgcPrxyDrftr
                 Write("╔═╗  ", ConsoleColor.Black, ConsoleColor.Blue);
                 WriteLine("╔═╗", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("U ", ConsoleColor.Black, ConsoleColor.White);
                 Write("║", ConsoleColor.Black, ConsoleColor.Red);
                 Write(dict.ContainsKey("U Red") ? dict["U Red"].ToString() : "-", ConsoleColor.Red);
@@ -231,7 +322,7 @@ namespace MgcPrxyDrftr
                 Write(dict.ContainsKey("U .Else") ? dict["U .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
                 WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("  ╚═╝  ", ConsoleColor.Black, ConsoleColor.Red);
                 Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
                 Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
@@ -239,26 +330,26 @@ namespace MgcPrxyDrftr
                 Write("╚═╝  ", ConsoleColor.Black, ConsoleColor.Blue);
                 WriteLine("╚═╝", ConsoleColor.Black, ConsoleColor.Yellow);
 
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 WriteLine("R ╔═╗                         ", ConsoleColor.Black, ConsoleColor.Yellow);
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 WriteLine($"/ ║{ (dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("M", ConsoleColor.Black, ConsoleColor.DarkRed);
                 WriteLine(" ╚═╝                         ", ConsoleColor.Black, ConsoleColor.Yellow);
-                Console.SetCursorPosition(50, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 WriteLine("                              ");
-                Console.SetCursorPosition(68, Console.CursorTop);
+                Console.SetCursorPosition(startPositionLeft + 18, Console.CursorTop);
                 Write($"ID: {guid.ToString().Split('-')[0]}");
 
-                FileInfo fileInfo = new(@$"{BaseDirectory}\{OutputDirectory}\{guid.ToString().Split('-')[0]}.txt");
+                FileInfo fileInfo = new(@$"{draftDirectory.FullName}\{guid.ToString().Split('-')[0]}.txt");
                 StreamWriter writer = fileInfo.AppendText();
                 writer.WriteLine(build.ToString());
                 writer.Close();
             } while (Console.ReadKey().Key != ConsoleKey.X);
         }
 
-        static void WriteHeader()
+        static void WriteHeader(bool setCursor = true)
         {
             H.Write(" ****     ****   ********    ******        *******  *******   **     ** **    **       *******   *******   ******** ********** *******  ", 0, 1);
             H.Write("/**/**   **/**  **//////**  **////**      /**////**/**////** //**   ** //**  **       /**////** /**////** /**///// /////**/// /**////** ", 0, 2);
@@ -269,7 +360,7 @@ namespace MgcPrxyDrftr
             H.Write("/**        /** //********  //******       /**      /**   //** **   //**   /**         /*******  /**   //**/**          /**    /**   //**", 0, 7);
             H.Write("//         //   ////////    //////        //       //     // //     //    //          ///////   //     // //           //     //     // ", 0, 8);
 
-            Console.SetCursorPosition(0, 10);
+            if(setCursor) { Console.SetCursorPosition(0, 10); }
         }
 
         // #############################################################
@@ -609,7 +700,7 @@ namespace MgcPrxyDrftr
         //static string GenerateBoosterPlain(string setCode)
         static SortedDictionary<string, int> GenerateBoosterPlain(string setCode)
         {
-            _ = ReadSingleSet("NEO");
+            _ = ReadSingleSet(setCode);
 
             List<Guid> boosterCards = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
@@ -719,6 +810,17 @@ namespace MgcPrxyDrftr
                         generalCardDictionary.Add("R/M", 1);
                     }
                 }
+                else if(cards[boosterCards[i]].OtherFaceIds != null && cards[boosterCards[i]].SetCode.ToUpper().Equals("NEO") && (cards[boosterCards[i]].Rarity == models.Rarity.Common || cards[boosterCards[i]].Rarity == models.Rarity.Uncommon))
+                {
+                    if (generalCardDictionary.ContainsKey("C/U"))
+                    {
+                        generalCardDictionary["C/U"]++;
+                    }
+                    else
+                    {
+                        generalCardDictionary.Add("C/U", 1);
+                    }
+                }
                 else
                 {
                     if (!generalCardDictionary.ContainsKey($"{cards[boosterCards[i]].Rarity.ToString()[..1]} {colorIdent}"))
@@ -741,9 +843,11 @@ namespace MgcPrxyDrftr
             return generalCardDictionary;
         }
 
-        static List<models.CardIdentifiers> GenerateBooster(string setCode)
+        //static List<models.CardIdentifiers> GenerateBooster(string setCode)
+        static List<models.Card> GenerateBooster(string setCode)
         {
             List<Guid> boosterCards = new();
+            List<models.Card> boosterCardsObjectList = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
             var set = sets[setCode.ToUpper()];
 
@@ -799,9 +903,11 @@ namespace MgcPrxyDrftr
             }
 
             // get scryfall id for card determination later on
-            for (int i = 0; i < boosterCards.Count; i++) { boosterCardIdentifier.Add(cards[boosterCards[i]].Identifiers); boosterCards[i] = cards[boosterCards[i]].Identifiers.ScryfallId; }
+            //for (int i = 0; i < boosterCards.Count; i++) { boosterCardIdentifier.Add(cards[boosterCards[i]].Identifiers); boosterCards[i] = cards[boosterCards[i]].Identifiers.ScryfallId; }
+            for (int i = 0; i < boosterCards.Count; i++) { boosterCardsObjectList.Add(cards[boosterCards[i]]); }
 
-            return boosterCardIdentifier;
+            //return boosterCardIdentifier;
+            return boosterCardsObjectList;
         }
 
         static async Task<object> PrintDeck(string deckName)
@@ -967,6 +1073,43 @@ namespace MgcPrxyDrftr
             return true;
         }
 
+        private static async Task<bool> DraftToSql(string draftString)
+        {
+            ISetService setService = serviceProvider.GetSetService();
+            string setCode = draftString.Split('|')[0];
+            string boosterCountParam = draftString.Split('|')[1];
+            StringBuilder sb = new StringBuilder();
+
+            MtgApiManager.Lib.Model.ISet set = (await setService.FindAsync(setCode)).Value;
+            Settings.LastGeneratedSet = setCode;
+            ReadSingleSetWithUpdateCheck(set.Code);
+            Settings.AddSet(set.Code);
+            Settings.Save();
+            int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
+            Console.CursorVisible = false;
+
+            for (int i = 1; i <= boosterCount; i++)
+            {
+                sb.AppendLine($"insert into rs_booster (setid) values ((select id from rs_set where setcode = '{setCode}'));");
+
+                Console.Clear();
+                Console.WriteLine($"Generating booster {i}/{boosterCount}...");
+
+                // get a booster
+                var booster = GenerateBooster(set.Code);
+
+                foreach (var card in booster) 
+                {
+                    sb.AppendLine($"insert into rs_boostercards (boosterid, cardid) values ((select max(id) from rs_booster), (select cardid from rs_card where mtgjsonid = '{card.Uuid}'));");
+                }
+            }
+
+            // update booster count just for fun
+            Settings.UpdateBoosterCount(1);
+
+            return true;
+        }
+
         /// <summary>
         /// Draft boosters from given set
         /// </summary>
@@ -1012,7 +1155,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
 
                 // load images
-                foreach (var card in booster) { await GetImage(card, boosterDirectory.FullName); }
+                foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
                 if (IsWindows)
                 {
@@ -1133,7 +1276,7 @@ namespace MgcPrxyDrftr
                     Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
 
                     // load images
-                    foreach (var card in booster) { await GetImage(card, boosterDirectory.FullName); }
+                    foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
                     if (IsWindows)
                     {
