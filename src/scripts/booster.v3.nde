@@ -1,5 +1,6 @@
-;setup the card size
-cardsize=6.33,8.89
+creat;setup the card size
+;cardsize=6.33,8.89
+cardsize=6.2,8.7
 
 ;load all the images from a folder in a label
 [images]=dirfiles([boosterfolder]\[guid]\, j*pg|png)
@@ -7,8 +8,12 @@ cardsize=6.33,8.89
 ;create a range for all the cards
 [all]=1-{(images)}
 
+; test brightness for arn and photo paper
+color = [all], , &998080
+
 ;setup the page size and paper color
 page=21,29.7,portrait,hv;,#000000
 
 ; draw the image
-image=[all],[images],0,0,6.33,8.89
+;image=[all],[images],0,0,6.33,8.89
+image=[all],[images],0,0,6.2,8.7

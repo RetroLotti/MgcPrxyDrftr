@@ -475,7 +475,7 @@ namespace MgcPrxyDrftr.models
 
     public enum Finish { Foil, Nonfoil, Etched, Glossy, Signed };
 
-    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, Devoid, Draft, Etched, Extendedart, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Tombstone, Waxingandwaningmoondfc };
+    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, storyspotlight, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Tombstone, Waxingandwaningmoondfc };
 
     //public enum FrameVersion { x1993, x1997, x2003, x2015, Future };
 

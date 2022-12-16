@@ -28,7 +28,7 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="MtgApiManager.Lib" Version="2.3.2" />
+    <PackageReference Include="MtgApiManager.Lib" Version="2.3.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
@@ -66,7 +66,6 @@
 
   <ItemGroup>
     <Folder Include="cache\scryfall\" />
-    <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
     <Folder Include="output\draft\2022-03-11T08-07-46\" />

@@ -103,7 +103,8 @@ namespace MgcPrxyDrftr
             // Magic: Online Arena
             //_ = await DraftToSql("ARN|60");
             //_ = await DraftToSql("LEB|36");
-            var foo = SetToSql();
+
+            string foo = SetToSql();
 #else
             // start application loop
             _ = await EnterTheLoop();
@@ -115,40 +116,56 @@ namespace MgcPrxyDrftr
             StringBuilder sb = new StringBuilder();
             var boosterBlueprintCounter = 0;
             var sheetCounter = 0;
+            var setCounter = 0;
 
-            foreach (var set in sets)
+            foreach (var set in sets.Where(x => x.Value.Data.Code == "LEA"))
             {
-                sb.AppendLine($"insert into rs_set (setcode, `name`, releasedate) values ('{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
+                setCounter++;
+                sb.AppendLine($"insert into rs_set (id, setcode, `name`, releasedate) values ({setCounter}, '{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name.Replace("\'", "\\\'")}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
+                sb.AppendLine($"insert into rs_magicproduct (productname, purchaseprice, setid) values ('{set.Value.Data.Name.Replace("\'", "\\\'")} Booster', 230, {setCounter});");
 
+                // add all cards of this set
                 foreach (var item in set.Value.Data.Cards)
                 {
-                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid) values ('{item.Name.Replace("\'", "\\\'")}', (select id from rs_set where setcode = '{item.SetCode}'), '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{item.Rarity}'));");
+                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{item.Rarity}'));");
                 }
 
                 sb.AppendLine("commit;");
                 sb.AppendLine($"update rs_set set boostertotalweight = {set.Value.Data.Booster.Default.BoostersTotalWeight} where setcode = '{set.Value.Data.Code}';");
+                sb.AppendLine("commit;");
+
+                foreach (var sheet in set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().Where(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null))
+                {
+                    long cardCount = ((models.Sheet)sheet.GetValue(set.Value.Data.Booster.Default.Sheets, null)).Cards.Count;
+                    string sheetName = sheet.Name;
+                    var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                    var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+
+                    sheetCounter++;
+                    sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheetName}', {actualSheet.TotalWeight});");
+
+                    foreach (var card in actualSheet.Cards)
+                    {
+                        sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
+                    }
+
+                    sb.AppendLine("commit;");
+                }
 
                 foreach (var booster in set.Value.Data.Booster.Default.Boosters)
                 {
                     boosterBlueprintCounter++;
-
-                    sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, (select id from rs_set where setcode = '{set.Value.Data.Code}'), {booster.Weight});");
+                    sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, {setCounter}, {booster.Weight});");
 
                     foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
                     {
                         long cardCount = (long)sheet.GetValue(booster.Contents, null);
                         string sheetName = sheet.Name;
-                        var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                        var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
-
-                        sheetCounter++;
-
-                        sb.AppendLine($"insert into rs_sheet (id, boosterblueprintid, sheetname, cardcount, totalweight) values ({sheetCounter}, {boosterBlueprintCounter}, '{sheetName}', {cardCount}, {actualSheet.TotalWeight});");
-
-                        foreach (var card in actualSheet.Cards)
-                        {
-                            sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
-                        }
+                        //var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                        //var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+                        
+                        //sheetCounter++;
+                        sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
 
                         sb.AppendLine("commit;");
                     }
@@ -420,6 +437,15 @@ namespace MgcPrxyDrftr
                                 Console.Write("Press any key to continue...");
                                 _ = Console.ReadKey();
                             }
+                            else if (StateMachine.CurrentState == LoopState.SetManager || StateMachine.CurrentState == LoopState.BoosterDraft)
+                            {
+                                foreach (var set in sets)
+                                {
+                                    Console.WriteLine($"[{set.Value.Data.Code}]\t{set.Value.Data.Name}");
+                                }
+                                Console.Write("Press any key to continue...");
+                                _ = Console.ReadKey();
+                            }
                             break;
                         case "e":
                             if (StateMachine.CurrentState == LoopState.Options)
@@ -458,6 +484,8 @@ namespace MgcPrxyDrftr
                             break;
                         case LoopState.FolderPrint:
                             _ = PrintDirectory(command);
+                            break;
+                        case LoopState.SetManager:
                             break;
                         default:
                             break;
@@ -505,8 +533,10 @@ namespace MgcPrxyDrftr
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.SetManager:
-                    H.Write("A => Add Set", startLeftPosition, startTopPosition + 1);
-                    H.Write("R => Remove Set", startLeftPosition, startTopPosition + 2);
+                    H.Write("Enter set code to add or remove it.", startLeftPosition, startTopPosition + 1);
+                    //H.Write("A => Add Set", startLeftPosition, startTopPosition + 1);
+                    //H.Write("R => Remove Set", startLeftPosition, startTopPosition + 2);
+                    H.Write("L => List Sets", startLeftPosition, startTopPosition + 2);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.RawListManager:
@@ -566,6 +596,8 @@ namespace MgcPrxyDrftr
 
         private static void LoadDeckList()
         {
+            // TODO: check for new version of deck list
+
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json");
             if(!file.Exists)
             {
@@ -580,6 +612,8 @@ namespace MgcPrxyDrftr
 
         private static void LoadSetList()
         {
+            // TODO: check for new version of set list
+
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\SetList.json");
             if (!file.Exists)
             {
@@ -1122,12 +1156,12 @@ namespace MgcPrxyDrftr
             string boosterCountParam = draftString.Split('|')[1];
 
             MtgApiManager.Lib.Model.ISet set = (await setService.FindAsync(setCode)).Value;
-            Settings.LastGeneratedSet = setCode;
-            ReadSingleSetWithUpdateCheck(set.Code);
-            Settings.AddSet(set.Code);
+            Settings.LastGeneratedSet = set?.Code ?? setCode.ToUpper();
+            ReadSingleSetWithUpdateCheck(set?.Code ?? setCode.ToUpper());
+            Settings.AddSet(set?.Code ?? setCode.ToUpper());
             Settings.Save();
             int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
-            Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
+            Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set?.Name}\".");
             Console.CursorVisible = false;
             Console.Write("Press any key to start generating.");
             Console.ReadKey();
@@ -1142,7 +1176,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
-                var booster = GenerateBooster(set.Code);
+                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper());
 
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();

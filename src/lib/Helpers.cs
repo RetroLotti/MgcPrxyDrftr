@@ -106,7 +106,7 @@ namespace MgcPrxyDrftr.lib
 
                 File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
                 File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
-                File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
+                File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256"); 
 
             }
         }
@@ -130,7 +130,7 @@ namespace MgcPrxyDrftr.lib
             FileInfo fileInfo = new(file);
             
             using SHA256 sHA256 = SHA256.Create();
-            using FileStream fileStream = fileInfo.Open(FileMode.Open);
+            using FileStream fileStream = fileInfo.Open(FileMode.Open); // 
             byte[] hashValue = sHA256.ComputeHash(fileStream);
 
             for (int i = 0; i < hashValue.Length; i++)

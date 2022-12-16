@@ -2,7 +2,7 @@
 cardsize=6.2,8.7
 
 ; load all the images from a folder in a label
-[images]=dirfiles([cardfolder]\, j*pg|png)
+[images]=dirfiles([cardfolder]\, png)
 
 ; create a range for all the cards
 [all]=1-{(images)}

@@ -77,6 +77,7 @@ namespace MgcPrxyDrftr.lib
 
                 { new StateTransition(LoopState.SetManager, "a"), LoopState.SetManager },
                 { new StateTransition(LoopState.SetManager, "l"), LoopState.SetManager },
+                { new StateTransition(LoopState.SetManager, "r"), LoopState.SetManager },
                 { new StateTransition(LoopState.SetManager, "b"), LoopState.Main },
 
                 { new StateTransition(LoopState.RawListManager, "b"), LoopState.Main },
