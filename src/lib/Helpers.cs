@@ -67,7 +67,7 @@ namespace MgcPrxyDrftr.lib
             return ValidateFiles(@$"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
         }
 
-        public static void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
+        public static async void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
         {
             WebClient webClient = new();
             string currentFileText = string.Empty;
@@ -84,10 +84,10 @@ namespace MgcPrxyDrftr.lib
 
             if(isValid)
             {
-                var downloadedFileText = File.ReadAllText(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
+                var downloadedFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
                 if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json"))
                 {
-                    currentFileText = File.ReadAllText(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
+                    currentFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
                 }
                 
                 var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);

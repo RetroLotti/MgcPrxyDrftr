@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using H = MgcPrxyDrftr.lib.Helpers;
 using System.Text;
+using Newtonsoft.Json.Linq;
 
 namespace MgcPrxyDrftr
 {
@@ -42,6 +43,7 @@ namespace MgcPrxyDrftr
         private static readonly SortedList<string, string> releaseTimelineSets = new();
         private static readonly SortedList<string, models.SetRoot> sets = new();
         private static SortedList<string, models.Deck> Decks { get; set; } = new();
+        private static HashSet<string> SheetList = new();
 
         private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
         private static readonly WebClient client = new();
@@ -118,7 +120,8 @@ namespace MgcPrxyDrftr
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in sets.Where(x => x.Value.Data.Code == "LEA"))
+            foreach (var set in sets.Where(x => x.Value.Data.Code == "LEA" || x.Value.Data.Code == "ARN" || x.Value.Data.Code == "DRK" || x.Value.Data.Code == "LEG" || x.Value.Data.Code == "ATQ" || x.Value.Data.Code == "BRO" || x.Value.Data.Code == "NEO" || x.Value.Data.Code == "3RD"))
+            //foreach (var set in sets)
             {
                 setCounter++;
                 sb.AppendLine($"insert into rs_set (id, setcode, `name`, releasedate) values ({setCounter}, '{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name.Replace("\'", "\\\'")}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
@@ -127,7 +130,17 @@ namespace MgcPrxyDrftr
                 // add all cards of this set
                 foreach (var item in set.Value.Data.Cards)
                 {
-                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{item.Rarity}'));");
+                    //item.Colors
+                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{item.Rarity}'), '{string.Join("", item.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Types.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Subtypes.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Supertypes.Select(s => s.ToString()).ToArray())}');");
+                }
+
+                // if set is BRO then add BRR cards
+                if(set.Value.Data.Code == "BRO")
+                {
+                    foreach (var card in sets["BRR"].Data.Cards)
+                    {
+                        sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString()).ToArray())}');");
+                    }
                 }
 
                 sb.AppendLine("commit;");
@@ -717,6 +730,22 @@ namespace MgcPrxyDrftr
         {
             var txt = File.ReadAllText(fileInfo.FullName);
             var o = JsonConvert.DeserializeObject<models.SetRoot>(txt);
+
+            JObject json = JObject.Parse(txt);
+            if(json.SelectToken("data").SelectToken("booster") != null && json.SelectToken("data").SelectToken("booster").SelectToken("default") != null)
+            {
+                foreach (var item in json.SelectToken("data").SelectToken("booster")?.SelectToken("default")?.SelectToken("boosters"))
+                {
+                    foreach (var item1 in item.SelectToken("contents"))
+                    {
+                        var name = ((JProperty)item1).Name;
+                        if (!SheetList.TryGetValue(name, out var sheet))
+                        {
+                            SheetList.Add(name);
+                        }
+                    }
+                }
+            }
 
             if (!sets.ContainsKey(o.Data.Code))
             {
