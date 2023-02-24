@@ -21,10 +21,10 @@ namespace MgcPrxyDrftr.lib
 
     public class StateMachine
     {
-        class StateTransition
+        private class StateTransition
         {
-            readonly LoopState CurrentState;
-            readonly string Command;
+            private readonly LoopState CurrentState;
+            private readonly string Command;
 
             public StateTransition(LoopState currentState, string command)
             {
@@ -87,7 +87,7 @@ namespace MgcPrxyDrftr.lib
         public LoopState GetNext(string command)
         {
             StateTransition transition = new(CurrentState, command.ToLower());
-            return !transitions.TryGetValue(transition, out LoopState nextState)
+            return !transitions.TryGetValue(transition, out var nextState)
                 ? throw new Exception("Invalid transition: " + CurrentState + " -> " + command)
                 : nextState;
         }

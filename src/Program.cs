@@ -17,11 +17,11 @@ using Newtonsoft.Json.Linq;
 
 namespace MgcPrxyDrftr
 {
-    class Program
+    internal class Program
     {
         private static StateMachine StateMachine { get; set; }
 
-        public static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
+        private static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
         private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
         private static string SetDirectory { get; set; } = ConfigurationManager.AppSettings["SetDirectory"] ?? "sets";
         private static string DeckDirectory { get; set; } = ConfigurationManager.AppSettings["DeckDirectory"] ?? "decks";
@@ -57,7 +57,7 @@ namespace MgcPrxyDrftr
         // sets
         private static models.SetList SetList { get; set; }
 
-        static async Task Main()
+        private static async Task Main()
         {
             if(IsWindows) { Console.SetWindowSize(136, 50); }
 
@@ -100,13 +100,16 @@ namespace MgcPrxyDrftr
 #if DEBUG
             ////GenerateCubeDraftBooster();
             ////GenerateCubeDraftMini();
-            //_ = await EnterTheLoop();
+            
+            // main loop
+            _ = await EnterTheLoop();
 
             // Magic: Online Arena
             //_ = await DraftToSql("ARN|60");
             //_ = await DraftToSql("LEB|36");
 
-            string foo = SetToSql();
+            // convert all given sets to sql inserts for mtgoa
+            //string foo = SetToSql();
 #else
             // start application loop
             _ = await EnterTheLoop();
@@ -115,7 +118,7 @@ namespace MgcPrxyDrftr
 
         private static string SetToSql()
         {
-            StringBuilder sb = new StringBuilder();
+            var sb = new StringBuilder();
             var boosterBlueprintCounter = 0;
             var sheetCounter = 0;
             var setCounter = 0;
@@ -149,8 +152,8 @@ namespace MgcPrxyDrftr
 
                 foreach (var sheet in set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().Where(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null))
                 {
-                    long cardCount = ((models.Sheet)sheet.GetValue(set.Value.Data.Booster.Default.Sheets, null)).Cards.Count;
-                    string sheetName = sheet.Name;
+                    long cardCount = (((models.Sheet)sheet.GetValue(set.Value.Data.Booster.Default.Sheets, null))!).Cards.Count;
+                    var sheetName = sheet.Name;
                     var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
                     var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
 
@@ -172,8 +175,8 @@ namespace MgcPrxyDrftr
 
                     foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
                     {
-                        long cardCount = (long)sheet.GetValue(booster.Contents, null);
-                        string sheetName = sheet.Name;
+                        var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
+                        var sheetName = sheet.Name;
                         //var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
                         //var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
                         
@@ -188,14 +191,15 @@ namespace MgcPrxyDrftr
             return sb.ToString();
         }
 
-        static void Write(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
+        private static void Write(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
         {
             if (Console.BackgroundColor != backgroundColor) { Console.BackgroundColor = backgroundColor; }
             if (Console.ForegroundColor != foregroundColor) { Console.ForegroundColor = foregroundColor; }
 
             Console.Write(text);
         }
-        static void WriteLine(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
+
+        private static void WriteLine(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
         {
             if (Console.BackgroundColor != backgroundColor) { Console.BackgroundColor = backgroundColor; }
             if (Console.ForegroundColor != foregroundColor) { Console.ForegroundColor = foregroundColor; }
@@ -203,21 +207,21 @@ namespace MgcPrxyDrftr
             Console.WriteLine(text);
         }
 
-        static void GenerateCubeDraftMini()
+        private static void GenerateCubeDraftMini()
         {
             Console.Clear();
 
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             draftDirectory.Create();
 
-            for (int k = 0; k < 1; k++)
+            for (var k = 0; k < 1; k++)
             {
                 var guid = Guid.NewGuid();
 
                 FileInfo fileInfo = new(@$"{draftDirectory.FullName}\{guid}.txt");
-                StreamWriter writer = fileInfo.AppendText();
+                var writer = fileInfo.AppendText();
 
-                for (int i = 0; i < 36000; i++)
+                for (var i = 0; i < 36000; i++)
                 {
                     Console.WriteLine($"{i + 1}/36000 [{k+1}]");
 
@@ -230,12 +234,12 @@ namespace MgcPrxyDrftr
             }
         }
 
-        static void GenerateCubeDraftBooster()
+        private static void GenerateCubeDraftBooster()
         {
             Console.CursorVisible = false;
 
-            int startPositionTop = 10;
-            int startPositionLeft = 50;
+            const int startPositionTop = 10;
+            const int startPositionLeft = 50;
 
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             draftDirectory.Create();
@@ -373,13 +377,13 @@ namespace MgcPrxyDrftr
                 Write($"ID: {guid.ToString().Split('-')[0]}");
 
                 FileInfo fileInfo = new(@$"{draftDirectory.FullName}\{guid.ToString().Split('-')[0]}.txt");
-                StreamWriter writer = fileInfo.AppendText();
+                var writer = fileInfo.AppendText();
                 writer.WriteLine(build.ToString());
                 writer.Close();
             } while (Console.ReadKey().Key != ConsoleKey.X);
         }
 
-        static void WriteHeader(bool setCursor = true)
+        private static void WriteHeader(bool setCursor = true)
         {
             H.Write(" ****     ****   ********    ******        *******  *******   **     ** **    **       *******   *******   ******** ********** *******  ", 0, 1);
             H.Write("/**/**   **/**  **//////**  **////**      /**////**/**////** //**   ** //**  **       /**////** /**////** /**///// /////**/// /**////** ", 0, 2);
@@ -396,7 +400,7 @@ namespace MgcPrxyDrftr
         // #############################################################
         // START
         // #############################################################
-        static async Task<int> EnterTheLoop()
+        private static async Task<int> EnterTheLoop()
         {
             StateMachine = new StateMachine();
 
@@ -416,8 +420,8 @@ namespace MgcPrxyDrftr
                 Console.Write(">>> ");
 
                 // read entered string
-                string command = Console.ReadLine();
-                bool isCommand = (command.Length == 1);
+                var command = Console.ReadLine();
+                var isCommand = command is { Length: 1 };
 
                 if(isCommand)
                 {
@@ -500,6 +504,14 @@ namespace MgcPrxyDrftr
                             break;
                         case LoopState.SetManager:
                             break;
+                        case LoopState.Main:
+                            break;
+                        case LoopState.Options:
+                            break;
+                        case LoopState.DeckManager:
+                            break;
+                        case LoopState.Exit:
+                            break;
                         default:
                             break;
                     }
@@ -510,7 +522,7 @@ namespace MgcPrxyDrftr
             return 0;
         }
 
-        static void PrintMenu(LoopState loopState, int startLeftPosition, int startTopPosition)
+        private static void PrintMenu(LoopState loopState, int startLeftPosition, int startTopPosition)
         {
             switch (loopState)
             {
@@ -557,6 +569,8 @@ namespace MgcPrxyDrftr
                     break;
                 case LoopState.Exit:
                     break;
+                case LoopState.FolderPrint:
+                    break;
                 default:
                     break;
             }
@@ -571,7 +585,7 @@ namespace MgcPrxyDrftr
             TextCopy.Clipboard clipboard = new();
 
             // get new list id
-            Guid guid = Guid.NewGuid();
+            var guid = Guid.NewGuid();
             //Guid subGuid = Guid.NewGuid();
             
             var rawCardString = clipboard.GetText();
@@ -584,26 +598,24 @@ namespace MgcPrxyDrftr
             foreach (var card in cardList)
             {
                 // 1 [VOC] Azorius Signet
-                _ = int.TryParse(card[..1], out int cardCount);
-                string cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
-                string cardName = card.Substring(card.IndexOf(']')+1).Trim();
+                _ = int.TryParse(card[..1], out var cardCount);
+                var cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
+                var cardName = card.Substring(card.IndexOf(']')+1).Trim();
 
                 var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet);
 
-                for (int i = 0; i < cardCount; i++)
+                for (var i = 0; i < cardCount; i++)
                 {
                     _ = await GetImage(scryfallCard, directory.FullName);
                 }
             }
 
             // create pdf
-            Process proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
-            if (proc.ExitCode == 0)
-            {
-                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\clipboard_{guid}.pdf"); }
-            }
-            
+            var proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
+            if (proc.ExitCode != 0) return true;
+            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+            if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\clipboard_{guid}.pdf"); }
+
             return true;
         }
 
@@ -642,18 +654,16 @@ namespace MgcPrxyDrftr
         private static void ReadAllDecks() 
         {
             DirectoryInfo deckDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
-            if (deckDirectory.Exists)
+            if (!deckDirectory.Exists) return;
+            var files = deckDirectory.GetFiles("*.json");
+            foreach (var file in files)
             {
-                var files = deckDirectory.GetFiles("*.json");
-                foreach (var file in files)
-                {
-                    var deck = H.ReadSingleDeck(file.FullName);
-                    Decks.Add($"{file.Name[..file.Name.IndexOf('.')]}_{deck.Data.Name}", deck.Data);
-                }
-                if (files.Length <= 0)
-                {
-                    Console.WriteLine("No Deck-Files found!");
-                }
+                var deck = H.ReadSingleDeck(file.FullName);
+                Decks.Add($"{file.Name[..file.Name.IndexOf('.')]}_{deck.Data.Name}", deck.Data);
+            }
+            if (files.Length <= 0)
+            {
+                Console.WriteLine("No Deck-Files found!");
             }
         }
 
@@ -681,17 +691,15 @@ namespace MgcPrxyDrftr
         private static void ReadAllSets()
         {
             DirectoryInfo setDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
-            if(setDirectory.Exists)
+            if (!setDirectory.Exists) return;
+            var files = setDirectory.GetFiles("*.json");
+            foreach (var file in files)
             {
-                var files = setDirectory.GetFiles("*.json");
-                foreach (var file in files)
-                {
-                    _ = ReadSingleSet(file);
-                }
-                if(files.Length <= 0)
-                {
-                    Console.WriteLine("No Set-Files found!");
-                }
+                _ = ReadSingleSet(file);
+            }
+            if(files.Length <= 0)
+            {
+                Console.WriteLine("No Set-Files found!");
             }
         }
 
@@ -714,24 +722,24 @@ namespace MgcPrxyDrftr
             }
         }
 
-        static models.SetRoot ReadSingleSetWithUpdateCheck(string setCode)
+        private static models.SetRoot ReadSingleSetWithUpdateCheck(string setCode)
         {
             Settings.CheckLastUpdate(setCode, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
             return ReadSingleSet(setCode);
         }
 
-        static models.SetRoot ReadSingleSet(string setCode)
+        private static models.SetRoot ReadSingleSet(string setCode)
         {
             FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
             return ReadSingleSet(fileInfo);
         }
 
-        static models.SetRoot ReadSingleSet(FileInfo fileInfo)
+        private static models.SetRoot ReadSingleSet(FileInfo fileInfo)
         {
             var txt = File.ReadAllText(fileInfo.FullName);
             var o = JsonConvert.DeserializeObject<models.SetRoot>(txt);
 
-            JObject json = JObject.Parse(txt);
+            var json = JObject.Parse(txt);
             if(json.SelectToken("data").SelectToken("booster") != null && json.SelectToken("data").SelectToken("booster").SelectToken("default") != null)
             {
                 foreach (var item in json.SelectToken("data").SelectToken("booster")?.SelectToken("default")?.SelectToken("boosters"))
@@ -761,7 +769,7 @@ namespace MgcPrxyDrftr
         }
 
         //static string GenerateBoosterPlain(string setCode)
-        static SortedDictionary<string, int> GenerateBoosterPlain(string setCode)
+        private static SortedDictionary<string, int> GenerateBoosterPlain(string setCode)
         {
             _ = ReadSingleSet(setCode);
 
@@ -788,10 +796,10 @@ namespace MgcPrxyDrftr
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
             {
                 // how many cards should be added for this sheet
-                long cardCount = (long)sheet.GetValue(booster.Key, null);
+                var cardCount = (long)sheet.GetValue(booster.Key, null);
 
                 // name of the sheet
-                string sheetName = sheet.Name;
+                var sheetName = sheet.Name;
 
                 // temporary sheet
                 Dictionary<Guid, float> temporarySheet = new();
@@ -807,10 +815,10 @@ namespace MgcPrxyDrftr
                 }
 
                 // get cards from sheet and add to booster
-                for (int i = 0; i < cardCount; i++)
+                for (var i = 0; i < cardCount; i++)
                 {
                     // reset card id
-                    Guid card = Guid.Empty;
+                    var card = Guid.Empty;
 
                     // prevent added duplicate cards
                     do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
@@ -821,12 +829,12 @@ namespace MgcPrxyDrftr
             }
 
             // just for some fun
-            string s = string.Empty;
+            var s = string.Empty;
             List<string> generalCards = new();
             SortedDictionary<string, int> generalCardDictionary = new();
-            for (int i = 0; i < boosterCards.Count; i++)
+            for (var i = 0; i < boosterCards.Count; i++)
             {
-                string colorIdent = string.Empty;
+                var colorIdent = string.Empty;
 
                 if (cards[boosterCards[i]].ColorIdentity.Count == 1)
                 {
@@ -907,7 +915,7 @@ namespace MgcPrxyDrftr
         }
 
         //static List<models.CardIdentifiers> GenerateBooster(string setCode)
-        static List<models.Card> GenerateBooster(string setCode)
+        private static List<models.Card> GenerateBooster(string setCode)
         {
             List<Guid> boosterCards = new();
             List<models.Card> boosterCardsObjectList = new();
@@ -933,10 +941,10 @@ namespace MgcPrxyDrftr
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
             {
                 // how many cards should be added for this sheet
-                long cardCount = (long)sheet.GetValue(booster.Key, null);
+                var cardCount = (long)sheet.GetValue(booster.Key, null);
 
                 // name of the sheet
-                string sheetName = sheet.Name;
+                var sheetName = sheet.Name;
 
                 // temporary sheet
                 Dictionary<Guid, float> temporarySheet = new();
@@ -952,10 +960,10 @@ namespace MgcPrxyDrftr
                 }
 
                 // get cards from sheet and add to booster
-                for (int i = 0; i < cardCount; i++)
+                for (var i = 0; i < cardCount; i++)
                 {
                     // reset card id
-                    Guid card = Guid.Empty;
+                    var card = Guid.Empty;
 
                     // prevent added duplicate cards
                     do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
@@ -967,23 +975,23 @@ namespace MgcPrxyDrftr
 
             // get scryfall id for card determination later on
             //for (int i = 0; i < boosterCards.Count; i++) { boosterCardIdentifier.Add(cards[boosterCards[i]].Identifiers); boosterCards[i] = cards[boosterCards[i]].Identifiers.ScryfallId; }
-            for (int i = 0; i < boosterCards.Count; i++) { boosterCardsObjectList.Add(cards[boosterCards[i]]); }
+            for (var i = 0; i < boosterCards.Count; i++) { boosterCardsObjectList.Add(cards[boosterCards[i]]); }
 
             //return boosterCardIdentifier;
             return boosterCardsObjectList;
         }
 
-        static async Task<object> PrintDeck(string deckName)
+        private static async Task<object> PrintDeck(string deckName)
         {
             // individual deck guid
-            Guid guid = Guid.NewGuid();
+            var guid = Guid.NewGuid();
             
             // create folder
             DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
             directory.Create();
 
             // try to get deck from the list of already downloaded decks
-            models.Deck deck = Decks.FirstOrDefault(x => x.Key.Contains(deckName)).Value;
+            var deck = Decks.FirstOrDefault(x => x.Key.Contains(deckName)).Value;
 
             // deck not found
             if (deck == null)
@@ -1022,7 +1030,7 @@ namespace MgcPrxyDrftr
                 //    var d = await api.GetCardByNameAndLanguageAsync(card.Name, Language, card.SetCode);
                 //}
 
-                for (int i = 0; i < card.Count; i++)
+                for (var i = 0; i < card.Count; i++)
                 {
                     // TODO check basix lands download setting
                     //if ((Settings.DownloadBasicLands && card.Types.Contains(models.Type.Land) && card.Supertypes.Contains(models.Supertype.Basic)))
@@ -1034,14 +1042,14 @@ namespace MgcPrxyDrftr
             }
             foreach (var card in deck.SideBoard)
             {
-                for (int i = 0; i < card.Count; i++)
+                for (var i = 0; i < card.Count; i++)
                 {
                     _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
                 }
             }
 
             // create pdf
-            Process proc = CreatePdf(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
+            var proc = CreatePdf(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
             if (proc.ExitCode == 0)
             {
                 FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
@@ -1060,11 +1068,11 @@ namespace MgcPrxyDrftr
         /// </summary>
         /// <param name="listFileName">Filename that should be used</param>
         /// <returns></returns>
-        static async Task<object> PrintRawList(string listFileName)
+        private static async Task<object> PrintRawList(string listFileName)
         {
             // get new list id
-            Guid guid = Guid.NewGuid();
-            Guid subGuid = Guid.NewGuid();
+            var guid = Guid.NewGuid();
+            var subGuid = Guid.NewGuid();
 
             // create directory
             DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
@@ -1072,8 +1080,8 @@ namespace MgcPrxyDrftr
 
             // read all lines
             var lines = File.ReadAllLines(@$"{BaseDirectory}\{FileDirectory}\{listFileName}");
-            bool isLargeList = lines.Length > 90;
-            int lineCounter = 0;
+            var isLargeList = lines.Length > 90;
+            var lineCounter = 0;
 
             directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
             directory.Create();
@@ -1081,9 +1089,9 @@ namespace MgcPrxyDrftr
             foreach (var line in lines)
             {
                 // 1 Azorius Signet|VOC
-                _ = int.TryParse(line[..1], out int cardCount);
-                string cardName = line[2..].Split('|')[0];
-                string cardSet = line[2..].Split('|')[1];
+                _ = int.TryParse(line[..1], out var cardCount);
+                var cardName = line[2..].Split('|')[0];
+                var cardSet = line[2..].Split('|')[1];
 
                 var card = await api.GetCardByNameAsync(cardName, cardSet);
                 if (card != null)
@@ -1102,12 +1110,12 @@ namespace MgcPrxyDrftr
             }
 
             DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
-            int count = 1;
+            var count = 1;
 
             foreach (var dir in directoryInfo.GetDirectories())
             {
                 // create pdf
-                Process proc = CreatePdf(@$"{dir.FullName}", Settings.AutomaticPrinting);
+                var proc = CreatePdf(@$"{dir.FullName}", Settings.AutomaticPrinting);
                 if (proc.ExitCode == 0)
                 {
                     FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
@@ -1124,10 +1132,10 @@ namespace MgcPrxyDrftr
         /// </summary>
         /// <param name="directoryPath"></param>
         /// <returns></returns>
-        static bool PrintDirectory(string directoryPath)
+        private static bool PrintDirectory(string directoryPath)
         {
             // create pdf
-            Process proc = CreatePdf(@$"{directoryPath}", Settings.AutomaticPrinting);
+            var proc = CreatePdf(@$"{directoryPath}", Settings.AutomaticPrinting);
             if (proc.ExitCode == 0)
             {
                 FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
@@ -1138,12 +1146,12 @@ namespace MgcPrxyDrftr
 
         private static async Task<bool> DraftToSql(string draftString)
         {
-            ISetService setService = serviceProvider.GetSetService();
-            string setCode = draftString.Split('|')[0];
-            string boosterCountParam = draftString.Split('|')[1];
-            StringBuilder sb = new StringBuilder();
+            var setService = serviceProvider.GetSetService();
+            var setCode = draftString.Split('|')[0];
+            var boosterCountParam = draftString.Split('|')[1];
+            var sb = new StringBuilder();
 
-            MtgApiManager.Lib.Model.ISet set = (await setService.FindAsync(setCode)).Value;
+            var set = (await setService.FindAsync(setCode)).Value;
             Settings.LastGeneratedSet = setCode;
             ReadSingleSetWithUpdateCheck(set.Code);
             Settings.AddSet(set.Code);
@@ -1151,7 +1159,7 @@ namespace MgcPrxyDrftr
             int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
             Console.CursorVisible = false;
 
-            for (int i = 1; i <= boosterCount; i++)
+            for (var i = 1; i <= boosterCount; i++)
             {
                 sb.AppendLine($"insert into rs_booster (setid) values ((select id from rs_set where setcode = '{setCode}'));");
 
@@ -1180,11 +1188,11 @@ namespace MgcPrxyDrftr
         /// <returns></returns>
         private static async Task<bool> Draft(string draftString)
         {
-            ISetService setService = serviceProvider.GetSetService();
-            string setCode = draftString.Split('|')[0];
-            string boosterCountParam = draftString.Split('|')[1];
+            var setService = serviceProvider.GetSetService();
+            var setCode = draftString.Split('|')[0];
+            var boosterCountParam = draftString.Split('|')[1];
 
-            MtgApiManager.Lib.Model.ISet set = (await setService.FindAsync(setCode)).Value;
+            var set = (await setService.FindAsync(setCode)).Value;
             Settings.LastGeneratedSet = set?.Code ?? setCode.ToUpper();
             ReadSingleSetWithUpdateCheck(set?.Code ?? setCode.ToUpper());
             Settings.AddSet(set?.Code ?? setCode.ToUpper());
@@ -1199,7 +1207,7 @@ namespace MgcPrxyDrftr
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             if (!draftDirectory.Exists) { draftDirectory.Create(); }
 
-            for (int i = 1; i <= boosterCount; i++)
+            for (var i = 1; i <= boosterCount; i++)
             {
                 Console.Clear();
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
@@ -1222,7 +1230,7 @@ namespace MgcPrxyDrftr
 
                 if (IsWindows)
                 {
-                    Process proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\\{TemporaryDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+                    var proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\\{TemporaryDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
 
                     if (proc.ExitCode == 0)
                     {
@@ -1257,9 +1265,9 @@ namespace MgcPrxyDrftr
             return true;
         }
 
-        static async Task<object> Draft()
+        private static async Task<object> Draft()
         {
-            ISetService setService = serviceProvider.GetSetService();
+            var setService = serviceProvider.GetSetService();
             MtgApiManager.Lib.Model.ISet set = null;
             do
             {
@@ -1269,7 +1277,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine("╠═════╬════════════╬═══════════════════════════════════════════╣");
                 foreach (var item in releaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key[..10]):dd.MM.yyyy} ║ {sets[item.Value].Data.Name.PadRight(41, ' ')} ║"); }
                 Console.WriteLine("╚═════╩════════════╩═══════════════════════════════════════════╝");
-                bool noValidSetFound = true;
+                var noValidSetFound = true;
                 do
                 {
                     Console.WriteLine("");
@@ -1321,7 +1329,7 @@ namespace MgcPrxyDrftr
                 DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
                 if(!draftDirectory.Exists) { draftDirectory.Create(); }
 
-                for (int i = 1; i <= boosterCount; i++)
+                for (var i = 1; i <= boosterCount; i++)
                 {
                     Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
@@ -1343,7 +1351,7 @@ namespace MgcPrxyDrftr
 
                     if (IsWindows)
                     {
-                        Process proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\\{OutputDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+                        var proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\\{OutputDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
 
                         if (proc.ExitCode == 0)
                         {
@@ -1436,7 +1444,7 @@ namespace MgcPrxyDrftr
         private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory)
         {
             // get unique file name guid
-            string fileName = $"{Guid.NewGuid()}.png";
+            var fileName = $"{Guid.NewGuid()}.png";
 
             // check for image
             FileInfo file = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");

@@ -26,7 +26,7 @@ namespace MgcPrxyDrftr
         public async Task<ScryfallApi.Client.Models.Card> GetCardByNameAsync(string cardName, string setCode = "")
         {
             ScryfallApi.Client.Models.Card card = null;
-            HttpResponseMessage response = await client.GetAsync($"cards/named?exact={cardName}&set={setCode}");
+            var response = await client.GetAsync($"cards/named?exact={cardName}&set={setCode}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -40,7 +40,7 @@ namespace MgcPrxyDrftr
             ScryfallApi.Client.Models.Card card = null;
             //https://scryfall.com/search?order=released&q=lang%3Ade&unique=prints
             //https://api.scryfall.com/cards/search?q=name%3DHellkite+set%3DGRN+lang%3Dde
-            HttpResponseMessage response = await client.GetAsync($"cards/search?q=name%3D{cardName}+set%3D{setCode}+lang%3D{language}");
+            var response = await client.GetAsync($"cards/search?q=name%3D{cardName}+set%3D{setCode}+lang%3D{language}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -53,7 +53,7 @@ namespace MgcPrxyDrftr
         {
             ScryfallApi.Client.Models.Card card = null;
 
-            HttpResponseMessage response = await client.GetAsync($"cards/multiverse/{multiverseid}");
+            var response = await client.GetAsync($"cards/multiverse/{multiverseid}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -65,7 +65,7 @@ namespace MgcPrxyDrftr
         {
             ScryfallApi.Client.Models.Card card = null;
 
-            HttpResponseMessage response = await client.GetAsync($"cards/{scryfallGuid}");
+            var response = await client.GetAsync($"cards/{scryfallGuid}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
@@ -79,7 +79,7 @@ namespace MgcPrxyDrftr
         {
             //lastApiCall = DateTime.Now;
             List<ScryfallApi.Client.Models.Set> sets = null;
-            HttpResponseMessage response = await client.GetAsync($"sets");
+            var response = await client.GetAsync($"sets");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();

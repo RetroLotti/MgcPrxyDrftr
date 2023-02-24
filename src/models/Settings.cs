@@ -41,14 +41,14 @@ namespace MgcPrxyDrftr.models
         }
         public void Save()
         {
-            string json = System.Text.Json.JsonSerializer.Serialize(this);
+            var json = System.Text.Json.JsonSerializer.Serialize(this);
             File.WriteAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json", json);
         }
         public void Load()
         {
             if (File.Exists($@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
             {
-                string json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
+                var json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
                 JsonConvert.PopulateObject(json, this);
             }
         }
@@ -81,9 +81,9 @@ namespace MgcPrxyDrftr.models
         }
         public void UpdateBoosterCount(int value)
         {
-            if (Statistics.TryGetValue("booster", out string currentValue))
+            if (Statistics.TryGetValue("booster", out var currentValue))
             {
-                int newValue = int.Parse(currentValue) + value;
+                var newValue = int.Parse(currentValue) + value;
                 UpdateStatistics("booster", newValue.ToString());
                 Save();
             }

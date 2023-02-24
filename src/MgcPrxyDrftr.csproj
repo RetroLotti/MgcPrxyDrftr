@@ -66,6 +66,7 @@
 
   <ItemGroup>
     <Folder Include="cache\scryfall\" />
+    <Folder Include="json\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
     <Folder Include="output\draft\2022-03-11T08-07-46\" />

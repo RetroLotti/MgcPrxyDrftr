@@ -17,7 +17,7 @@ namespace MgcPrxyDrftr.lib
     {
         public static bool Write(string text, int posX, int posY)
         {
-            (int left, int top) = Console.GetCursorPosition();
+            (var left, var top) = Console.GetCursorPosition();
             Console.SetCursorPosition(posX, posY);
             Console.Write(text);
             Console.SetCursorPosition(left, top);
@@ -64,14 +64,13 @@ namespace MgcPrxyDrftr.lib
             webClient.DownloadFile(downloadUri, @$"{targetDirectory}\{downloadUri.Segments[^1]}");
             webClient.DownloadFile(checksumUri, @$"{targetDirectory}\{checksumUri.Segments[^1]}");
 
-            return ValidateFiles(@$"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
+            return ValidateFiles($@"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
         }
 
         public static async void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
         {
             WebClient webClient = new();
-            string currentFileText = string.Empty;
-            SetRoot currentSet;
+            var currentFileText = string.Empty;
 
             // download content file
             webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json"), @$"{fullJsonPath}\{setCode.ToUpper()}.json");
@@ -80,35 +79,32 @@ namespace MgcPrxyDrftr.lib
             webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json.sha256"), @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
             // validate checksum
-            bool isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
+            var isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
-            if(isValid)
+            if (!isValid) return;
+            var downloadedFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
+            if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json"))
             {
-                var downloadedFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
-                if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json"))
-                {
-                    currentFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
-                }
-                
-                var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);
-                currentSet = JsonConvert.DeserializeObject<SetRoot>(currentFileText);
-
-                if(currentSet == null)
-                {
-                    // move
-                    File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
-                }
-                else if (downloadSet.Meta.Date > currentSet.Meta.Date && !downloadSet.Meta.Version.Equals(currentSet.Meta.Version))
-                {
-                    // replace
-                    File.Replace(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
-                }
-
-                File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
-                File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
-                File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256"); 
-
+                currentFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
             }
+                
+            var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);
+            var currentSet = JsonConvert.DeserializeObject<SetRoot>(currentFileText);
+
+            if(currentSet == null)
+            {
+                // move
+                File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
+            }
+            else if (downloadSet.Meta.Date > currentSet.Meta.Date && !downloadSet.Meta.Version.Equals(currentSet.Meta.Version))
+            {
+                // replace
+                File.Replace(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
+            }
+
+            File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
+            File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
+            File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
         }
 
         private static bool ValidateFiles(string contentFile, string checksumFile)
@@ -119,29 +115,38 @@ namespace MgcPrxyDrftr.lib
             return (downloadedFileChecksum.Equals(serverChecksum));
         }
 
-        private static string ReadChecksum(string file)
-        {
-            return File.ReadAllText(file);
-        }
+        private static string ReadChecksum(string file) { return File.ReadAllText(file); }
 
         private static string CalculateChecksum(string file)
         {
-            string checksum = string.Empty;
+            var waitCounter = 0;
+            var finished = false;
+            var checksum = string.Empty;
             FileInfo fileInfo = new(file);
             
-            using SHA256 sHA256 = SHA256.Create();
-            using FileStream fileStream = fileInfo.Open(FileMode.Open); // 
-            byte[] hashValue = sHA256.ComputeHash(fileStream);
+            using var sha256 = SHA256.Create();
 
-            for (int i = 0; i < hashValue.Length; i++)
+            do
             {
-                checksum += $"{hashValue[i]:X2}";
-            }
+                try
+                {
+                    using var fileStream = fileInfo.Open(FileMode.Open);
+                    var hashValue = sha256.ComputeHash(fileStream);
+
+                    checksum = hashValue.Aggregate(checksum, (current, t) => current + $"{t:X2}");
+
+                    finished = true;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
+
+                if (++waitCounter == 10) finished = true;
+
+            } while (finished == false);
 
             return checksum.ToLower();
         }
-
-
-
     }
 }

@@ -9,9 +9,9 @@ namespace MgcPrxyDrftr.lib
     {
         public static T RandomElementByWeight<T>(this IEnumerable<T> sequence, Func<T, float> weightSelector)
         {
-            float totalWeight = sequence.Sum(weightSelector);
+            var totalWeight = sequence.Sum(weightSelector);
             // The weight we are after...
-            float itemWeightIndex = (float)new Random().NextDouble() * totalWeight;
+            var itemWeightIndex = (float)new Random().NextDouble() * totalWeight;
             float currentWeightIndex = 0;
 
             foreach (var item in from weightedItem in sequence select new { Value = weightedItem, Weight = weightSelector(weightedItem) })
