@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using H = MgcPrxyDrftr.lib.Helpers;
 using System.Text;
+using MgcPrxyDrftr.models;
 using Newtonsoft.Json.Linq;
 
 namespace MgcPrxyDrftr
@@ -59,7 +60,7 @@ namespace MgcPrxyDrftr
 
         private static async Task Main()
         {
-            if(IsWindows) { Console.SetWindowSize(136, 50); }
+            if (IsWindows) { Console.SetWindowSize(136, 50); }
 
             WriteHeader();
             
@@ -732,6 +733,15 @@ namespace MgcPrxyDrftr
         private static models.SetRoot ReadSingleSet(string setCode)
         {
             FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
+
+            //if (!fileInfo.Exists)
+            //{
+            //    Settings.CheckSetFile(setCode, @$"{BaseDirectory}\{JsonDirectory}\", SetDirectory);
+
+
+            //    //var isValid = H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
+            //}
+
             return ReadSingleSet(fileInfo);
         }
 
@@ -916,26 +926,21 @@ namespace MgcPrxyDrftr
         }
 
         //static List<models.CardIdentifiers> GenerateBooster(string setCode)
-        private static List<models.Card> GenerateBooster(string setCode)
+        private static List<models.Card> GenerateBooster(string setCode, List<string> additionalSetCodes = null)
         {
             List<Guid> boosterCards = new();
-            List<models.Card> boosterCardsObjectList = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
             var set = sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
             SortedDictionary<Guid, models.Card> cards = new();
-            foreach (var item in set.Data.Cards) { if(!cards.ContainsKey(item.Uuid) && (item.Side == null || item.Side == models.Side.A)) cards.Add(item.Uuid, item); }
+            foreach (var item in set.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or models.Side.A)) { cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
-            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0)
-            {
-                return null;
-            }
+            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) { return null; }
 
             // determine booster blueprint
-            Dictionary<models.Contents, float> blueprint = new();
-            foreach (var item in set.Data.Booster.Default.Boosters) { blueprint.Add(item.Contents, (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight); }
+            var blueprint = set.Data.Booster.Default.Boosters.ToDictionary(item => item.Contents, item => (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
             // determine booster contents
@@ -976,10 +981,18 @@ namespace MgcPrxyDrftr
 
             // get scryfall id for card determination later on
             //for (int i = 0; i < boosterCards.Count; i++) { boosterCardIdentifier.Add(cards[boosterCards[i]].Identifiers); boosterCards[i] = cards[boosterCards[i]].Identifiers.ScryfallId; }
-            for (var i = 0; i < boosterCards.Count; i++) { boosterCardsObjectList.Add(cards[boosterCards[i]]); }
 
-            //return boosterCardIdentifier;
-            return boosterCardsObjectList;
+
+            // if there are addtional sets given they will only be used to get their cards like BRO needs BRR
+            if (additionalSetCodes != null)
+            {
+                foreach (var item in additionalSetCodes.Select(addSetCode => sets[addSetCode.ToUpper()]).SelectMany(addSet => Enumerable.Where<Card>(addSet.Data.Cards, item => !cards.ContainsKey(item.Uuid) && item.Side is null or models.Side.A)))
+                {
+                    cards.Add(item.Uuid, item);
+                }
+            }
+
+            return boosterCards.Select(t => cards[t]).ToList();
         }
 
         private static async Task<object> PrintDeck(string deckName)
@@ -1221,13 +1234,20 @@ namespace MgcPrxyDrftr
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             if (!draftDirectory.Exists) { draftDirectory.Create(); }
 
+            List<string> moreSets = null;
+            // create additional list for sets with sub sets like BRO needs BRR
+            if (setCode.ToUpper().Equals("BRO"))
+            {
+                moreSets = new List<string> { "BRR" };
+            }
+
             for (var i = 1; i <= boosterCount; i++)
             {
                 Console.Clear();
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
-                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper());
+                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets);
 
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();

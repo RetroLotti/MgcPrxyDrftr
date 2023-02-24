@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.AccessControl;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -65,6 +66,19 @@ namespace MgcPrxyDrftr.models
                 LastUpdatesList[setCode] = DateTime.Now;
                 Save();
             }
+
+            return true;
+        }
+        public bool CheckSetFile(string setCode, string fullJsonPath, string setFolder)
+        {
+            _ = CheckLastUpdate(setCode, fullJsonPath, setFolder);
+
+            // if the file is still not there we download it
+            if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json")) return true;
+
+            Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
+            //LastUpdatesList[setCode] = DateTime.Now;
+            //Save();
 
             return true;
         }

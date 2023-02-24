@@ -18,8 +18,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="output\draft\2022-03-11T08-07-46\**" />
+    <Compile Remove="output\draft\2022-04-11T08-32-14\**" />
     <Compile Remove="output\list\**" />
+    <EmbeddedResource Remove="output\draft\2022-03-11T08-07-46\**" />
+    <EmbeddedResource Remove="output\draft\2022-04-11T08-32-14\**" />
     <EmbeddedResource Remove="output\list\**" />
+    <None Remove="output\draft\2022-03-11T08-07-46\**" />
+    <None Remove="output\draft\2022-04-11T08-32-14\**" />
     <None Remove="output\list\**" />
   </ItemGroup>
 
@@ -67,10 +73,9 @@
   <ItemGroup>
     <Folder Include="cache\scryfall\" />
     <Folder Include="json\" />
+    <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
-    <Folder Include="output\draft\2022-03-11T08-07-46\" />
-    <Folder Include="output\draft\2022-04-11T08-32-14\" />
     <Folder Include="output\lists\" />
     <Folder Include="temporary\booster\" />
     <Folder Include="temporary\decks\" />

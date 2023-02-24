@@ -77,6 +77,7 @@ namespace MgcPrxyDrftr.models
     {
         public long? Basic { get; set; }
         public long? FoilBasic { get; set; }
+        public long? MechBasic { get; set; }
         public long? Foil { get; set; }
         public long? FoilCommon { get; set; }
         public long? Special { get; set; }
@@ -170,7 +171,7 @@ namespace MgcPrxyDrftr.models
         public long? NonlegendaryUncommon { get; set; }
         public long? LegendaryUncommon { get; set; }
         public long? NonlegendaryRareMythic { get; set; }
-
+        public long? BrrRetroArtifact { get; set; }
         public long? ConspiracyFoil { get; set; }
         public long? NonconspiracyFoil { get; set; }
         public long? NonconspiracyUncommon { get; set; }
@@ -345,7 +346,6 @@ namespace MgcPrxyDrftr.models
         public Sheet PlaneswalkerUncommon { get; set; }
         public Sheet ModaldfcRareMythic { get; set; }
         public Sheet ModaldfcUncommon { get; set; }
-
         public Sheet TsTs { get; set; }
         public Sheet BasicOrGainLand { get; set; }
         public Sheet DedicatedFoil2xm { get; set; }

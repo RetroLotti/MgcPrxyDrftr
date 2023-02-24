@@ -137,9 +137,9 @@ namespace MgcPrxyDrftr.lib
 
                     finished = true;
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Console.WriteLine(ex.Message);
+                    //Console.WriteLine(ex.Message);
                 }
 
                 if (++waitCounter == 10) finished = true;
