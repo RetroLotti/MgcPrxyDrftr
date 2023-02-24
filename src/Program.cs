@@ -503,6 +503,7 @@ namespace MgcPrxyDrftr
                             _ = PrintDirectory(command);
                             break;
                         case LoopState.SetManager:
+                            _ = AddSet(command);
                             break;
                         case LoopState.Main:
                             break;
@@ -705,7 +706,7 @@ namespace MgcPrxyDrftr
 
         private static void ReadAllConfiguredSets()
         {
-            if(Settings.SetsToLoad == null || Settings.SetsToLoad.Count <= 0)
+            if(Settings.SetsToLoad is not { Count: > 0 })
             {
                 Console.WriteLine("No sets configured!");
             }
@@ -742,12 +743,12 @@ namespace MgcPrxyDrftr
             var json = JObject.Parse(txt);
             if(json.SelectToken("data").SelectToken("booster") != null && json.SelectToken("data").SelectToken("booster").SelectToken("default") != null)
             {
-                foreach (var item in json.SelectToken("data").SelectToken("booster")?.SelectToken("default")?.SelectToken("boosters"))
+                foreach (var item in json.SelectToken("data").SelectToken("booster")?.SelectToken("default").SelectToken("boosters")!)
                 {
                     foreach (var item1 in item.SelectToken("contents"))
                     {
                         var name = ((JProperty)item1).Name;
-                        if (!SheetList.TryGetValue(name, out var sheet))
+                        if (!SheetList.TryGetValue(name, out _))
                         {
                             SheetList.Add(name);
                         }
@@ -1177,6 +1178,19 @@ namespace MgcPrxyDrftr
 
             // update booster count just for fun
             Settings.UpdateBoosterCount(1);
+
+            return true;
+        }
+
+        private static async Task<bool> AddSet(string setCode)
+        {
+            // add new set
+            Settings.AddSet(setCode);
+
+            // read and download if necessary
+            var x = ReadSingleSetWithUpdateCheck(setCode.ToUpper());
+
+            Settings.Save();
 
             return true;
         }

@@ -15,21 +15,21 @@ namespace MgcPrxyDrftr.models
         public bool DownloadBasicLands { get; set; }
         public string LastGeneratedSet { get; set; }
         public Dictionary<string, DateTime> LastUpdatesList { get; set; }
-        public Dictionary<string, string> Statistics { get; set; }
+        private Dictionary<string, string> Statistics { get; set; }
         public List<string> SetsToLoad { get; set; }
 
         public Settings()
         {
-            LastUpdatesList = new();
-            Statistics = new();
-            SetsToLoad = new();
+            LastUpdatesList = new Dictionary<string, DateTime>();
+            Statistics = new Dictionary<string, string>();
+            SetsToLoad = new List<string>();
         }
 
         public void AddSet(string setCode)
         {
-            if(SetsToLoad != null && !SetsToLoad.Contains(setCode))
+            if(SetsToLoad != null && !SetsToLoad.Contains(setCode.ToUpper()))
             {
-                SetsToLoad.Add(setCode);
+                SetsToLoad.Add(setCode.ToUpper());
             }
         }
         public void RemoveSet(string setCode)
