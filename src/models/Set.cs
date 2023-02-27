@@ -213,6 +213,7 @@ namespace MgcPrxyDrftr.models
         public long? AlaraPremiumCommon { get; set; }
         public long? AlaraPremiumRareMythic { get; set; }
         public long? AlaraPremiumUncommon { get; set; }
+        public long? Praetor { get; set; }
     }
 
     public class Sheets
@@ -353,6 +354,8 @@ namespace MgcPrxyDrftr.models
         public Sheet AlaraPremiumCommon { get; set; }
         public Sheet AlaraPremiumRareMythic { get; set; }
         public Sheet AlaraPremiumUncommon { get; set; }
+        public Sheet Praetor { get; set; }
+        
     }
 
     public class Sheet

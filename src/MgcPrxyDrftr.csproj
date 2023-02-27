@@ -50,6 +50,9 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <None Update="scripts\booster.v4.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="scripts\booster.noguid.v1.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

@@ -55,28 +55,36 @@ namespace MgcPrxyDrftr.lib
         /// <param name="validationFileUri"></param>
         /// <param name="targetDirectory"></param>
         /// <returns></returns>
-        public static bool DownloadAndValidateFile(string downloadFileUri, string validationFileUri, string targetDirectory)
+        public static async Task<bool> DownloadAndValidateFile(string downloadFileUri, string validationFileUri, string targetDirectory)
         {
-            WebClient webClient = new();
+            HttpClient httpClient = new();
             Uri downloadUri = new(downloadFileUri);
             Uri checksumUri = new(validationFileUri);
 
-            webClient.DownloadFile(downloadUri, @$"{targetDirectory}\{downloadUri.Segments[^1]}");
-            webClient.DownloadFile(checksumUri, @$"{targetDirectory}\{checksumUri.Segments[^1]}");
+            await DownloadFile(httpClient, downloadFileUri, @$"{targetDirectory}\{downloadUri.Segments[^1]}");
+            await DownloadFile(httpClient, validationFileUri, @$"{targetDirectory}\{checksumUri.Segments[^1]}");
 
             return ValidateFiles($@"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
         }
 
+        private static async Task<bool> DownloadFile(HttpClient httpClient, string uri, string targetFile)
+        {
+            await using var stream = await httpClient.GetStreamAsync(uri);
+            await using var fileStream = new FileStream(targetFile, FileMode.CreateNew);
+            await stream.CopyToAsync(fileStream);
+            return true;
+        }
+
         public static async void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
         {
-            WebClient webClient = new();
+            HttpClient httpClient = new();
             var currentFileText = string.Empty;
 
             // download content file
-            webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json"), @$"{fullJsonPath}\{setCode.ToUpper()}.json");
+            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json");
 
             // download checksum file
-            webClient.DownloadFile(new Uri($"https://mtgjson.com/api/v5/{setCode}.json.sha256"), @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
+            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json.sha256", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
             // validate checksum
             var isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
@@ -91,15 +99,18 @@ namespace MgcPrxyDrftr.lib
             var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);
             var currentSet = JsonConvert.DeserializeObject<SetRoot>(currentFileText);
 
-            if(currentSet == null)
+            if (currentSet == null)
             {
                 // move
                 File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
             }
             else if (downloadSet.Meta.Date > currentSet.Meta.Date && !downloadSet.Meta.Version.Equals(currentSet.Meta.Version))
             {
-                // replace
-                File.Replace(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json.bak");
+                // delete
+                File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
+
+                // then move
+                File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
             }
 
             File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json");

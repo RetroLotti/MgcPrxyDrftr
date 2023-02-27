@@ -435,15 +435,28 @@ namespace MgcPrxyDrftr
                             _ = ReadClipboardAndDownload();
                             break;
                         case "a":
-                            if(StateMachine.CurrentState == LoopState.DeckCreator)
+                            switch (StateMachine.CurrentState)
                             {
-                                foreach(var deck in DeckList.Data)
+                                case LoopState.DeckCreator:
                                 {
-                                    Console.WriteLine(deck.Name);
+                                    foreach(var deck in DeckList.Data)
+                                    {
+                                        Console.WriteLine(deck.Name);
+                                    }
+                                    Console.Write("Press any key to continue...");
+                                    _ = Console.ReadKey();
+                                    break;
                                 }
-                                Console.Write("Press any key to continue...");
-                                _ = Console.ReadKey();
+                                case LoopState.Options:
+                                {
+                                    Settings.NewDraftMenu = !Settings.NewDraftMenu;
+                                    Settings.Save();
+                                    break;
+                                }
+                                default:
+                                    break;
                             }
+
                             break;
                         case "l":
                             if (StateMachine.CurrentState == LoopState.DeckCreator)
@@ -476,6 +489,13 @@ namespace MgcPrxyDrftr
                             if (StateMachine.CurrentState == LoopState.Options)
                             {
                                 Settings.AutomaticPrinting = !Settings.AutomaticPrinting;
+                                Settings.Save();
+                            }
+                            break;
+                        case "d":
+                            if (StateMachine.CurrentState == LoopState.Options)
+                            {
+                                Settings.PromptForDraftConfirmation = !Settings.PromptForDraftConfirmation;
                                 Settings.Save();
                             }
                             break;
@@ -541,6 +561,8 @@ namespace MgcPrxyDrftr
                 case LoopState.Options:
                     H.Write($"P => enable / disable automatic printing [{(Settings.AutomaticPrinting ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 1);
                     H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 2);
+                    H.Write($"D => enable / disable prompting for confirmation where drafting booster [{(Settings.PromptForDraftConfirmation ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 3);
+                    H.Write($"A => enable / disable alternative (new) draft menu [{(Settings.NewDraftMenu ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 4);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.BoosterDraft:
@@ -621,14 +643,14 @@ namespace MgcPrxyDrftr
             return true;
         }
 
-        private static void LoadDeckList()
+        private static async void LoadDeckList()
         {
             // TODO: check for new version of deck list
 
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json");
             if(!file.Exists)
             {
-                var valid = H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
                 if(!valid)
                 {
                     throw new Exception("Filechecksum is invalid!");
@@ -637,14 +659,14 @@ namespace MgcPrxyDrftr
             DeckList = JsonConvert.DeserializeObject<models.DeckList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
         }
 
-        private static void LoadSetList()
+        private static async void LoadSetList()
         {
             // TODO: check for new version of set list
 
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\SetList.json");
             if (!file.Exists)
             {
-                var valid = H.DownloadAndValidateFile("https://mtgjson.com/api/v5/SetList.json", "https://mtgjson.com/api/v5/SetList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/SetList.json", "https://mtgjson.com/api/v5/SetList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
                 if (!valid)
                 {
                     throw new Exception("Filechecksum is invalid!");
@@ -713,12 +735,22 @@ namespace MgcPrxyDrftr
             }
             else
             {
+                Console.WriteLine(">> Checking for updates...");
+                // check if an update is available
+                foreach (var set in Settings.SetsToLoad)
+                {
+                    Console.WriteLine($"> Checking {set}");
+                    _ = Settings.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
+                }
+
+                Console.WriteLine(">> Reading files...");
                 foreach (var set in Settings.SetsToLoad)
                 {
                     FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{set}.json");
                     // force reread when file does no longer exist
-                    if(!file.Exists) { Settings.LastUpdatesList[set] = DateTime.Now.AddDays(-2); }
-                    Settings.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
+                    if(!file.Exists) { Settings.LastUpdatesList[set] = DateTime.Now.AddDays(-2); Settings.Save(); }
+                    //Settings.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
+                    Console.WriteLine($"> Reading {set}");
                     _ = ReadSingleSet(set);
                 }
             }
@@ -1016,7 +1048,7 @@ namespace MgcPrxyDrftr
                 if(deckFromList != null)
                 {
                     // download and validate deck and checksum files
-                    var isValid = H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
+                    var isValid = await H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
 
                     // when file is valid
                     if(isValid)
@@ -1225,10 +1257,14 @@ namespace MgcPrxyDrftr
             Settings.AddSet(set?.Code ?? setCode.ToUpper());
             Settings.Save();
             int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
-            Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set?.Name}\".");
-            Console.CursorVisible = false;
-            Console.Write("Press any key to start generating.");
-            Console.ReadKey();
+            if (Settings.PromptForDraftConfirmation)
+            {
+                Console.WriteLine(
+                    $"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set?.Name}\".");
+                Console.CursorVisible = false;
+                Console.Write("Press any key to start generating.");
+                Console.ReadKey();
+            }
 
             // create new draft folder
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
@@ -1271,7 +1307,7 @@ namespace MgcPrxyDrftr
                         FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
                         if (file.Exists)
                         {
-                            file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
+                            file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf");
                         }
                         Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                         Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");

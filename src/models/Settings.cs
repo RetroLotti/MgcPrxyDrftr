@@ -14,10 +14,14 @@ namespace MgcPrxyDrftr.models
     {
         public bool AutomaticPrinting { get; set; }
         public bool DownloadBasicLands { get; set; }
+        public bool PromptForDraftConfirmation { get; set; }
+        public bool NewDraftMenu { get; set; }
         public string LastGeneratedSet { get; set; }
         public Dictionary<string, DateTime> LastUpdatesList { get; set; }
         private Dictionary<string, string> Statistics { get; set; }
         public List<string> SetsToLoad { get; set; }
+        
+        //private bool HasChanges { get; set; }
 
         public Settings()
         {
@@ -47,11 +51,11 @@ namespace MgcPrxyDrftr.models
         }
         public void Load()
         {
-            if (File.Exists($@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
-            {
-                var json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
-                JsonConvert.PopulateObject(json, this);
-            }
+            if (!File.Exists(
+                    @$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
+                return;
+            var json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
+            JsonConvert.PopulateObject(json, this);
         }
         public bool CheckLastUpdate(string setCode, string fullJsonPath, string setFolder)
         {
@@ -60,12 +64,10 @@ namespace MgcPrxyDrftr.models
                 LastUpdatesList.Add(setCode, DateTime.Now.AddDays(-2));
             }
 
-            if (LastUpdatesList[setCode].AddDays(1) < DateTime.Now)
-            {
-                Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
-                LastUpdatesList[setCode] = DateTime.Now;
-                Save();
-            }
+            if (LastUpdatesList[setCode].AddDays(1) >= DateTime.Now) return true;
+            Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
+            LastUpdatesList[setCode] = DateTime.Now;
+            Save();
 
             return true;
         }

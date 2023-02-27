@@ -23,33 +23,33 @@ namespace MgcPrxyDrftr.lib
     {
         private class StateTransition
         {
-            private readonly LoopState CurrentState;
-            private readonly string Command;
+            private readonly LoopState _currentState;
+            private readonly string _command;
 
             public StateTransition(LoopState currentState, string command)
             {
-                CurrentState = currentState;
-                Command = command;
+                _currentState = currentState;
+                _command = command;
             }
 
             public override int GetHashCode()
             {
-                return 17 + 31 * CurrentState.GetHashCode() + 31 * Command.GetHashCode();
+                return 17 + 31 * _currentState.GetHashCode() + 31 * _command.GetHashCode();
             }
 
             public override bool Equals(object obj)
             {
-                return obj is StateTransition other && CurrentState == other.CurrentState && Command == other.Command;
+                return obj is StateTransition other && _currentState == other._currentState && _command == other._command;
             }
         }
 
-        private readonly Dictionary<StateTransition, LoopState> transitions;
+        private readonly Dictionary<StateTransition, LoopState> _transitions;
         public LoopState CurrentState { get; private set; }
 
         public StateMachine()
         {
             CurrentState = LoopState.Main;
-            transitions = new Dictionary<StateTransition, LoopState>
+            _transitions = new Dictionary<StateTransition, LoopState>
             {
                 { new StateTransition(LoopState.Main, "b"), LoopState.BoosterDraft },
                 { new StateTransition(LoopState.Main, "c"), LoopState.Main },
@@ -69,6 +69,8 @@ namespace MgcPrxyDrftr.lib
 
                 { new StateTransition(LoopState.Options, "p"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "e"), LoopState.Options },
+                { new StateTransition(LoopState.Options, "d"), LoopState.Options },
+                { new StateTransition(LoopState.Options, "a"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "b"), LoopState.Main },
 
                 { new StateTransition(LoopState.DeckCreator, "a"), LoopState.DeckCreator },
@@ -84,10 +86,10 @@ namespace MgcPrxyDrftr.lib
             };
         }
 
-        public LoopState GetNext(string command)
+        private LoopState GetNext(string command)
         {
             StateTransition transition = new(CurrentState, command.ToLower());
-            return !transitions.TryGetValue(transition, out var nextState)
+            return !_transitions.TryGetValue(transition, out var nextState)
                 ? throw new Exception("Invalid transition: " + CurrentState + " -> " + command)
                 : nextState;
         }
