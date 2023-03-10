@@ -35,10 +35,10 @@
   
   <ItemGroup>
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.3" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.2" />
     <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.0" />
-    <PackageReference Include="TextCopy" Version="6.1.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
+    <PackageReference Include="TextCopy" Version="6.2.1" />
     <PackageReference Include="WolfCurses" Version="2018.9.12.1" />
   </ItemGroup>
 
@@ -49,9 +49,6 @@
     <None Update="icon.ico">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
-    </None>
-    <None Update="scripts\booster.v4.nde">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="scripts\booster.noguid.v1.nde">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -75,7 +72,7 @@
 
   <ItemGroup>
     <Folder Include="cache\scryfall\" />
-    <Folder Include="json\" />
+    <Folder Include="json\decks\" />
     <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />

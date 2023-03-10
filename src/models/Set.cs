@@ -208,12 +208,18 @@ namespace MgcPrxyDrftr.models
         public long? FoilUncommonPartner3 { get; set; }
         public long? FoilUncommonPartner4 { get; set; }
         public long? FoilUncommonPartner5 { get; set; }
-
         public long? AlaraPremiumBasic { get; set; }
         public long? AlaraPremiumCommon { get; set; }
         public long? AlaraPremiumRareMythic { get; set; }
         public long? AlaraPremiumUncommon { get; set; }
         public long? Praetor { get; set; }
+        public long? A30Basic { get; set; }
+        public long? A30Common { get; set; }
+        public long? A30Uncommon { get; set; }
+        public long? A30Rare { get; set; }
+        public long? A30RetroBasic { get; set; }
+        public long? A30Retro { get; set; }
+        public long? DedicatedFoilDoubleMasters { get; set; }
     }
 
     public class Sheets
@@ -355,7 +361,12 @@ namespace MgcPrxyDrftr.models
         public Sheet AlaraPremiumRareMythic { get; set; }
         public Sheet AlaraPremiumUncommon { get; set; }
         public Sheet Praetor { get; set; }
-        
+        public Sheet A30Basic { get; set; }
+        public Sheet A30Common { get; set; }
+        public Sheet A30Uncommon { get; set; }
+        public Sheet A30Rare { get; set; }
+        public Sheet A30RetroBasic { get; set; }
+        public Sheet A30Retro { get; set; }
     }
 
     public class Sheet

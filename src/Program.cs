@@ -63,7 +63,7 @@ namespace MgcPrxyDrftr
             if (IsWindows) { Console.SetWindowSize(136, 50); }
 
             WriteHeader();
-            
+
             Console.WriteLine(">> Pre-Clean-Up...");
             CleanFolders();
 
@@ -101,7 +101,11 @@ namespace MgcPrxyDrftr
 #if DEBUG
             ////GenerateCubeDraftBooster();
             ////GenerateCubeDraftMini();
-            
+
+            //ReadFilteredSets();
+
+            //ResetAndCleanEverything();
+
             // main loop
             _ = await EnterTheLoop();
 
@@ -115,6 +119,26 @@ namespace MgcPrxyDrftr
             // start application loop
             _ = await EnterTheLoop();
 #endif
+        }
+
+        // removes all json files and clears the output
+        // also resets the settings file
+        private static void ResetAndCleanEverything()
+        {
+            Settings = new models.Settings();
+            Settings.Save();
+
+            DirectoryInfo outputDirectoryInfo = new(@$"{BaseDirectory}\{OutputDirectory}\");
+            outputDirectoryInfo.Delete(true);
+
+            DirectoryInfo cacheDirectoryInfo = new(@$"{BaseDirectory}\{CacheDirectory}\");
+            cacheDirectoryInfo.Delete(true);
+
+            DirectoryInfo tempDirectoryInfo = new(@$"{BaseDirectory}\{TemporaryDirectory}\");
+            tempDirectoryInfo.Delete(true);
+
+            DirectoryInfo jsonDirectoryInfo = new(@$"{BaseDirectory}\{JsonDirectory}\");
+            jsonDirectoryInfo.Delete(true);
         }
 
         private static string SetToSql()
@@ -206,6 +230,14 @@ namespace MgcPrxyDrftr
             if (Console.ForegroundColor != foregroundColor) { Console.ForegroundColor = foregroundColor; }
 
             Console.WriteLine(text);
+        }
+
+        private static void ReadFilteredSets()
+        {
+            foreach (var set in SetList.Data.Where(s => s.IsOnlineOnly == false && (s.Type.Equals("core") || s.Type.Equals("expanson") || s.Type.Equals("masters"))).OrderBy(s => s.ReleaseDate).ToList())
+            {
+
+            }
         }
 
         private static void GenerateCubeDraftMini()
@@ -656,7 +688,7 @@ namespace MgcPrxyDrftr
                     throw new Exception("Filechecksum is invalid!");
                 }
             }
-            DeckList = JsonConvert.DeserializeObject<models.DeckList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
+            DeckList = JsonConvert.DeserializeObject<models.DeckList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
         }
 
         private static async void LoadSetList()
@@ -672,7 +704,7 @@ namespace MgcPrxyDrftr
                     throw new Exception("Filechecksum is invalid!");
                 }
             }
-            SetList = JsonConvert.DeserializeObject<models.SetList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\SetList.json"));
+            SetList = JsonConvert.DeserializeObject<models.SetList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\SetList.json"));
         }
 
         private static void ReadAllDecks() 
@@ -1300,7 +1332,7 @@ namespace MgcPrxyDrftr
 
                 if (IsWindows)
                 {
-                    var proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\\{TemporaryDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+                    var proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings.AutomaticPrinting);
 
                     if (proc.ExitCode == 0)
                     {
@@ -1466,14 +1498,17 @@ namespace MgcPrxyDrftr
         private static Process CreatePdf(string folder, bool print)
         {
             Console.WriteLine("Creating PDF-file via nanDECK...");
-
+            
             // prepare pdf with nandeck
             Process proc = new();
             proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
             proc.StartInfo.CreateNoWindow = true;
             proc.StartInfo.FileName = "cmd.exe";
             proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptNameNoGuid}.nde\" /[cardfolder]={folder} /createpdf";
-           
+            proc.StartInfo.RedirectStandardOutput = true;
+            proc.StartInfo.RedirectStandardError = true;
+            proc.StartInfo.UseShellExecute = false;
+
             // pdf gets printed right away when desired
             if (print) { proc.StartInfo.Arguments += " /print"; }
 
@@ -1489,6 +1524,7 @@ namespace MgcPrxyDrftr
         /// </summary>
         /// <param name="guid"></param>
         /// <param name="folder"></param>
+        /// <param name="print"></param>
         /// <returns></returns>
         private static Process CreatePdf(Guid guid, string folder, bool print)
         {
@@ -1507,7 +1543,7 @@ namespace MgcPrxyDrftr
             proc.EnableRaisingEvents = true;
             proc.Start();
             proc.WaitForExit();
-            
+
             return proc;
         }
 

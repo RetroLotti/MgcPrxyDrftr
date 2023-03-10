@@ -52,9 +52,9 @@ namespace MgcPrxyDrftr.models
         public void Load()
         {
             if (!File.Exists(
-                    @$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
+                    $@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json"))
                 return;
-            var json = File.ReadAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
+            var json = File.ReadAllText($@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
             JsonConvert.PopulateObject(json, this);
         }
         public bool CheckLastUpdate(string setCode, string fullJsonPath, string setFolder)
