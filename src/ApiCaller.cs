@@ -26,7 +26,7 @@ namespace MgcPrxyDrftr
         public async Task<ScryfallApi.Client.Models.Card> GetCardByNameAsync(string cardName, string setCode = "")
         {
             ScryfallApi.Client.Models.Card card = null;
-            var response = await client.GetAsync($"cards/named?exact={cardName}&set={setCode}");
+            var response = await client.GetAsync($"cards/named?exact={cardName}&set={setCode}").ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
