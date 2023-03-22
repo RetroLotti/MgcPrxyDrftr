@@ -658,11 +658,11 @@ namespace MgcPrxyDrftr
                 var cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
                 var cardName = card.Substring(card.IndexOf(']')+1).Trim();
 
-                var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet);
+                var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet).ConfigureAwait(false);
 
                 for (var i = 0; i < cardCount; i++)
                 {
-                    _ = await GetImage(scryfallCard, directory.FullName);
+                    _ = await GetImage(scryfallCard, directory.FullName).ConfigureAwait(false);
                 }
             }
 
