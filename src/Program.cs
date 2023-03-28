@@ -429,7 +429,7 @@ namespace MgcPrxyDrftr
 
             if(setCursor) { Console.SetCursorPosition(0, 10); }
         }
-
+        
         // #############################################################
         // START
         // #############################################################
@@ -644,31 +644,35 @@ namespace MgcPrxyDrftr
             var guid = Guid.NewGuid();
             //Guid subGuid = Guid.NewGuid();
             
-            var rawCardString = clipboard.GetText();
-            var cardList = rawCardString.Split("\r\n");
-
-            // create directory
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
-            directory.Create();
-
-            foreach (var card in cardList)
+            var rawCardString = await clipboard.GetTextAsync().ConfigureAwait(false);
+            if (rawCardString != null)
             {
-                // 1 [VOC] Azorius Signet
-                _ = int.TryParse(card[..1], out var cardCount);
-                var cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
-                var cardName = card.Substring(card.IndexOf(']')+1).Trim();
+                var cardList = rawCardString.Split("\r\n");
 
-                var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet).ConfigureAwait(false);
+                // create directory
+                DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
+                directory.Create();
 
-                for (var i = 0; i < cardCount; i++)
+                foreach (var card in cardList)
                 {
-                    _ = await GetImage(scryfallCard, directory.FullName).ConfigureAwait(false);
+                    // 1 [VOC] Azorius Signet
+                    _ = int.TryParse(card[..1], out var cardCount);
+                    var cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
+                    var cardName = card.Substring(card.IndexOf(']')+1).Trim();
+
+                    var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet).ConfigureAwait(false);
+
+                    for (var i = 0; i < cardCount; i++)
+                    {
+                        _ = await GetImage(scryfallCard, directory.FullName).ConfigureAwait(false);
+                    }
                 }
+
+                // create pdf
+                var proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
+                if (proc.ExitCode != 0) return true;
             }
 
-            // create pdf
-            var proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
-            if (proc.ExitCode != 0) return true;
             FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
             if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\clipboard_{guid}.pdf"); }
 
@@ -1011,23 +1015,20 @@ namespace MgcPrxyDrftr
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
             {
                 // how many cards should be added for this sheet
-                var cardCount = (long)sheet.GetValue(booster.Key, null);
+                var cardCount = (long)sheet.GetValue(booster.Key, null)!;
 
                 // name of the sheet
                 var sheetName = sheet.Name;
 
                 // temporary sheet
-                Dictionary<Guid, float> temporarySheet = new();
 
                 // get the actual sheet
                 var actualSheetReflection = set.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
                 var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Data.Booster.Default.Sheets));
 
                 // add all cards to a temporary list with correct weight
-                foreach (var item in actualSheet.Cards) 
-                {
-                    temporarySheet.Add(Guid.Parse(item.Key), (float)item.Value / (float)actualSheet.TotalWeight); 
-                }
+                if (actualSheet == null) continue;
+                var temporarySheet = actualSheet.Cards.ToDictionary(item => Guid.Parse(item.Key), item => (float)item.Value / (float)actualSheet.TotalWeight);
 
                 // get cards from sheet and add to booster
                 for (var i = 0; i < cardCount; i++)
@@ -1261,11 +1262,34 @@ namespace MgcPrxyDrftr
 
         private static async Task<bool> AddSet(string setCode)
         {
+            // read and download if necessary
+            var setRoot = ReadSingleSetWithUpdateCheck(setCode.ToUpper());
+
+            if (setRoot.Data.IsOnlineOnly || setRoot.Data.IsPartialPreview || setRoot.Data.Booster == null)
+            {
+                // ask user if adding is ok when online only or it is in preview or has no booster
+                Console.Write("[");
+                Console.ForegroundColor = !setRoot.Data.IsOnlineOnly ? ConsoleColor.Green : ConsoleColor.Red;
+                Console.Write("IsNotOnlineOnly");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.Write("] [");
+                Console.ForegroundColor = !setRoot.Data.IsPartialPreview ? ConsoleColor.Green : ConsoleColor.Red;
+                Console.Write("IsNotPartialPreview");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.Write("] [");
+                Console.ForegroundColor = setRoot.Data.Booster != null ? ConsoleColor.Green : ConsoleColor.Red;
+                Console.Write("HasBooster");
+                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.WriteLine("]\n");
+
+                Console.Write("Continue anyway? (yes|no)[default:n] ");
+                var key = Console.ReadKey(false);
+
+                if (key.Key is ConsoleKey.N or ConsoleKey.Enter) { return false; }
+            }
+
             // add new set
             Settings.AddSet(setCode);
-
-            // read and download if necessary
-            var x = ReadSingleSetWithUpdateCheck(setCode.ToUpper());
 
             Settings.Save();
 
@@ -1283,7 +1307,7 @@ namespace MgcPrxyDrftr
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
 
-            var set = (await setService.FindAsync(setCode)).Value;
+            var set = (await setService.FindAsync(setCode).ConfigureAwait(false)).Value;
             Settings.LastGeneratedSet = set?.Code ?? setCode.ToUpper();
             ReadSingleSetWithUpdateCheck(set?.Code ?? setCode.ToUpper());
             Settings.AddSet(set?.Code ?? setCode.ToUpper());

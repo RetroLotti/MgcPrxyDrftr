@@ -23,6 +23,7 @@ namespace MgcPrxyDrftr.models
         public string Code { get; set; }
         public bool IsFoilOnly { get; set; }
         public bool IsNonFoilOnly { get; set; }
+        public bool IsPartialPreview { get; set; }
         public bool IsOnlineOnly { get; set; }
         public string KeyruneCode { get; set; }
         public string Name { get; set; }
