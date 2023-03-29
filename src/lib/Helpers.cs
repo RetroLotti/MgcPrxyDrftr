@@ -3,6 +3,7 @@ using MgcPrxyDrftr.models;
 using System;
 using System.Collections.Generic;
 using System.Configuration;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,6 +11,8 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Net.Http;
+using Spire.Pdf;
+using Spire.Pdf.Graphics;
 
 namespace MgcPrxyDrftr.lib
 {
@@ -158,6 +161,52 @@ namespace MgcPrxyDrftr.lib
             } while (finished == false);
 
             return checksum.ToLower();
+        }
+
+        public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder)
+        {
+
+            // TODO: check folder
+
+            var pdfDocument = new PdfDocument();
+            var cardCounter = 0;
+
+            float x = 0;
+            float y = 0;
+
+            var unitConvertor = new PdfUnitConvertor();
+            var cardWidth = unitConvertor.ConvertUnits(6.2f, PdfGraphicsUnit.Centimeter, PdfGraphicsUnit.Point);
+            var cardHeight = unitConvertor.ConvertUnits(8.7f, PdfGraphicsUnit.Centimeter, PdfGraphicsUnit.Point);
+
+            var marginLeftRight = (PdfPageSize.A4.Width - cardWidth * 3) / 2;
+            var marginTopBottom = (PdfPageSize.A4.Height - cardHeight * 3) / 2;
+
+            // add first page
+            var page = pdfDocument.Pages.Add(PdfPageSize.A4, new PdfMargins(marginLeftRight, marginTopBottom));
+
+            foreach (var file in Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png"))
+            {
+                cardCounter++;
+
+                var image = Image.FromFile(file);
+                var pdfImage = PdfImage.FromImage(image);
+                
+                // put image on page
+                page.Canvas.DrawImage(pdfImage, x, y, cardWidth, cardHeight);
+
+                if (cardCounter % 3 > 0) { x += cardWidth; } else { x = 0; }
+
+                if (cardCounter is 3 or 6 or 12 or 15) { y += cardHeight; }
+
+                // add new page if page has nine cards
+                if (cardCounter % 9 != 0) continue;
+                page = pdfDocument.Pages.Add(PdfPageSize.A4, new PdfMargins(marginLeftRight, marginTopBottom));
+                x = 0; y = 0;
+            }
+
+            pdfDocument.SaveToFile(@$"{imageFolder}\{boosterGuid}\{boosterGuid}.pdf");
+
+            return true;
         }
     }
 }

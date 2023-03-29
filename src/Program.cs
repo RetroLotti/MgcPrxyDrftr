@@ -1354,37 +1354,29 @@ namespace MgcPrxyDrftr
                 // load images
                 foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
-                if (IsWindows)
-                {
-                    var proc = CreatePdf(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings.AutomaticPrinting);
+                var foo = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
 
-                    if (proc.ExitCode == 0)
-                    {
-                        FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                        if (file.Exists)
-                        {
-                            file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf");
-                        }
-                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
-                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                    }
-                    else
-                    {
-                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        Console.WriteLine("Booster creation failed...");
-                    }
-                }
-                else
-                {
-                    Console.WriteLine("Skipping PDF-file generation...");
-                }
+                FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
+                
+                if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf"); }
+                
+                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
+                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
 
                 // update booster count just for fun
                 Settings.UpdateBoosterCount(1);
 
-                // cleanup
-                if (IsWindows) { boosterDirectory.Delete(true); }
+                try
+                {
+                    // cleanup
+                    if (IsWindows) { boosterDirectory.Delete(true); }
+                }
+                catch (Exception e)
+                {
+                    // ignore will be cleaned up when the application is starting again
+                }
+                
                 Console.Clear();
             }
 
