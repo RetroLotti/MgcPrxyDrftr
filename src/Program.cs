@@ -101,6 +101,8 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
 #if DEBUG
+            var foo = ReadAllCards();
+            //AnalyseSet("LEA");
             //AnalyseSet("DMU");
             //AnalyseSet("BRO");
             //AnalyseSet("DMR");
@@ -148,6 +150,22 @@ namespace MgcPrxyDrftr
 
             DirectoryInfo jsonDirectoryInfo = new(@$"{BaseDirectory}\{JsonDirectory}\");
             jsonDirectoryInfo.Delete(true);
+        }
+
+        private static SortedList<Guid, Card> ReadAllCards()
+        {
+            SortedList<Guid, Card> list = new SortedList<Guid, Card>();
+            DirectoryInfo dir = new DirectoryInfo(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
+            foreach (var item in dir.GetFiles("*.json"))
+            {
+                var set = ReadSingleSet(item.Name.Substring(0, item.Name.IndexOf(".")));
+                foreach(var card in set.Data.Cards)
+                {
+                    list.Add(card.Uuid, card);
+                }
+            }
+
+            return list;
         }
 
         private static void AnalyseSet(string setCode)
@@ -1071,7 +1089,7 @@ namespace MgcPrxyDrftr
 
             // name of booster to generate
             var type = Enum.GetName(boosterType);
-            var dynamic_booster = (ArenaBooster)set.Data.Booster.GetType().GetProperty(type).GetValue(set.Data.Booster, null);
+            var dynamic_booster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type).GetValue(set.Data.Booster, null);
 
             // determine booster blueprint
             var blueprint = dynamic_booster.Boosters.ToDictionary(item => item.Contents, item => (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
@@ -1390,7 +1408,7 @@ namespace MgcPrxyDrftr
             List<string> moreSets = new List<string>();
             // create additional list for sets with sub sets like BRO needs BRR
             if (setCode.ToUpper().Equals("BRO")) { moreSets.Add("BRR"); }
-            if (setCode.ToUpper().Equals("MOM")) { moreSets.AddRange(new List<string> { "MUL", "J22" }); }
+            if (setCode.ToUpper().Equals("MOM")) { moreSets.AddRange(new List<string> { "MUL", "PLIST" }); }
 
             for (var i = 1; i <= boosterCount; i++)
             {
@@ -1398,7 +1416,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
-                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets, BoosterType.Set);
+                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets, BoosterType.Default);
 
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();
@@ -1431,7 +1449,7 @@ namespace MgcPrxyDrftr
                     // cleanup
                     if (IsWindows) { boosterDirectory.Delete(true); }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // ignore will be cleaned up when the application is starting again
                 }

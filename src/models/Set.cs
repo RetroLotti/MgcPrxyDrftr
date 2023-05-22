@@ -52,17 +52,17 @@ namespace MgcPrxyDrftr.models
 
     public class Booster
     {
-        public ArenaBooster Arena { get; set; }
+        public DefaultBooster Arena { get; set; }
         public DefaultBooster Default { get; set; }
-        public ArenaBooster Set { get; set; }
-        public ArenaBooster Collector { get; set; }
-        public ArenaBooster Jumpstart { get; set; }
+        public DefaultBooster Set { get; set; }
+        public DefaultBooster Collector { get; set; }
+        public DefaultBooster Jumpstart { get; set; }
     }
 
-    public class ArenaBooster : DefaultBooster
-    {
-        public string Name { get; set; }
-    }
+    //public class ArenaBooster : DefaultBooster
+    //{
+    //    public string Name { get; set; }
+    //}
 
     public class DefaultBooster
     {
@@ -194,7 +194,7 @@ namespace MgcPrxyDrftr.models
 
     public enum Finish { Foil, Nonfoil, Etched, Glossy, Signed };
 
-    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, storyspotlight, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc };
+    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, upsidedowndfc, convertdfc, storyspotlight, thick, shatteredglass, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc };
 
     //public enum FrameVersion { x1993, x1997, x2003, x2015, Future };
 
@@ -217,7 +217,7 @@ namespace MgcPrxyDrftr.models
     public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World };
 
     // TODO
-    public enum Type { Artifact, Battle, Creature, Card, Conspiracy, Dragon, Dungeon, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
+    public enum Type { Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
 
     // TODO 
     //public enum Watermark { Abzan };
