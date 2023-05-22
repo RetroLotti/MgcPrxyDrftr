@@ -359,3 +359,5 @@ MigrationBackup/
 *.bak
 *.pdf
 /src/MgcPrxyDrftr/cache/scryfall
+/src/MgcPrxyDrftr/json/sets
+/src/MgcPrxyDrftr/json
