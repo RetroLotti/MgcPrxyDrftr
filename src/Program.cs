@@ -15,6 +15,8 @@ using H = MgcPrxyDrftr.lib.Helpers;
 using System.Text;
 using MgcPrxyDrftr.models;
 using Newtonsoft.Json.Linq;
+using System.Xml.Linq;
+using System.Reflection;
 
 namespace MgcPrxyDrftr
 {
@@ -99,7 +101,12 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
 #if DEBUG
-            AnalyseSet("MOM");
+            //AnalyseSet("DMU");
+            //AnalyseSet("BRO");
+            //AnalyseSet("DMR");
+            //AnalyseSet("ONE");
+            //AnalyseSet("MOM");
+            //AnalyseSet("MAT");
 
             ////GenerateCubeDraftBooster();
             ////GenerateCubeDraftMini();
@@ -146,18 +153,52 @@ namespace MgcPrxyDrftr
         private static void AnalyseSet(string setCode)
         {
             var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
-            dynamic json = JsonConvert.DeserializeObject(file);
+            var json = JObject.Parse(file);
+            var foo = json.SelectToken("data").SelectToken("booster");
+            var upgradeStringContents = new StringBuilder();
+            var upgradeStringSheets = new StringBuilder();
+            var sampleContent = new Contents();
+            var addedSheets = new HashSet<string>();
+            var newSheets = false;
 
-            var foo = json["data"]["booster"];
-            
-            foreach (var booster in foo)
+            upgradeStringContents.AppendLine("namespace MgcPrxyDrftr.models { public partial class Contents { ");
+            upgradeStringSheets.AppendLine("public partial class Sheets { ");
+
+            foreach (JProperty attributeProperty in foo)
             {
-                foreach (var subbooster in booster)
+                var attribute = foo[attributeProperty.Name];
+                foreach (var booster in attribute["boosters"])
                 {
-                    foreach(var subsubbooster in subbooster)
+                    foreach(JProperty sheet in booster["contents"])
                     {
-                        var bar = subsubbooster["contents"];
+                        var sheetNameTitleCase = char.ToUpper(sheet.Name[0]) + sheet.Name[1..];
+                        // check if sheet exists
+                        var contentSheet = sampleContent.GetType().GetProperty(sheetNameTitleCase);
+
+                        if(contentSheet == null && !addedSheets.Contains(sheetNameTitleCase))
+                        {
+                            newSheets = true;
+                            addedSheets.Add(sheetNameTitleCase);
+
+                            upgradeStringContents.AppendLine($"public long? {sheetNameTitleCase} {{ get; set; }}");
+                            upgradeStringSheets.AppendLine($"public Sheet {sheetNameTitleCase} {{ get; set; }}");
+                        }
                     }
+                }
+            }
+
+            upgradeStringContents.AppendLine(" } ");
+            upgradeStringSheets.AppendLine(" } }");
+            var bar1 = upgradeStringContents.ToString();
+            var bar2 = upgradeStringSheets.ToString();
+
+            var upgradeFileString = bar1 + bar2;
+
+            if (newSheets)
+            {
+                using(StreamWriter writer = new StreamWriter(@$"{BaseDirectory}\models\upgrades\Upgrade{setCode.ToUpper()}.cs"))
+                {
+                    writer.WriteLine(upgradeFileString);
                 }
             }
         }
@@ -1349,7 +1390,7 @@ namespace MgcPrxyDrftr
             List<string> moreSets = new List<string>();
             // create additional list for sets with sub sets like BRO needs BRR
             if (setCode.ToUpper().Equals("BRO")) { moreSets.Add("BRR"); }
-            if (setCode.ToUpper().Equals("MOM")) { moreSets.AddRange(new List<string> { "MUL" }); }
+            if (setCode.ToUpper().Equals("MOM")) { moreSets.AddRange(new List<string> { "MUL", "J22" }); }
 
             for (var i = 1; i <= boosterCount; i++)
             {
@@ -1357,7 +1398,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
-                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets, BoosterType.Collector);
+                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets, BoosterType.Set);
 
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();

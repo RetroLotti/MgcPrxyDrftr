@@ -1,0 +1,65 @@
+namespace MgcPrxyDrftr.models { public partial class Contents { 
+public long? CompleatFoil { get; set; }
+public long? FoilShowcaseRareMythic { get; set; }
+public long? NonfoilRareMythicShowcase { get; set; }
+public long? OilSlickBasics1 { get; set; }
+public long? OilSlickBasics2 { get; set; }
+public long? OilSlickMythic { get; set; }
+public long? CommonWithShowcase { get; set; }
+public long? UncommonWithShowcase { get; set; }
+public long? PrototypePraetor { get; set; }
+public long? Corruption1 { get; set; }
+public long? Corruption1Foils { get; set; }
+public long? Corruption2 { get; set; }
+public long? Corruption2Foils { get; set; }
+public long? MiteY1 { get; set; }
+public long? MiteY1Foils { get; set; }
+public long? MiteY2 { get; set; }
+public long? MiteY2Foils { get; set; }
+public long? Progress1 { get; set; }
+public long? Progress1Foils { get; set; }
+public long? Progress2 { get; set; }
+public long? Progress2Foils { get; set; }
+public long? Rebellious1 { get; set; }
+public long? Rebellious1Foils { get; set; }
+public long? Rebellious2 { get; set; }
+public long? Rebellious2Foils { get; set; }
+public long? Toxic1 { get; set; }
+public long? Toxic1Foils { get; set; }
+public long? Toxic2 { get; set; }
+public long? Toxic2Foils { get; set; }
+public long? MainRareMythic { get; set; }
+ } 
+public partial class Sheets { 
+public Sheet CompleatFoil { get; set; }
+public Sheet FoilShowcaseRareMythic { get; set; }
+public Sheet NonfoilRareMythicShowcase { get; set; }
+public Sheet OilSlickBasics1 { get; set; }
+public Sheet OilSlickBasics2 { get; set; }
+public Sheet OilSlickMythic { get; set; }
+public Sheet CommonWithShowcase { get; set; }
+public Sheet UncommonWithShowcase { get; set; }
+public Sheet PrototypePraetor { get; set; }
+public Sheet Corruption1 { get; set; }
+public Sheet Corruption1Foils { get; set; }
+public Sheet Corruption2 { get; set; }
+public Sheet Corruption2Foils { get; set; }
+public Sheet MiteY1 { get; set; }
+public Sheet MiteY1Foils { get; set; }
+public Sheet MiteY2 { get; set; }
+public Sheet MiteY2Foils { get; set; }
+public Sheet Progress1 { get; set; }
+public Sheet Progress1Foils { get; set; }
+public Sheet Progress2 { get; set; }
+public Sheet Progress2Foils { get; set; }
+public Sheet Rebellious1 { get; set; }
+public Sheet Rebellious1Foils { get; set; }
+public Sheet Rebellious2 { get; set; }
+public Sheet Rebellious2Foils { get; set; }
+public Sheet Toxic1 { get; set; }
+public Sheet Toxic1Foils { get; set; }
+public Sheet Toxic2 { get; set; }
+public Sheet Toxic2Foils { get; set; }
+public Sheet MainRareMythic { get; set; }
+ } }
+
