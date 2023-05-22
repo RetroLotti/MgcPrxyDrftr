@@ -1,0 +1,91 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <AppConfig>App.$(Configuration).config</AppConfig>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net7.0</TargetFramework>
+    <ApplicationIcon>icon.ico</ApplicationIcon>
+    <Authors>RetroLotti</Authors>
+    <Product>Magic the Gathering Proxy Drafter</Product>
+    <SignAssembly>True</SignAssembly>
+    <AssemblyOriginatorKeyFile></AssemblyOriginatorKeyFile>
+    <DelaySign>false</DelaySign>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageIcon>icon.ico</PackageIcon>
+	  <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="output\draft\2022-03-11T08-07-46\**" />
+    <Compile Remove="output\draft\2022-04-11T08-32-14\**" />
+    <Compile Remove="output\list\**" />
+    <EmbeddedResource Remove="output\draft\2022-03-11T08-07-46\**" />
+    <EmbeddedResource Remove="output\draft\2022-04-11T08-32-14\**" />
+    <EmbeddedResource Remove="output\list\**" />
+    <None Remove="output\draft\2022-03-11T08-07-46\**" />
+    <None Remove="output\draft\2022-04-11T08-32-14\**" />
+    <None Remove="output\list\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Remove="ext\nanDeck\nandeck.ini" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <PackageReference Include="FreeSpire.PDF" Version="8.6.0" />
+    <PackageReference Include="MtgApiManager.Lib" Version="2.3.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="7.0.0" />
+    <PackageReference Include="TextCopy" Version="6.2.1" />
+    <PackageReference Include="WolfCurses" Version="2018.9.12.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="ext\nanDeck\nanDECK.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="icon.ico">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Update="scripts\booster.noguid.v1.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.noguid.v2.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.noguid.v3.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.v1.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.v2.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="scripts\booster.v3.nde">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="cache\scryfall\" />
+    <Folder Include="json\decks\" />
+    <Folder Include="json\sets\" />
+    <Folder Include="output\decks\" />
+    <Folder Include="output\draft\" />
+    <Folder Include="output\lists\" />
+    <Folder Include="temporary\booster\" />
+    <Folder Include="temporary\decks\" />
+    <Folder Include="temporary\draft\" />
+    <Folder Include="temporary\lists\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MgcPrxyDrftrLib\MgcPrxyDrftrLib.csproj" />
+  </ItemGroup>
+</Project>

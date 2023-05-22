@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<AppConfig>App.$(Configuration).config</AppConfig>
+	</PropertyGroup>
+
+	<PropertyGroup>
+	    <OutputType>WinExe</OutputType>
+	    <TargetFramework>net7.0-windows</TargetFramework>
+	    <Nullable>enable</Nullable>
+	    <UseWindowsForms>true</UseWindowsForms>
+	    <ImplicitUsings>enable</ImplicitUsings>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\MgcPrxyDrftrLib\MgcPrxyDrftrLib.csproj" />
+	</ItemGroup>
+
+</Project>
