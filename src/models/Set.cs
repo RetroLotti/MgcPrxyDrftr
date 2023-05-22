@@ -54,6 +54,9 @@ namespace MgcPrxyDrftr.models
     {
         public ArenaBooster Arena { get; set; }
         public DefaultBooster Default { get; set; }
+        public ArenaBooster Set { get; set; }
+        public ArenaBooster Collector { get; set; }
+        public ArenaBooster Jumpstart { get; set; }
     }
 
     public class ArenaBooster : DefaultBooster
@@ -221,6 +224,11 @@ namespace MgcPrxyDrftr.models
         public long? A30RetroBasic { get; set; }
         public long? A30Retro { get; set; }
         public long? DedicatedFoilDoubleMasters { get; set; }
+        public long? AftermathCard { get; set; }
+        public long? MultiverseLegend { get; set; }
+        public long? UncommonBattle { get; set; }
+        public long? RareMythicBattle { get; set; }
+        public long? FoilWithShowcaseAndMul { get; set; }
     }
 
     public class Sheets
@@ -368,6 +376,11 @@ namespace MgcPrxyDrftr.models
         public Sheet A30Rare { get; set; }
         public Sheet A30RetroBasic { get; set; }
         public Sheet A30Retro { get; set; }
+        public Sheet AftermathCard { get; set; }
+        public Sheet MultiverseLegend { get; set; }
+        public Sheet UncommonBattle { get; set; }
+        public Sheet RareMythicBattle { get; set; }
+        public Sheet FoilWithShowcaseAndMul { get; set; }
     }
 
     public class Sheet
@@ -510,7 +523,7 @@ namespace MgcPrxyDrftr.models
     public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World };
 
     // TODO
-    public enum Type { Artifact, Creature, Card, Conspiracy, Dragon, Dungeon, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
+    public enum Type { Artifact, Battle, Creature, Card, Conspiracy, Dragon, Dungeon, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
 
     // TODO 
     //public enum Watermark { Abzan };
@@ -522,5 +535,7 @@ namespace MgcPrxyDrftr.models
     //public enum CardLayout { Normal, Class, Transform };
 
     public enum Legality { Banned, Legal, Restricted };
+
+    public enum BoosterType { Default, Collector, Set, Jumpstart, Arena }
     #endregion
 }

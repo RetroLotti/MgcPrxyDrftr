@@ -74,7 +74,6 @@
   <ItemGroup>
     <Folder Include="cache\scryfall\" />
     <Folder Include="json\decks\" />
-    <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
     <Folder Include="output\lists\" />

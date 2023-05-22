@@ -99,6 +99,8 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
 #if DEBUG
+            AnalyseSet("MOM");
+
             ////GenerateCubeDraftBooster();
             ////GenerateCubeDraftMini();
 
@@ -139,6 +141,25 @@ namespace MgcPrxyDrftr
 
             DirectoryInfo jsonDirectoryInfo = new(@$"{BaseDirectory}\{JsonDirectory}\");
             jsonDirectoryInfo.Delete(true);
+        }
+
+        private static void AnalyseSet(string setCode)
+        {
+            var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
+            dynamic json = JsonConvert.DeserializeObject(file);
+
+            var foo = json["data"]["booster"];
+            
+            foreach (var booster in foo)
+            {
+                foreach (var subbooster in booster)
+                {
+                    foreach(var subsubbooster in subbooster)
+                    {
+                        var bar = subsubbooster["contents"];
+                    }
+                }
+            }
         }
 
         private static string SetToSql()
@@ -993,8 +1014,7 @@ namespace MgcPrxyDrftr
             return generalCardDictionary;
         }
 
-        //static List<models.CardIdentifiers> GenerateBooster(string setCode)
-        private static List<models.Card> GenerateBooster(string setCode, List<string> additionalSetCodes = null)
+        private static List<models.Card> GenerateBooster(string setCode, List<string> additionalSetCodes = null, models.BoosterType boosterType = BoosterType.Default)
         {
             List<Guid> boosterCards = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
@@ -1005,10 +1025,15 @@ namespace MgcPrxyDrftr
             foreach (var item in set.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or models.Side.A)) { cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
-            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) { return null; }
+            //if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) { return null; }
+            if (set.Data.Booster == null) { return null; }
+
+            // name of booster to generate
+            var type = Enum.GetName(boosterType);
+            var dynamic_booster = (ArenaBooster)set.Data.Booster.GetType().GetProperty(type).GetValue(set.Data.Booster, null);
 
             // determine booster blueprint
-            var blueprint = set.Data.Booster.Default.Boosters.ToDictionary(item => item.Contents, item => (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
+            var blueprint = dynamic_booster.Boosters.ToDictionary(item => item.Contents, item => (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
             // determine booster contents
@@ -1020,11 +1045,9 @@ namespace MgcPrxyDrftr
                 // name of the sheet
                 var sheetName = sheet.Name;
 
-                // temporary sheet
-
                 // get the actual sheet
-                var actualSheetReflection = set.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Data.Booster.Default.Sheets));
+                var actualSheetReflection = dynamic_booster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamic_booster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(dynamic_booster.Sheets));
 
                 // add all cards to a temporary list with correct weight
                 if (actualSheet == null) continue;
@@ -1043,10 +1066,6 @@ namespace MgcPrxyDrftr
                     boosterCards.Add(card);
                 }
             }
-
-            // get scryfall id for card determination later on
-            //for (int i = 0; i < boosterCards.Count; i++) { boosterCardIdentifier.Add(cards[boosterCards[i]].Identifiers); boosterCards[i] = cards[boosterCards[i]].Identifiers.ScryfallId; }
-
 
             // if there are addtional sets given they will only be used to get their cards like BRO needs BRR
             if (additionalSetCodes != null)
@@ -1299,12 +1318,13 @@ namespace MgcPrxyDrftr
         /// <summary>
         /// Draft boosters from given set
         /// </summary>
-        /// <param name="draftString">set + count i.e. NEO|6</param>
+        /// <param name="draftString">set + boostertype + count i.e. NEO|c|6</param>
         /// <returns></returns>
         private static async Task<bool> Draft(string draftString)
         {
             var setService = serviceProvider.GetSetService();
             var setCode = draftString.Split('|')[0];
+            //var boosterType = draftString.Split('|')[1];
             var boosterCountParam = draftString.Split('|')[1];
 
             var set = (await setService.FindAsync(setCode).ConfigureAwait(false)).Value;
@@ -1326,12 +1346,10 @@ namespace MgcPrxyDrftr
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             if (!draftDirectory.Exists) { draftDirectory.Create(); }
 
-            List<string> moreSets = null;
+            List<string> moreSets = new List<string>();
             // create additional list for sets with sub sets like BRO needs BRR
-            if (setCode.ToUpper().Equals("BRO"))
-            {
-                moreSets = new List<string> { "BRR" };
-            }
+            if (setCode.ToUpper().Equals("BRO")) { moreSets.Add("BRR"); }
+            if (setCode.ToUpper().Equals("MOM")) { moreSets.AddRange(new List<string> { "MUL" }); }
 
             for (var i = 1; i <= boosterCount; i++)
             {
@@ -1339,7 +1357,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
-                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets);
+                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets, BoosterType.Collector);
 
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();

@@ -98,6 +98,8 @@ namespace MgcPrxyDrftr.lib
             {
                 currentFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
             }
+
+            // TODO: check for new eums
                 
             var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);
             var currentSet = JsonConvert.DeserializeObject<SetRoot>(currentFileText);
