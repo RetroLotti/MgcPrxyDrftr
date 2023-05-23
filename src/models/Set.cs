@@ -59,16 +59,12 @@ namespace MgcPrxyDrftr.models
         public DefaultBooster Jumpstart { get; set; }
     }
 
-    //public class ArenaBooster : DefaultBooster
-    //{
-    //    public string Name { get; set; }
-    //}
-
     public class DefaultBooster
     {
         public List<BoosterElement> Boosters { get; set; }
         public long BoostersTotalWeight { get; set; }
         public Sheets Sheets { get; set; }
+        public string Name { get; set; }
     }
 
     public class BoosterElement

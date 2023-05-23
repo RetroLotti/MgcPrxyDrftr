@@ -59,10 +59,12 @@ namespace MgcPrxyDrftr
         private static models.DeckList DeckList { get; set; }
         // sets
         private static models.SetList SetList { get; set; }
+        // cards
+        private static SortedDictionary<Guid, models.Card> OmniCardList { get; set; } = new(); 
 
         private static async Task Main()
         {
-            if (IsWindows) { Console.SetWindowSize(136, 50); }
+            //if (IsWindows) { Console.SetWindowSize(136, 50); }
 
             WriteHeader();
 
@@ -79,7 +81,9 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Reading setlist...");
             LoadSetList();
             Console.WriteLine(">> Reading sets from disk...");
-            if (UseSetList) { ReadAllConfiguredSets(); } else { ReadAllSets(); }
+            if (UseSetList) { ReadAllConfiguredSets(Settings.SetsToLoad); } else { ReadAllSets(); }
+            Console.WriteLine(">> Reading support sets from disk...");
+            ReadAllConfiguredSets(Settings.SupportSetsToLoad);
 
             Console.WriteLine(">> Reading decklist...");
             LoadDeckList();
@@ -101,7 +105,8 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
 #if DEBUG
-            var foo = ReadAllCards();
+            //OmniCardList = ReadAllCards();
+
             //AnalyseSet("LEA");
             //AnalyseSet("DMU");
             //AnalyseSet("BRO");
@@ -152,13 +157,13 @@ namespace MgcPrxyDrftr
             jsonDirectoryInfo.Delete(true);
         }
 
-        private static SortedList<Guid, Card> ReadAllCards()
+        private static SortedDictionary<Guid, Card> ReadAllCards()
         {
-            SortedList<Guid, Card> list = new SortedList<Guid, Card>();
-            DirectoryInfo dir = new DirectoryInfo(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
+            var list = new SortedDictionary<Guid, Card>();
+            var dir = new DirectoryInfo(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
             foreach (var item in dir.GetFiles("*.json"))
             {
-                var set = ReadSingleSet(item.Name.Substring(0, item.Name.IndexOf(".")));
+                var set = ReadSingleSet(item.Name[..item.Name.IndexOf(".", StringComparison.Ordinal)]);
                 foreach(var card in set.Data.Cards)
                 {
                     list.Add(card.Uuid, card);
@@ -172,7 +177,7 @@ namespace MgcPrxyDrftr
         {
             var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
             var json = JObject.Parse(file);
-            var foo = json.SelectToken("data").SelectToken("booster");
+            var foo = json.SelectToken("data")?.SelectToken("booster");
             var upgradeStringContents = new StringBuilder();
             var upgradeStringSheets = new StringBuilder();
             var sampleContent = new Contents();
@@ -681,7 +686,7 @@ namespace MgcPrxyDrftr
                     H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
                     H.Write("L => List downloaded sets", startLeftPosition, startTopPosition + 2);
                     //H.Write("G => Create general draft booster", startLeftPosition, startTopPosition + 3);
-                    H.Write("Format: {SetCode}|{HowManyBoosters}", startLeftPosition, startTopPosition + 6);
+                    H.Write("Format: {SetCode}|{HowManyBoosters}[|BoosterType]", startLeftPosition, startTopPosition + 6);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
                 case LoopState.DeckCreator:
@@ -843,9 +848,9 @@ namespace MgcPrxyDrftr
             }
         }
 
-        private static void ReadAllConfiguredSets()
+        private static void ReadAllConfiguredSets(List<string> setsToLoad)
         {
-            if(Settings.SetsToLoad is not { Count: > 0 })
+            if(setsToLoad is not { Count: > 0 })
             {
                 Console.WriteLine("No sets configured!");
             }
@@ -853,14 +858,14 @@ namespace MgcPrxyDrftr
             {
                 Console.WriteLine(">> Checking for updates...");
                 // check if an update is available
-                foreach (var set in Settings.SetsToLoad)
+                foreach (var set in setsToLoad)
                 {
                     Console.WriteLine($"> Checking {set}");
                     _ = Settings.CheckLastUpdate(set, @$"{BaseDirectory}\{JsonDirectory}", SetDirectory);
                 }
 
                 Console.WriteLine(">> Reading files...");
-                foreach (var set in Settings.SetsToLoad)
+                foreach (var set in setsToLoad)
                 {
                     FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{set}.json");
                     // force reread when file does no longer exist
@@ -1089,10 +1094,10 @@ namespace MgcPrxyDrftr
 
             // name of booster to generate
             var type = Enum.GetName(boosterType);
-            var dynamic_booster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type).GetValue(set.Data.Booster, null);
+            var dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type).GetValue(set.Data.Booster, null);
 
             // determine booster blueprint
-            var blueprint = dynamic_booster.Boosters.ToDictionary(item => item.Contents, item => (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
+            var blueprint = dynamicBooster.Boosters.ToDictionary(item => item.Contents, item => (float)item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
             // determine booster contents
@@ -1105,8 +1110,8 @@ namespace MgcPrxyDrftr
                 var sheetName = sheet.Name;
 
                 // get the actual sheet
-                var actualSheetReflection = dynamic_booster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamic_booster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(dynamic_booster.Sheets));
+                var actualSheetReflection = dynamicBooster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamicBooster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(dynamicBooster.Sheets));
 
                 // add all cards to a temporary list with correct weight
                 if (actualSheet == null) continue;
@@ -1374,17 +1379,32 @@ namespace MgcPrxyDrftr
             return true;
         }
 
+        private static BoosterType MapBoosterType(string boosterType)
+        {
+            return boosterType switch
+            {
+                "c" => BoosterType.Collector,
+                "d" => BoosterType.Default,
+                "j" => BoosterType.Default,
+                "s" => BoosterType.Set,
+                "a" => BoosterType.Arena,
+                _ => BoosterType.Default
+            };
+        }
+
         /// <summary>
         /// Draft boosters from given set
         /// </summary>
-        /// <param name="draftString">set + boostertype + count i.e. NEO|c|6</param>
+        /// <param name="draftString">set + count + [boostertype] i.e. NEO|6[|c]</param>
         /// <returns></returns>
         private static async Task<bool> Draft(string draftString)
         {
             var setService = serviceProvider.GetSetService();
             var setCode = draftString.Split('|')[0];
-            //var boosterType = draftString.Split('|')[1];
             var boosterCountParam = draftString.Split('|')[1];
+            var boosterType = draftString.Split('|').Length == 2
+                ? BoosterType.Default
+                : MapBoosterType(draftString.Split('|')[2]);
 
             var set = (await setService.FindAsync(setCode).ConfigureAwait(false)).Value;
             Settings.LastGeneratedSet = set?.Code ?? setCode.ToUpper();
@@ -1405,18 +1425,13 @@ namespace MgcPrxyDrftr
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             if (!draftDirectory.Exists) { draftDirectory.Create(); }
 
-            List<string> moreSets = new List<string>();
-            // create additional list for sets with sub sets like BRO needs BRR
-            if (setCode.ToUpper().Equals("BRO")) { moreSets.Add("BRR"); }
-            if (setCode.ToUpper().Equals("MOM")) { moreSets.AddRange(new List<string> { "MUL", "PLIST" }); }
-
             for (var i = 1; i <= boosterCount; i++)
             {
                 Console.Clear();
                 Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
                 // get a booster
-                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), moreSets, BoosterType.Default);
+                var booster = GenerateBooster(set?.Code ?? setCode.ToUpper(), Settings.SupportSetsToLoad, boosterType);
 
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();
