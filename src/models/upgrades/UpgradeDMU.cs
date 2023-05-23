@@ -1,9 +1,6 @@
 namespace MgcPrxyDrftr.models { public partial class Contents { 
 public long? FoilLegendsRetold { get; set; }
-public long? ExtendedRareMythic { get; set; }
 public long? FoilAltBorderRareMythic { get; set; }
-public long? FoilFullartLand { get; set; }
-public long? FoilRareMythic { get; set; }
 public long? FoilUncommonShowcase { get; set; }
 public long? RetoldUncommon { get; set; }
 public long? ShowcaseRareMythic { get; set; }
@@ -12,7 +9,6 @@ public long? EtchedRetoldUncommon { get; set; }
 public long? EtchedRetoldRareMythic { get; set; }
 public long? LostLegends { get; set; }
 public long? NonfoilRareMythic { get; set; }
-public long? FoilWithShowcase { get; set; }
 public long? ArcaneMischief { get; set; }
 public long? ArcaneMischiefFoils { get; set; }
 public long? RareMythicBlue { get; set; }
@@ -38,16 +34,10 @@ public long? TotallyMerciless { get; set; }
 public long? TotallyMercilessFoils { get; set; }
 public long? TotallyRuthless { get; set; }
 public long? TotallyRuthlessFoils { get; set; }
-public long? UncommonShowcase { get; set; }
-public long? Wildcard { get; set; }
-public long? TheList { get; set; }
  } 
 public partial class Sheets { 
 public Sheet FoilLegendsRetold { get; set; }
-public Sheet ExtendedRareMythic { get; set; }
 public Sheet FoilAltBorderRareMythic { get; set; }
-public Sheet FoilFullartLand { get; set; }
-public Sheet FoilRareMythic { get; set; }
 public Sheet FoilUncommonShowcase { get; set; }
 public Sheet RetoldUncommon { get; set; }
 public Sheet ShowcaseRareMythic { get; set; }
@@ -56,7 +46,6 @@ public Sheet EtchedRetoldUncommon { get; set; }
 public Sheet EtchedRetoldRareMythic { get; set; }
 public Sheet LostLegends { get; set; }
 public Sheet NonfoilRareMythic { get; set; }
-public Sheet FoilWithShowcase { get; set; }
 public Sheet ArcaneMischief { get; set; }
 public Sheet ArcaneMischiefFoils { get; set; }
 public Sheet RareMythicBlue { get; set; }
@@ -82,8 +71,5 @@ public Sheet TotallyMerciless { get; set; }
 public Sheet TotallyMercilessFoils { get; set; }
 public Sheet TotallyRuthless { get; set; }
 public Sheet TotallyRuthlessFoils { get; set; }
-public Sheet UncommonShowcase { get; set; }
-public Sheet Wildcard { get; set; }
-public Sheet TheList { get; set; }
  } }
 

@@ -1,5 +1,7 @@
 namespace MgcPrxyDrftr.models { public partial class Contents { 
-public long? BasicOrGainland { get; set; }
+public long? MultiverseLegend { get; set; }
+public long? UncommonBattle { get; set; }
+public long? RareMythicBattle { get; set; }
 public long? ExtendedArtCommanderJumpstart { get; set; }
 public long? FoilMulUncommon { get; set; }
 public long? FoilShowcase { get; set; }
@@ -13,6 +15,7 @@ public long? DoubleFoilPraetorSerialized { get; set; }
 public long? UncommonMulHalo { get; set; }
 public long? UncommonMulSerialized { get; set; }
 public long? FoilUncommonMul { get; set; }
+public long? FoilWithShowcaseAndMul { get; set; }
 public long? Brood1 { get; set; }
 public long? Brood1Foils { get; set; }
 public long? Brood2 { get; set; }
@@ -36,6 +39,9 @@ public long? Reinforcement2Foils { get; set; }
 public long? FoilEtched { get; set; }
  } 
 public partial class Sheets { 
+public Sheet MultiverseLegend { get; set; }
+public Sheet UncommonBattle { get; set; }
+public Sheet RareMythicBattle { get; set; }
 public Sheet ExtendedArtCommanderJumpstart { get; set; }
 public Sheet FoilMulUncommon { get; set; }
 public Sheet FoilShowcase { get; set; }
@@ -49,6 +55,7 @@ public Sheet DoubleFoilPraetorSerialized { get; set; }
 public Sheet UncommonMulHalo { get; set; }
 public Sheet UncommonMulSerialized { get; set; }
 public Sheet FoilUncommonMul { get; set; }
+public Sheet FoilWithShowcaseAndMul { get; set; }
 public Sheet Brood1 { get; set; }
 public Sheet Brood1Foils { get; set; }
 public Sheet Brood2 { get; set; }
