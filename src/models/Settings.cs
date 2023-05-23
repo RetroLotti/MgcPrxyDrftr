@@ -3,10 +3,6 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Security.AccessControl;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MgcPrxyDrftr.models
 {
@@ -20,7 +16,8 @@ namespace MgcPrxyDrftr.models
         public Dictionary<string, DateTime> LastUpdatesList { get; set; }
         private Dictionary<string, string> Statistics { get; set; }
         public List<string> SetsToLoad { get; set; }
-        
+        public List<string> SupportSetsToLoad { get; set; }
+
         //private bool HasChanges { get; set; }
 
         public Settings()
@@ -28,14 +25,25 @@ namespace MgcPrxyDrftr.models
             LastUpdatesList = new Dictionary<string, DateTime>();
             Statistics = new Dictionary<string, string>();
             SetsToLoad = new List<string>();
+            SupportSetsToLoad = new List<string>();
+        }
+
+        private void AddSetGeneric(string setCode, ICollection<string> list)
+        {
+            if (list != null && !list.Contains(setCode.ToUpper()))
+            {
+                list.Add(setCode.ToUpper());
+            }
+        }
+
+        public void AddSupportSet(string setCode)
+        {
+            AddSetGeneric(setCode, SupportSetsToLoad);
         }
 
         public void AddSet(string setCode)
         {
-            if(SetsToLoad != null && !SetsToLoad.Contains(setCode.ToUpper()))
-            {
-                SetsToLoad.Add(setCode.ToUpper());
-            }
+            AddSetGeneric(setCode, SetsToLoad);
         }
         public void RemoveSet(string setCode)
         {

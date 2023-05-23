@@ -52,13 +52,11 @@ namespace MgcPrxyDrftr.models
 
     public class Booster
     {
-        public ArenaBooster Arena { get; set; }
+        public DefaultBooster Arena { get; set; }
         public DefaultBooster Default { get; set; }
-    }
-
-    public class ArenaBooster : DefaultBooster
-    {
-        public string Name { get; set; }
+        public DefaultBooster Set { get; set; }
+        public DefaultBooster Collector { get; set; }
+        public DefaultBooster Jumpstart { get; set; }
     }
 
     public class DefaultBooster
@@ -66,308 +64,13 @@ namespace MgcPrxyDrftr.models
         public List<BoosterElement> Boosters { get; set; }
         public long BoostersTotalWeight { get; set; }
         public Sheets Sheets { get; set; }
+        public string Name { get; set; }
     }
 
     public class BoosterElement
     {
         public Contents Contents { get; set; }
-        public int Weight { get; set; }
-    }
-
-    public class Contents
-    {
-        public long? Basic { get; set; }
-        public long? FoilBasic { get; set; }
-        public long? MechBasic { get; set; }
-        public long? Foil { get; set; }
-        public long? FoilCommon { get; set; }
-        public long? Special { get; set; }
-        public long? FoilOrMasterpiece1In129 { get; set; }
-
-        public long? Common { get; set; }
-        public long? DfcCommon { get; set; }
-        public long? SfcCommon { get; set; }
-
-        public long? Uncommon { get; set; }
-        public long? DfcUncommon { get; set; }
-        public long? SfcUncommon { get; set; }
-
-        public long? Rare { get; set; }
-        public long? RareMythic { get; set; }
-        public long? DfcRareMythic { get; set; }
-        public long? SfcRareMythic { get; set; }
-
-        public long? TsTs { get; set; }
-        public long? TsFoil { get; set; }
-
-        // double feature
-        public long? MidDfcCommon { get; set; }
-        public long? MidDfcUncommon { get; set; }
-        public long? MidDfcRareMythic { get; set; }
-
-        public long? MidSfcCommon { get; set; }
-        public long? MidSfcUncommon { get; set; }
-        public long? MidSfcRareMythic { get; set; }
-
-        public long? VowDfcCommon { get; set; }
-        public long? VowDfcUncommon { get; set; }
-        public long? VowDfcRareMythic { get; set; }
-
-        public long? VowSfcCommon { get; set; }
-        public long? VowSfcUncommon { get; set; }
-        public long? VowSfcRareMythic { get; set; }
-
-        public long? BasicOrGainLand { get; set; }
-        public long? NongainlandCommon { get; set; }
-        
-        public long? DedicatedFoil { get; set; }
-
-        public long? ModaldfcRareMythic { get; set; }
-        public long? ModaldfcUncommon { get; set; }
-        public long? NonplaneswalkerUncommon { get; set; }
-        public long? PlaneswalkerRareMythic { get; set; }
-        public long? NonplaneswalkerRareMythic { get; set; }
-        public long? PlaneswalkerUncommon { get; set; }
-        public long? Contraption { get; set; }
-        public long? ContraptionFoil { get; set; }
-        public long? UnhingedFoil { get; set; }
-        public long? FoilUncommon { get; set; }
-        public long? FoilRare { get; set; }
-        public long? Lesson { get; set; }
-        public long? NonlessonCommon { get; set; }
-        public long? NonlessonRareMythic { get; set; }
-        public long? Sta { get; set; }
-        public long? DfcCommonUncommon { get; set; }
-        public long? Land { get; set; }
-        public long? FoilCommonOrBasic { get; set; }
-        public long? PcCommon { get; set; }
-        public long? PcCsCommon { get; set; }
-        public long? PcCsUncommonRare { get; set; }
-        public long? PcRare { get; set; }
-        public long? PcUncommon { get; set; }
-        public long? FoilOrMasterpiece1In144 { get; set; }
-        public long? NewToModern { get; set; }
-        public long? NormalRareMythic { get; set; }
-        public long? NormalUncommon { get; set; }
-        public long? BlackA { get; set; }
-        public long? BlackB { get; set; }
-        public long? BlueA { get; set; }
-        public long? BlueB { get; set; }
-        public long? GreenA { get; set; }
-        public long? GreenB { get; set; }
-        public long? Multicolor { get; set; }
-        public long? Colorless { get; set; }
-        public long? OldFrame { get; set; }
-        public long? RedA { get; set; }
-        public long? RedB { get; set; }
-        public long? WhiteA { get; set; }
-        public long? WhiteB { get; set; }
-        public long? BasicOrCommonLand { get; set; }
-        public long? TherosGods { get; set; }
-        public long? NonlandCommon { get; set; }
-        public long? Basictype { get; set; }
-        public long? NonBasictypeCommon { get; set; }
-        public long? Dfc { get; set; }
-        public long? LegendaryRareMythic { get; set; }
-        public long? NonlegendaryUncommon { get; set; }
-        public long? LegendaryUncommon { get; set; }
-        public long? NonlegendaryRareMythic { get; set; }
-        public long? BrrRetroArtifact { get; set; }
-        public long? ConspiracyFoil { get; set; }
-        public long? NonconspiracyFoil { get; set; }
-        public long? NonconspiracyUncommon { get; set; }
-        public long? NonconspiracyRareMythic { get; set; }
-        public long? Draft { get; set; }
-        public long? NondraftCommon { get; set; }
-        public long? NondraftRareMythic { get; set; }
-        public long? NondraftUncommon { get; set; }
-        public long? NondraftFoil { get; set; }
-        public long? DraftFoil { get; set; }
-        public long? Conspiracy { get; set; }
-        public long? NonconspiracyCommon { get; set; }
-        public long? Legendary { get; set; }
-        public long? DedicatedFoil2xm { get; set; }
-        public long? UncommonPartner1 { get; set; }
-        public long? UncommonPartner2 { get; set; }
-        public long? UncommonPartner3 { get; set; }
-        public long? UncommonPartner4 { get; set; }
-        public long? UncommonPartner5 { get; set; }
-        public long? RarePartner1 { get; set; }
-        public long? RarePartner2 { get; set; }
-        public long? RarePartner3 { get; set; }
-        public long? RarePartner4 { get; set; }
-        public long? RarePartner5 { get; set; }
-        public long? MythicPartner1 { get; set; }
-        public long? FoilMythicPartner1 { get; set; }
-        public long? FoilRarePartner1 { get; set; }
-        public long? FoilRarePartner2 { get; set; }
-        public long? FoilRarePartner3 { get; set; }
-        public long? FoilRarePartner4 { get; set; }
-        public long? FoilRarePartner5 { get; set; }
-        public long? FoilUncommonPartner1 { get; set; }
-        public long? FoilUncommonPartner2 { get; set; }
-        public long? FoilUncommonPartner3 { get; set; }
-        public long? FoilUncommonPartner4 { get; set; }
-        public long? FoilUncommonPartner5 { get; set; }
-        public long? AlaraPremiumBasic { get; set; }
-        public long? AlaraPremiumCommon { get; set; }
-        public long? AlaraPremiumRareMythic { get; set; }
-        public long? AlaraPremiumUncommon { get; set; }
-        public long? Praetor { get; set; }
-        public long? A30Basic { get; set; }
-        public long? A30Common { get; set; }
-        public long? A30Uncommon { get; set; }
-        public long? A30Rare { get; set; }
-        public long? A30RetroBasic { get; set; }
-        public long? A30Retro { get; set; }
-        public long? DedicatedFoilDoubleMasters { get; set; }
-    }
-
-    public class Sheets
-    {
-        public Sheet Basic { get; set; }
-        public Sheet Common { get; set; }
-        public Sheet Rare { get; set; }
-        public Sheet Uncommon { get; set; }
-        public Sheet FoilCommon { get; set; }
-        public Sheet FoilUncommon { get; set; }
-        public Sheet FoilRare { get; set; }
-        public Sheet FoilBasic { get; set; }
-        public Sheet DedicatedFoilDoubleMasters { get; set; }
-        public Sheet RareMythic { get; set; }
-        public Sheet DedicatedFoil { get; set; }
-        public Sheet FoilOrMasterpiece1In144 { get; set; }
-        public Sheet Foil { get; set; }
-        public Sheet FoilOrMasterpiece1In129 { get; set; }
-        public Sheet UncommonPartner1 { get; set; }
-        public Sheet UncommonPartner2 { get; set; }
-        public Sheet UncommonPartner3 { get; set; }
-        public Sheet UncommonPartner4 { get; set; }
-        public Sheet UncommonPartner5 { get; set; }
-        public Sheet RarePartner1 { get; set; }
-        public Sheet RarePartner2 { get; set; }
-        public Sheet RarePartner3 { get; set; }
-        public Sheet RarePartner4 { get; set; }
-        public Sheet RarePartner5 { get; set; }
-        public Sheet MythicPartner1 { get; set; }
-        public Sheet FoilMythicPartner1 { get; set; }
-        public Sheet FoilRarePartner1 { get; set; }
-        public Sheet FoilRarePartner2 { get; set; }
-        public Sheet FoilRarePartner3 { get; set; }
-        public Sheet FoilRarePartner4 { get; set; }
-        public Sheet FoilRarePartner5 { get; set; }
-        public Sheet FoilUncommonPartner1 { get; set; }
-        public Sheet FoilUncommonPartner2 { get; set; }
-        public Sheet FoilUncommonPartner3 { get; set; }
-        public Sheet FoilUncommonPartner4 { get; set; }
-        public Sheet FoilUncommonPartner5 { get; set; }
-        public Sheet BrrRetroArtifact { get; set; }
-        public Sheet MechBasic { get; set; }
-        public Sheet FoilCommonOrBasic { get; set; }
-        public Sheet Background { get; set; }
-        public Sheet Legendary { get; set; }
-        public Sheet NonlegendaryCommon { get; set; }
-        public Sheet NonlegendaryRareMythic { get; set; }
-        public Sheet NonlegendaryUncommon { get; set; }
-        public Sheet Special { get; set; }
-        public Sheet BlackA { get; set; }
-        public Sheet BlackB { get; set; }
-        public Sheet BlueA { get; set; }
-        public Sheet BlueB { get; set; }
-        public Sheet Colorless { get; set; }
-        public Sheet GreenA { get; set; }
-        public Sheet GreenB { get; set; }
-        public Sheet Multicolor { get; set; }
-        public Sheet OldFrame { get; set; }
-        public Sheet Playtest { get; set; }
-        public Sheet RedA { get; set; }
-        public Sheet RedB { get; set; }
-        public Sheet WhiteA { get; set; }
-        public Sheet WhiteB { get; set; }
-        public Sheet Playtest2 { get; set; }
-        public Sheet Conspiracy { get; set; }
-        public Sheet NonconspiracyCommon { get; set; }
-        public Sheet NonconspiracyRareMythic { get; set; }
-        public Sheet NonconspiracyUncommon { get; set; }
-        public Sheet NonconspiracyFoil { get; set; }
-        public Sheet ConspiracyFoil { get; set; }
-        public Sheet Draft { get; set; }
-        public Sheet NondraftCommon { get; set; }
-        public Sheet NondraftRareMythic { get; set; }
-        public Sheet NondraftUncommon { get; set; }
-        public Sheet NondraftFoil { get; set; }
-        public Sheet DraftFoil { get; set; }
-        public Sheet CommonOrBasic { get; set; }
-        public Sheet MidDfcCommon { get; set; }
-        public Sheet MidSfcCommon { get; set; }
-        public Sheet MidSfcRareMythic { get; set; }
-        public Sheet MidSfcUncommon { get; set; }
-        public Sheet VowDfcCommon { get; set; }
-        public Sheet VowSfcCommon { get; set; }
-        public Sheet VowSfcRareMythic { get; set; }
-        public Sheet VowSfcUncommon { get; set; }
-        public Sheet MidDfcUncommon { get; set; }
-        public Sheet MidDfcRareMythic { get; set; }
-        public Sheet VowDfcUncommon { get; set; }
-        public Sheet VowDfcRareMythic { get; set; }
-        public Sheet Land { get; set; }
-        public Sheet Dfc { get; set; }
-        public Sheet SfcCommon { get; set; }
-        public Sheet SfcRareMythic { get; set; }
-        public Sheet SfcUncommon { get; set; }
-        public Sheet LegendaryRareMythic { get; set; }
-        public Sheet LegendaryUncommon { get; set; }
-        public Sheet DfcCommonUncommon { get; set; }
-        public Sheet DfcRareMythic { get; set; }
-        public Sheet BasicOrGainland { get; set; }
-        public Sheet TherosGods { get; set; }
-        public Sheet Basictype { get; set; }
-        public Sheet NonBasictypeCommon { get; set; }
-        public Sheet BasicOrCommonLand { get; set; }
-        public Sheet NonlandCommon { get; set; }
-        public Sheet NongainlandCommon { get; set; }
-        public Sheet NewToModern { get; set; }
-        public Sheet NormalRareMythic { get; set; }
-        public Sheet NormalUncommon { get; set; }
-        public Sheet DfcCommon { get; set; }
-        public Sheet DfcUncommon { get; set; }
-        public Sheet PcCommon { get; set; }
-        public Sheet PcCsCommon { get; set; }
-        public Sheet PcCsUncommonRare { get; set; }
-        public Sheet PcRare { get; set; }
-        public Sheet PcUncommon { get; set; }
-        public Sheet Lesson { get; set; }
-        public Sheet NonlessonCommon { get; set; }
-        public Sheet NonlessonRareMythic { get; set; }
-        public Sheet Sta { get; set; }
-        public Sheet Tsts { get; set; }
-        public Sheet TsFoil { get; set; }
-        public Sheet SncBasic { get; set; }
-        public Sheet SunfSticker { get; set; }
-        public Sheet UnhingedFoil { get; set; }
-        public Sheet Contraption { get; set; }
-        public Sheet BasicFoil { get; set; }
-        public Sheet ContraptionFoil { get; set; }
-        public Sheet NonplaneswalkerUncommon { get; set; }
-        public Sheet PlaneswalkerRareMythic { get; set; }
-        public Sheet NonplaneswalkerRareMythic { get; set; }
-        public Sheet PlaneswalkerUncommon { get; set; }
-        public Sheet ModaldfcRareMythic { get; set; }
-        public Sheet ModaldfcUncommon { get; set; }
-        public Sheet TsTs { get; set; }
-        public Sheet BasicOrGainLand { get; set; }
-        public Sheet DedicatedFoil2xm { get; set; }
-        public Sheet AlaraPremiumBasic { get; set; }
-        public Sheet AlaraPremiumCommon { get; set; }
-        public Sheet AlaraPremiumRareMythic { get; set; }
-        public Sheet AlaraPremiumUncommon { get; set; }
-        public Sheet Praetor { get; set; }
-        public Sheet A30Basic { get; set; }
-        public Sheet A30Common { get; set; }
-        public Sheet A30Uncommon { get; set; }
-        public Sheet A30Rare { get; set; }
-        public Sheet A30RetroBasic { get; set; }
-        public Sheet A30Retro { get; set; }
+        public long Weight { get; set; }
     }
 
     public class Sheet
@@ -375,7 +78,7 @@ namespace MgcPrxyDrftr.models
         public bool BalanceColors { get; set; }
         public Dictionary<string, long> Cards { get; set; }
         public bool Foil { get; set; }
-        public int TotalWeight { get; set; }
+        public long TotalWeight { get; set; }
 
         public static explicit operator Sheet(PropertyInfo v)
         {
@@ -487,7 +190,7 @@ namespace MgcPrxyDrftr.models
 
     public enum Finish { Foil, Nonfoil, Etched, Glossy, Signed };
 
-    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, storyspotlight, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc };
+    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, upsidedowndfc, convertdfc, storyspotlight, thick, shatteredglass, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc };
 
     //public enum FrameVersion { x1993, x1997, x2003, x2015, Future };
 
@@ -510,7 +213,7 @@ namespace MgcPrxyDrftr.models
     public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World };
 
     // TODO
-    public enum Type { Artifact, Creature, Card, Conspiracy, Dragon, Dungeon, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
+    public enum Type { Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
 
     // TODO 
     //public enum Watermark { Abzan };
@@ -522,5 +225,7 @@ namespace MgcPrxyDrftr.models
     //public enum CardLayout { Normal, Class, Transform };
 
     public enum Legality { Banned, Legal, Restricted };
+
+    public enum BoosterType { Default, Collector, Set, Jumpstart, Arena }
     #endregion
 }
