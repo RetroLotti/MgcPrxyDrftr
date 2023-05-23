@@ -1,17 +1,17 @@
 namespace MgcPrxyDrftr.models { public partial class Contents { 
+public long? BrrRetroArtifact { get; set; }
 public long? BrrRetroArtifactUncommon { get; set; }
 public long? BrrSchematicRareMythic { get; set; }
 public long? ExtendedCommanderJumpstart { get; set; }
 public long? FoilAltArt { get; set; }
 public long? FoilBrrRetroArtifactSchematicUncommon { get; set; }
-public long? FoilFullartBasic { get; set; }
 public long? Transformers { get; set; }
 public long? DoubleRainbowSerialized { get; set; }
 public long? FoilTransformers { get; set; }
 public long? BrrRetroArtifactRareMythic { get; set; }
 public long? BrrSchematicUncommon { get; set; }
 public long? FoilUncommonRetroArtifact { get; set; }
-public long? RareMythicWithShowcase { get; set; }
+public long? MechBasic { get; set; }
 public long? Infantry1 { get; set; }
 public long? Infantry1Foils { get; set; }
 public long? Infantry2 { get; set; }
@@ -34,19 +34,19 @@ public long? Welded2 { get; set; }
 public long? Welded2Foils { get; set; }
  } 
 public partial class Sheets { 
+public Sheet BrrRetroArtifact { get; set; }
 public Sheet BrrRetroArtifactUncommon { get; set; }
 public Sheet BrrSchematicRareMythic { get; set; }
 public Sheet ExtendedCommanderJumpstart { get; set; }
 public Sheet FoilAltArt { get; set; }
 public Sheet FoilBrrRetroArtifactSchematicUncommon { get; set; }
-public Sheet FoilFullartBasic { get; set; }
 public Sheet Transformers { get; set; }
 public Sheet DoubleRainbowSerialized { get; set; }
 public Sheet FoilTransformers { get; set; }
 public Sheet BrrRetroArtifactRareMythic { get; set; }
 public Sheet BrrSchematicUncommon { get; set; }
 public Sheet FoilUncommonRetroArtifact { get; set; }
-public Sheet RareMythicWithShowcase { get; set; }
+public Sheet MechBasic { get; set; }
 public Sheet Infantry1 { get; set; }
 public Sheet Infantry1Foils { get; set; }
 public Sheet Infantry2 { get; set; }

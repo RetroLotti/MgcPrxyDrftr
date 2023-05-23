@@ -40,17 +40,19 @@ namespace MgcPrxyDrftr
         private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
         private static string DefaultScriptNameNoGuid { get; set; } = ConfigurationManager.AppSettings["DefaultScriptNameNoGuid"];
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
-        private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"]);
+        private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"] ?? "true");
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        
 
-        private static readonly SortedList<string, string> releaseTimelineSets = new();
-        private static readonly SortedList<string, models.SetRoot> sets = new();
+        private static readonly SortedList<string, string> ReleaseTimelineSets = new();
+        private static readonly SortedList<string, models.SetRoot> Sets = new();
         private static SortedList<string, models.Deck> Decks { get; set; } = new();
-        private static HashSet<string> SheetList = new();
+        private static readonly HashSet<string> SheetList = new();
+        private static HashSet<string> AddedSheets { get; set; } = new ();
 
-        private static readonly IMtgServiceProvider serviceProvider = new MtgServiceProvider();
-        private static readonly WebClient client = new();
-        private static readonly ApiCaller api = new();
+        private static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
+        private static readonly WebClient Client = new();
+        private static readonly ApiCaller Api = new();
         private static models.Settings Settings { get; set; }
 
         private static string Language { get; set; } = "de";
@@ -65,6 +67,7 @@ namespace MgcPrxyDrftr
         private static async Task Main()
         {
             //if (IsWindows) { Console.SetWindowSize(136, 50); }
+            if (IsWindows) { Console.SetWindowSize(136, 40); }
 
             WriteHeader();
 
@@ -106,6 +109,8 @@ namespace MgcPrxyDrftr
 
 #if DEBUG
             //OmniCardList = ReadAllCards();
+
+            //AnalyseAllSets();
 
             //AnalyseSet("LEA");
             //AnalyseSet("DMU");
@@ -173,6 +178,22 @@ namespace MgcPrxyDrftr
             return list;
         }
 
+        private static void AnalyseAllSets()
+        {
+            var dir = new DirectoryInfo(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
+            foreach (var item in dir.GetFiles("*.json"))
+            {
+                Console.WriteLine($"Reading Set {item.Name}");
+                _ = ReadSingleSet(item);
+            }
+
+            foreach (var releaseTimelineSet in ReleaseTimelineSets)
+            {
+                var code = Sets[releaseTimelineSet.Value].Data.Code == "CON" ? "CON_" : Sets[releaseTimelineSet.Value].Data.Code;
+                AnalyseSet(code);
+            }
+        }
+
         private static void AnalyseSet(string setCode)
         {
             var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
@@ -181,31 +202,35 @@ namespace MgcPrxyDrftr
             var upgradeStringContents = new StringBuilder();
             var upgradeStringSheets = new StringBuilder();
             var sampleContent = new Contents();
-            var addedSheets = new HashSet<string>();
             var newSheets = false;
+
+            Console.WriteLine($"Processing set sheets {setCode}");
+
+            if (foo is null) return;
 
             upgradeStringContents.AppendLine("namespace MgcPrxyDrftr.models { public partial class Contents { ");
             upgradeStringSheets.AppendLine("public partial class Sheets { ");
 
-            foreach (JProperty attributeProperty in foo)
+            foreach (var jToken in foo)
             {
+                var attributeProperty = (JProperty)jToken;
                 var attribute = foo[attributeProperty.Name];
-                foreach (var booster in attribute["boosters"])
+                if (attribute == null) continue;
+                foreach (var booster in attribute["boosters"]!)
                 {
-                    foreach(JProperty sheet in booster["contents"])
+                    foreach (var jToken1 in booster["contents"]!)
                     {
+                        var sheet = (JProperty)jToken1;
                         var sheetNameTitleCase = char.ToUpper(sheet.Name[0]) + sheet.Name[1..];
                         // check if sheet exists
                         var contentSheet = sampleContent.GetType().GetProperty(sheetNameTitleCase);
 
-                        if(contentSheet == null && !addedSheets.Contains(sheetNameTitleCase))
-                        {
-                            newSheets = true;
-                            addedSheets.Add(sheetNameTitleCase);
+                        if (contentSheet != null || AddedSheets.Contains(sheetNameTitleCase)) continue;
+                        newSheets = true;
+                        AddedSheets.Add(sheetNameTitleCase);
 
-                            upgradeStringContents.AppendLine($"public long? {sheetNameTitleCase} {{ get; set; }}");
-                            upgradeStringSheets.AppendLine($"public Sheet {sheetNameTitleCase} {{ get; set; }}");
-                        }
+                        upgradeStringContents.AppendLine($"public long? {sheetNameTitleCase} {{ get; set; }}");
+                        upgradeStringSheets.AppendLine($"public Sheet {sheetNameTitleCase} {{ get; set; }}");
                     }
                 }
             }
@@ -233,7 +258,7 @@ namespace MgcPrxyDrftr
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in sets.Where(x => x.Value.Data.Code == "LEA" || x.Value.Data.Code == "ARN" || x.Value.Data.Code == "DRK" || x.Value.Data.Code == "LEG" || x.Value.Data.Code == "ATQ" || x.Value.Data.Code == "BRO" || x.Value.Data.Code == "NEO" || x.Value.Data.Code == "3RD"))
+            foreach (var set in Sets.Where(x => x.Value.Data.Code == "LEA" || x.Value.Data.Code == "ARN" || x.Value.Data.Code == "DRK" || x.Value.Data.Code == "LEG" || x.Value.Data.Code == "ATQ" || x.Value.Data.Code == "BRO" || x.Value.Data.Code == "NEO" || x.Value.Data.Code == "3RD"))
             //foreach (var set in sets)
             {
                 setCounter++;
@@ -250,7 +275,7 @@ namespace MgcPrxyDrftr
                 // if set is BRO then add BRR cards
                 if(set.Value.Data.Code == "BRO")
                 {
-                    foreach (var card in sets["BRR"].Data.Cards)
+                    foreach (var card in Sets["BRR"].Data.Cards)
                     {
                         sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString()).ToArray())}');");
                     }
@@ -585,11 +610,21 @@ namespace MgcPrxyDrftr
                                 Console.Write("Press any key to continue...");
                                 _ = Console.ReadKey();
                             }
-                            else if (StateMachine.CurrentState == LoopState.SetManager || StateMachine.CurrentState == LoopState.BoosterDraft)
+                            else if (StateMachine.CurrentState == LoopState.SetManager)
                             {
-                                foreach (var set in sets)
+                                foreach (var set in Sets)
                                 {
                                     Console.WriteLine($"[{set.Value.Data.Code}]\t{set.Value.Data.Name}");
+                                }
+                                Console.Write("Press any key to continue...");
+                                _ = Console.ReadKey();
+                            }
+                            else if (StateMachine.CurrentState == LoopState.BoosterDraft)
+                            {
+                                // get only sets that actually have boosters
+                                foreach (var set in Sets.Values.Where(s => s.Data.Booster is not null).ToList())
+                                {
+                                    Console.WriteLine($"[{set.Data.Code}]\t{set.Data.Name}");
                                 }
                                 Console.Write("Press any key to continue...");
                                 _ = Console.ReadKey();
@@ -684,7 +719,7 @@ namespace MgcPrxyDrftr
                     break;
                 case LoopState.BoosterDraft:
                     H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
-                    H.Write("L => List downloaded sets", startLeftPosition, startTopPosition + 2);
+                    H.Write("L => List downloaded sets with booster", startLeftPosition, startTopPosition + 2);
                     //H.Write("G => Create general draft booster", startLeftPosition, startTopPosition + 3);
                     H.Write("Format: {SetCode}|{HowManyBoosters}[|BoosterType]", startLeftPosition, startTopPosition + 6);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
@@ -745,7 +780,7 @@ namespace MgcPrxyDrftr
                     var cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
                     var cardName = card.Substring(card.IndexOf(']')+1).Trim();
 
-                    var scryfallCard = await api.GetCardByNameAsync(cardName, cardSet).ConfigureAwait(false);
+                    var scryfallCard = await Api.GetCardByNameAsync(cardName, cardSet).ConfigureAwait(false);
 
                     for (var i = 0; i < cardCount; i++)
                     {
@@ -919,14 +954,14 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            if (!sets.ContainsKey(o.Data.Code))
+            if (!Sets.ContainsKey(o.Data.Code))
             {
-                sets.Add(o.Data.Code, o);
+                Sets.Add(o.Data.Code, o);
             }
 
-            if (!releaseTimelineSets.ContainsValue(o.Data.Code))
+            if (!ReleaseTimelineSets.ContainsValue(o.Data.Code))
             {
-                releaseTimelineSets.Add(o.Data.ReleaseDate.ToString("yyyy-MM-dd") + o.Data.Code, o.Data.Code);
+                ReleaseTimelineSets.Add(o.Data.ReleaseDate.ToString("yyyy-MM-dd") + o.Data.Code, o.Data.Code);
             }
                 
             return o;
@@ -939,7 +974,7 @@ namespace MgcPrxyDrftr
 
             List<Guid> boosterCards = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
-            var set = sets[setCode.ToUpper()];
+            var set = Sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
             SortedDictionary<Guid, models.Card> cards = new();
@@ -1078,11 +1113,11 @@ namespace MgcPrxyDrftr
             return generalCardDictionary;
         }
 
-        private static List<models.Card> GenerateBooster(string setCode, List<string> additionalSetCodes = null, models.BoosterType boosterType = BoosterType.Default)
+        private static List<models.Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, models.BoosterType boosterType = BoosterType.Default)
         {
             List<Guid> boosterCards = new();
             List<models.CardIdentifiers> boosterCardIdentifier = new();
-            var set = sets[setCode.ToUpper()];
+            var set = Sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
             SortedDictionary<Guid, models.Card> cards = new();
@@ -1134,7 +1169,7 @@ namespace MgcPrxyDrftr
             // if there are addtional sets given they will only be used to get their cards like BRO needs BRR
             if (additionalSetCodes != null)
             {
-                foreach (var item in additionalSetCodes.Select(addSetCode => sets[addSetCode.ToUpper()]).SelectMany(addSet => Enumerable.Where<Card>(addSet.Data.Cards, item => !cards.ContainsKey(item.Uuid) && item.Side is null or models.Side.A)))
+                foreach (var item in additionalSetCodes.Select(addSetCode => Sets[addSetCode.ToUpper()]).SelectMany(addSet => Enumerable.Where<Card>(addSet.Data.Cards, item => !cards.ContainsKey(item.Uuid) && item.Side is null or models.Side.A)))
                 {
                     cards.Add(item.Uuid, item);
                 }
@@ -1255,7 +1290,7 @@ namespace MgcPrxyDrftr
                 var cardName = line[2..].Split('|')[0];
                 var cardSet = line[2..].Split('|')[1];
 
-                var card = await api.GetCardByNameAsync(cardName, cardSet);
+                var card = await Api.GetCardByNameAsync(cardName, cardSet);
                 if (card != null)
                 {
                     lineCounter++;
@@ -1308,7 +1343,7 @@ namespace MgcPrxyDrftr
 
         private static async Task<bool> DraftToSql(string draftString)
         {
-            var setService = serviceProvider.GetSetService();
+            var setService = ServiceProvider.GetSetService();
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
             var sb = new StringBuilder();
@@ -1372,9 +1407,11 @@ namespace MgcPrxyDrftr
             }
 
             // add new set
-            Settings.AddSet(setCode);
-
+            Settings.AddSet(setCode.ToUpper());
             Settings.Save();
+
+            // analyse and add new upgrade sheet file
+            AnalyseSet(setCode.ToUpper());
 
             return true;
         }
@@ -1399,7 +1436,7 @@ namespace MgcPrxyDrftr
         /// <returns></returns>
         private static async Task<bool> Draft(string draftString)
         {
-            var setService = serviceProvider.GetSetService();
+            var setService = ServiceProvider.GetSetService();
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
             var boosterType = draftString.Split('|').Length == 2
@@ -1477,7 +1514,7 @@ namespace MgcPrxyDrftr
 
         private static async Task<object> Draft()
         {
-            var setService = serviceProvider.GetSetService();
+            var setService = ServiceProvider.GetSetService();
             MtgApiManager.Lib.Model.ISet set = null;
             do
             {
@@ -1485,7 +1522,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine("╔══════ RetroLottis Magic The Gathering Proxy Generator ═══════╗");
                 Console.WriteLine("╠═════╦════════════╦═══════════════════════════════════════════╣");
                 Console.WriteLine("╠═════╬════════════╬═══════════════════════════════════════════╣");
-                foreach (var item in releaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key[..10]):dd.MM.yyyy} ║ {sets[item.Value].Data.Name.PadRight(41, ' ')} ║"); }
+                foreach (var item in ReleaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key[..10]):dd.MM.yyyy} ║ {Sets[item.Value].Data.Name.PadRight(41, ' ')} ║"); }
                 Console.WriteLine("╚═════╩════════════╩═══════════════════════════════════════════╝");
                 var noValidSetFound = true;
                 do
@@ -1669,7 +1706,7 @@ namespace MgcPrxyDrftr
             if(!directoryInfo.Exists) { directoryInfo.Create(); }
 
             // download if not present
-            await client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+            await Client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
 
             // copy to booster directory
             FileInfo newFile = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
@@ -1730,7 +1767,7 @@ namespace MgcPrxyDrftr
         private static async Task<bool> GetImage(models.CardIdentifiers cardIdentifiers, string targetDirectory)
         {
             // get scryfall card
-            var scryfallCard = await api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
+            var scryfallCard = await Api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
             
             return await GetImage(scryfallCard, targetDirectory);
         }

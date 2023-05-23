@@ -1,12 +1,10 @@
 namespace MgcPrxyDrftr.models { public partial class Contents { 
+public long? Praetor { get; set; }
 public long? CompleatFoil { get; set; }
-public long? FoilShowcaseRareMythic { get; set; }
 public long? NonfoilRareMythicShowcase { get; set; }
 public long? OilSlickBasics1 { get; set; }
 public long? OilSlickBasics2 { get; set; }
 public long? OilSlickMythic { get; set; }
-public long? CommonWithShowcase { get; set; }
-public long? UncommonWithShowcase { get; set; }
 public long? PrototypePraetor { get; set; }
 public long? Corruption1 { get; set; }
 public long? Corruption1Foils { get; set; }
@@ -31,14 +29,12 @@ public long? Toxic2Foils { get; set; }
 public long? MainRareMythic { get; set; }
  } 
 public partial class Sheets { 
+public Sheet Praetor { get; set; }
 public Sheet CompleatFoil { get; set; }
-public Sheet FoilShowcaseRareMythic { get; set; }
 public Sheet NonfoilRareMythicShowcase { get; set; }
 public Sheet OilSlickBasics1 { get; set; }
 public Sheet OilSlickBasics2 { get; set; }
 public Sheet OilSlickMythic { get; set; }
-public Sheet CommonWithShowcase { get; set; }
-public Sheet UncommonWithShowcase { get; set; }
 public Sheet PrototypePraetor { get; set; }
 public Sheet Corruption1 { get; set; }
 public Sheet Corruption1Foils { get; set; }
