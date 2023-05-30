@@ -1,16 +1,13 @@
-﻿using Newtonsoft.Json;
-using MgcPrxyDrftr.models;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Configuration;
 using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading.Tasks;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Threading.Tasks;
+using MgcPrxyDrftr.models;
+using Newtonsoft.Json;
 using Spire.Pdf;
 using Spire.Pdf.Graphics;
 
@@ -36,7 +33,7 @@ namespace MgcPrxyDrftr.lib
 
         public static DeckRoot ReadSingleDeck(string file)
         {
-            return JsonConvert.DeserializeObject<models.DeckRoot>(File.ReadAllText(file));
+            return JsonConvert.DeserializeObject<DeckRoot>(File.ReadAllText(file));
         }
 
         public static void CheckNanDeck(string fullPath)
@@ -78,16 +75,16 @@ namespace MgcPrxyDrftr.lib
             return true;
         }
 
-        public static async void DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
+        public static async Task DownloadSetFile(string setCode, string fullJsonPath, string setFolder)
         {
             HttpClient httpClient = new();
             var currentFileText = string.Empty;
 
             // download content file
-            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json");
+            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json").ConfigureAwait(false);
 
             // download checksum file
-            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json.sha256", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
+            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json.sha256", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256").ConfigureAwait(false);
 
             // validate checksum
             var isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");

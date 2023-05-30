@@ -1,8 +1,10 @@
-﻿using MgcPrxyDrftr.lib;
-using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
+using MgcPrxyDrftr.lib;
+using Newtonsoft.Json;
+using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MgcPrxyDrftr.models
 {
@@ -54,7 +56,7 @@ namespace MgcPrxyDrftr.models
         }
         public void Save()
         {
-            var json = System.Text.Json.JsonSerializer.Serialize(this);
+            var json = JsonSerializer.Serialize(this);
             File.WriteAllText(@$"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json", json);
         }
         public void Load()
@@ -65,15 +67,12 @@ namespace MgcPrxyDrftr.models
             var json = File.ReadAllText($@"{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\MgcPrxyDrftr\settings.json");
             JsonConvert.PopulateObject(json, this);
         }
-        public bool CheckLastUpdate(string setCode, string fullJsonPath, string setFolder)
+        public async Task<bool> CheckLastUpdate(string setCode, string fullJsonPath, string setFolder)
         {
-            if (!LastUpdatesList.ContainsKey(setCode))
-            {
-                LastUpdatesList.Add(setCode, DateTime.Now.AddDays(-2));
-            }
+            LastUpdatesList.TryAdd(setCode, DateTime.Now.AddDays(-2));
 
             if (LastUpdatesList[setCode].AddDays(1) >= DateTime.Now) return true;
-            Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
+            await Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder).ConfigureAwait(false);
             LastUpdatesList[setCode] = DateTime.Now;
             Save();
 

@@ -2,14 +2,16 @@
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
+using ScryfallApi.Client.Models;
 
 namespace MgcPrxyDrftr
 {
     public class ApiCaller
     {
         //private const int WAIT_TIME = 100;
-        private readonly HttpClient client = null;
+        private readonly HttpClient client;
         //private DateTime lastApiCall;
 
         //https://scryfall.com/docs/api
@@ -23,67 +25,67 @@ namespace MgcPrxyDrftr
                 new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
-        public async Task<ScryfallApi.Client.Models.Card> GetCardByNameAsync(string cardName, string setCode = "")
+        public async Task<Card> GetCardByNameAsync(string cardName, string setCode = "")
         {
-            ScryfallApi.Client.Models.Card card = null;
+            Card card = null;
             var response = await client.GetAsync($"cards/named?exact={cardName}&set={setCode}").ConfigureAwait(false);
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
+                card = JsonSerializer.Deserialize<Card>(json);
             }
             return card;
         }
 
-        public async Task<ScryfallApi.Client.Models.Card> GetCardByNameAndLanguageAsync(string cardName, string language, string setCode = "")
+        public async Task<Card> GetCardByNameAndLanguageAsync(string cardName, string language, string setCode = "")
         {
-            ScryfallApi.Client.Models.Card card = null;
+            Card card = null;
             //https://scryfall.com/search?order=released&q=lang%3Ade&unique=prints
             //https://api.scryfall.com/cards/search?q=name%3DHellkite+set%3DGRN+lang%3Dde
             var response = await client.GetAsync($"cards/search?q=name%3D{cardName}+set%3D{setCode}+lang%3D{language}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
+                card = JsonSerializer.Deserialize<Card>(json);
             }
             return card;
         }
 
-        public async Task<ScryfallApi.Client.Models.Card> GetCardByMultiverseIdAsync(string multiverseid)
+        public async Task<Card> GetCardByMultiverseIdAsync(string multiverseid)
         {
-            ScryfallApi.Client.Models.Card card = null;
+            Card card = null;
 
             var response = await client.GetAsync($"cards/multiverse/{multiverseid}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
+                card = JsonSerializer.Deserialize<Card>(json);
             }
             return card;
         }
-        public async Task<ScryfallApi.Client.Models.Card> GetCardByScryfallIdAsync(Guid scryfallGuid)
+        public async Task<Card> GetCardByScryfallIdAsync(Guid scryfallGuid)
         {
-            ScryfallApi.Client.Models.Card card = null;
+            Card card = null;
 
             var response = await client.GetAsync($"cards/{scryfallGuid}");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                card = System.Text.Json.JsonSerializer.Deserialize<ScryfallApi.Client.Models.Card>(json);
+                card = JsonSerializer.Deserialize<Card>(json);
             }
 
             return card;
         }
 
-        public async Task<List<ScryfallApi.Client.Models.Set>> GetSetsAsync()
+        public async Task<List<Set>> GetSetsAsync()
         {
             //lastApiCall = DateTime.Now;
-            List<ScryfallApi.Client.Models.Set> sets = null;
-            var response = await client.GetAsync($"sets");
+            List<Set> sets = null;
+            var response = await client.GetAsync("sets");
             if (response.IsSuccessStatusCode)
             {
                 var json = await response.Content.ReadAsStringAsync();
-                sets = System.Text.Json.JsonSerializer.Deserialize<List<ScryfallApi.Client.Models.Set>>(json);
+                sets = JsonSerializer.Deserialize<List<Set>>(json);
             }
             return sets;
         }
