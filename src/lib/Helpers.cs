@@ -183,6 +183,9 @@ namespace MgcPrxyDrftr.lib
             // add first page
             var page = pdfDocument.Pages.Add(PdfPageSize.A4, new PdfMargins(marginLeftRight, marginTopBottom));
 
+            // get card count
+            var maxCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png").Length;
+
             foreach (var file in Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png"))
             {
                 cardCounter++;
@@ -197,8 +200,8 @@ namespace MgcPrxyDrftr.lib
 
                 if (cardCounter is 3 or 6 or 12 or 15) { y += cardHeight; }
 
-                // add new page if page has nine cards
-                if (cardCounter % 9 != 0) continue;
+                // add new page if current page has nine cards
+                if (cardCounter % 9 != 0 && maxCards > 9 * pdfDocument.Pages.Count) continue;
                 page = pdfDocument.Pages.Add(PdfPageSize.A4, new PdfMargins(marginLeftRight, marginTopBottom));
                 x = 0; y = 0;
             }

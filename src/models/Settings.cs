@@ -10,6 +10,7 @@ namespace MgcPrxyDrftr.models
 {
     public class Settings
     {
+        public bool RunsForFirstTime { get; set; }
         public bool AutomaticPrinting { get; set; }
         public bool DownloadBasicLands { get; set; }
         public bool PromptForDraftConfirmation { get; set; }

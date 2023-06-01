@@ -36,6 +36,8 @@ public long? Reinforcement1 { get; set; }
 public long? Reinforcement1Foils { get; set; }
 public long? Reinforcement2 { get; set; }
 public long? Reinforcement2Foils { get; set; }
+public long? PromoTeamup { get; set; }
+public long? PromoTeamupFoil { get; set; }
 public long? FoilEtched { get; set; }
  } 
 public partial class Sheets { 
@@ -76,6 +78,8 @@ public Sheet Reinforcement1 { get; set; }
 public Sheet Reinforcement1Foils { get; set; }
 public Sheet Reinforcement2 { get; set; }
 public Sheet Reinforcement2Foils { get; set; }
+public Sheet PromoTeamup { get; set; }
+public Sheet PromoTeamupFoil { get; set; }
 public Sheet FoilEtched { get; set; }
  } }
 

@@ -49,6 +49,7 @@ namespace MgcPrxyDrftr
         private static SortedList<string, Deck> Decks { get; set; } = new();
         private static readonly HashSet<string> SheetList = new();
         private static HashSet<string> AddedSheets { get; set; } = new ();
+        private static readonly Dictionary<string, List<string>> SetDependencies = new();
 
         private static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
         [Obsolete("Obsolete")] private static readonly WebClient Client = new();
@@ -78,19 +79,40 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
+            Console.WriteLine(">> Init set dependencies...");
+            InitSetDependencies();
+
             Console.WriteLine(">> Reading settings...");
             Settings = new Settings();
             Settings.Load();
 
             Console.WriteLine(">> Reading setlist...");
-            LoadSetList();
+            await LoadSetList().ConfigureAwait(false);
+
+            //Settings.RunsForFirstTime = true;
+            //if (Settings.RunsForFirstTime)
+            //{
+            //    Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
+            //    Console.WriteLine(">> All available set files will be downloaded from mtgjson.");
+
+            //    var tempList = Settings.SetsToLoad;
+
+            //    DownloadAllSetFiles();
+
+            //    AnalyseAllSets();
+
+            //    Settings.RunsForFirstTime = false;
+            //    Settings.SetsToLoad = tempList;
+            //    Settings.Save();
+            //}
+
             Console.WriteLine(">> Reading sets from disk...");
-            if (UseSetList) { await ReadAllConfiguredSets(Settings.SetsToLoad); } else { ReadAllSets(); }
+            if (UseSetList) { await ReadAllConfiguredSets(Settings.SetsToLoad).ConfigureAwait(false); } else { ReadAllSets(); }
             Console.WriteLine(">> Reading support sets from disk...");
             await ReadAllConfiguredSets(Settings.SupportSetsToLoad);
 
             Console.WriteLine(">> Reading decklist...");
-            LoadDeckList();
+            await LoadDeckList().ConfigureAwait(false);
             Console.WriteLine(">> Reading decks from disk...");
             ReadAllDecks();
 
@@ -111,8 +133,10 @@ namespace MgcPrxyDrftr
 #if DEBUG
             //OmniCardList = ReadAllCards();
 
-            ////GenerateCubeDraftBooster();
-            ////GenerateCubeDraftMini();
+            //GenerateCubeDraftBooster();
+            //GenerateCubeDraftMini();
+
+            //AnalyseAllSets();
 
             //ReadFilteredSets();
 
@@ -131,6 +155,23 @@ namespace MgcPrxyDrftr
             // start application loop
             _ = await EnterTheLoop();
 #endif
+        }
+
+        private static void InitSetDependencies()
+        {
+            // TODO: complete
+            SetDependencies["BRO"] = new List<string> { "PLIST", "BRR", "BRC", "BOT" };
+            SetDependencies["NEO"] = new List<string> { "PLIST", "NEC", "NCC" };
+            SetDependencies["DMU"] = new List<string> { "PLIST", "DMC" };
+            SetDependencies["MOM"] = new List<string> { "PLIST", "MOC", "MUL" };
+        }
+
+        private static void DownloadAllSetFiles()
+        {
+            foreach (var set in SetList.Data.Where(s => s.IsOnlineOnly == false && s.IsPartialPreview == false))
+            {
+                _ = ReadSingleSetWithUpdateCheck(set.Code.ToUpper());
+            }
         }
 
         // removes all json files and clears the output
@@ -194,8 +235,8 @@ namespace MgcPrxyDrftr
             var sampleContent = new Contents();
             var newSheets = false;
 
-            var isPreview = json.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>();
-            if (isPreview is null or true)
+            var isPreview = json.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>() ?? false;
+            if (isPreview)
             {
                 Console.WriteLine("Skipping preview set");
                 return;
@@ -240,7 +281,7 @@ namespace MgcPrxyDrftr
             var upgradeFileString = bar1 + bar2;
 
             if (!newSheets) return;
-            using var writer = new StreamWriter(@$"{BaseDirectory}\models\upgrades\Upgrade{setCode.ToUpper()}.cs");
+            using var writer = new StreamWriter(@$"{BaseDirectory}\models\upgrades\Upgrade{setCode.ToUpper()}_{Guid.NewGuid().ToString().ToLower()[..8]}.cs");
             writer.WriteLine(upgradeFileString);
         }
 
@@ -663,6 +704,12 @@ namespace MgcPrxyDrftr
                                 Settings.Save();
                             }
                             break;
+                        case "r":
+                            if (StateMachine.CurrentState == LoopState.Options)
+                            {
+                                ResetAndCleanEverything();
+                            }
+                            break;
                     }
                 }
                 else
@@ -742,7 +789,8 @@ namespace MgcPrxyDrftr
                     H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 2);
                     H.Write($"D => enable / disable prompting for confirmation where drafting booster [{(Settings.PromptForDraftConfirmation ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 3);
                     H.Write($"A => enable / disable alternative (new) draft menu [{(Settings.NewDraftMenu ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 4);
-                    H.Write("B => Back", startLeftPosition, startTopPosition + 8);
+                    H.Write("R => reset all settings and folders !I mean it everything will be deleted!", startLeftPosition, startTopPosition + 6);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 10);
                     break;
                 case LoopState.BoosterDraft:
                     H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
@@ -827,23 +875,23 @@ namespace MgcPrxyDrftr
             return true;
         }
 
-        private static async void LoadDeckList()
+        private static async Task LoadDeckList()
         {
             // TODO: check for new version of deck list
 
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json");
             if(!file.Exists)
             {
-                var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\").ConfigureAwait(false);
                 if(!valid)
                 {
                     throw new Exception("Filechecksum is invalid!");
                 }
             }
-            DeckList = JsonConvert.DeserializeObject<DeckList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json"));
+            DeckList = JsonConvert.DeserializeObject<DeckList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json").ConfigureAwait(false));
         }
 
-        private static async void LoadSetList()
+        private static async Task LoadSetList()
         {
             // TODO: check for new version of set list
 
@@ -856,7 +904,10 @@ namespace MgcPrxyDrftr
                     throw new Exception("Filechecksum is invalid!");
                 }
             }
-            SetList = JsonConvert.DeserializeObject<SetList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\SetList.json"));
+
+            var setlist = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\SetList.json")
+                .ConfigureAwait(false);
+            SetList = JsonConvert.DeserializeObject<SetList>(setlist);
         }
 
         private static async Task<PriceList> LoadPriceList()
@@ -1179,7 +1230,7 @@ namespace MgcPrxyDrftr
 
             // name of booster to generate
             var type = Enum.GetName(boosterType) ?? "Default";
-            var dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type)!.GetValue(set.Data.Booster, null);
+            var dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type)!.GetValue(set.Data.Booster, null) ?? (DefaultBooster)set.Data.Booster.GetType().GetProperty("Default")!.GetValue(set.Data.Booster, null);
 
             // determine booster blueprint
             var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
@@ -1464,6 +1515,17 @@ namespace MgcPrxyDrftr
 
             // add new set
             Settings.AddSet(setCode.ToUpper());
+            
+            // check dependencies 
+            if (SetDependencies.ContainsKey(setCode.ToUpper()))
+            {
+                foreach (var supportSet in SetDependencies[setCode.ToUpper()])
+                {
+                    Settings.AddSupportSet(supportSet);
+                }
+            }
+
+            // save all settings
             Settings.Save();
 
             // analyse and add new upgrade sheet file
