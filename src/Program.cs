@@ -42,7 +42,7 @@ namespace MgcPrxyDrftr
         private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"] ?? "true");
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        
+        private static bool IsCommandLineMode { get; set; } = false;
 
         private static readonly SortedList<string, string> ReleaseTimelineSets = new();
         private static readonly SortedList<string, SetRoot> Sets = new();
@@ -65,11 +65,15 @@ namespace MgcPrxyDrftr
         // cards
         private static SortedDictionary<Guid, Card> OmniCardList { get; set; } = new(); 
 
-        private static async Task Main()
+        private static async Task Main(string[] args)
         {
+            if (args.Length > 0) { IsCommandLineMode = true; }
+
 #pragma warning disable CA1416 // Validate platform compatibility
             if (IsWindows) { Console.SetWindowSize(136, 40); }
 #pragma warning restore CA1416 // Validate platform compatibility
+
+            if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
             WriteHeader();
 
@@ -155,6 +159,40 @@ namespace MgcPrxyDrftr
             // start application loop
             _ = await EnterTheLoop();
 #endif
+        }
+
+        /// <summary>
+        /// This is a method thats sole purpose is to handle cli calls of the program
+        /// </summary>
+        /// <param name="args"></param>
+        private static async Task PrepareCommandLineMode(IReadOnlyList<string> args)
+        {
+            if (args.Count != 3) { return; }
+
+            var setCode = (args[0] ?? "LEA").ToUpper();
+            var numberOfBoosters = int.TryParse(args[1], out var boosteResult) ? boosteResult : 1;
+            var boosterType = MapBoosterType(args[2] ?? "d");
+
+            Settings = new Settings();
+            Settings.Load();
+
+            CheckAllDirectories();
+
+            InitSetDependencies();
+
+            await Settings.CheckSetFile(setCode, @$"{BaseDirectory}\{JsonDirectory}\", @$"{SetDirectory}").ConfigureAwait(false);
+            Sets[setCode] = ReadSingleSet(setCode);
+
+            if (SetDependencies.TryGetValue(setCode, out var dependency))
+            {
+                foreach (var supportSet in dependency)
+                {
+                    await Settings.CheckSetFile(supportSet, @$"{BaseDirectory}\{JsonDirectory}\", @$"{SetDirectory}").ConfigureAwait(false);
+                    Sets[supportSet] = ReadSingleSet(supportSet);
+                }
+            }
+
+            await SimpleDraft(setCode, numberOfBoosters, boosterType, dependency);
         }
 
         private static void InitSetDependencies()
@@ -1548,6 +1586,37 @@ namespace MgcPrxyDrftr
             };
         }
 
+        private static async Task SimpleDraft(string setCode, int numberOfBoosters, BoosterType boosterType, IReadOnlyCollection<string> additionalSetCollection)
+        {
+            DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            draftDirectory.Create();
+
+            for (var i = 1; i <= numberOfBoosters; i++)
+            {
+                Console.WriteLine($"{Enum.GetName(boosterType)} Booster {i}/{numberOfBoosters}");
+
+                // get a booster
+                var booster = GenerateBooster(setCode.ToUpper(), additionalSetCollection, boosterType);
+
+                // new booster guid 
+                var boosterGuid = Guid.NewGuid();
+
+                // create directory
+                DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
+                if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
+
+                // load images
+                foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
+
+                // generate and move pdf file
+                H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
+                if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf"); }
+
+                Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
+            }
+        }
+
         /// <summary>
         /// Draft boosters from given set
         /// </summary>
@@ -1622,7 +1691,7 @@ namespace MgcPrxyDrftr
                 }
                 catch (Exception)
                 {
-                    // ignore will be cleaned up when the application is starting again
+                    // ignore - will be cleaned up when the application is starting again
                 }
                 
                 Console.Clear();

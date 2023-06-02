@@ -79,17 +79,15 @@ namespace MgcPrxyDrftr.models
 
             return true;
         }
-        public bool CheckSetFile(string setCode, string fullJsonPath, string setFolder)
+        public async Task<bool> CheckSetFile(string setCode, string fullJsonPath, string setFolder)
         {
             _ = CheckLastUpdate(setCode, fullJsonPath, setFolder);
 
             // if the file is still not there we download it
             if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json")) return true;
 
-            Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
-            //LastUpdatesList[setCode] = DateTime.Now;
-            //Save();
-
+            await Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder).ConfigureAwait(false);
+   
             return true;
         }
         public void UpdateStatistics(string stat, string value)

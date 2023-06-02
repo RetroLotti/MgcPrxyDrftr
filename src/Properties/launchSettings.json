@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "MgcPrxyDrftr": {
+      "commandName": "Project",
+      "commandLineArgs": "mom 1 c"
+    }
+  }
+}
