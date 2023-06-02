@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MgcPrxyDrftr.lib
 {
@@ -16,6 +13,7 @@ namespace MgcPrxyDrftr.lib
         SetManager,
         RawListManager,
         FolderPrint,
+        PriceChecker,
         Exit
     }
 
@@ -51,11 +49,12 @@ namespace MgcPrxyDrftr.lib
             CurrentState = LoopState.Main;
             _transitions = new Dictionary<StateTransition, LoopState>
             {
-                { new StateTransition(LoopState.Main, "b"), LoopState.BoosterDraft },
                 { new StateTransition(LoopState.Main, "c"), LoopState.Main },
-                { new StateTransition(LoopState.Main, "d"), LoopState.DeckCreator },
+                { new StateTransition(LoopState.Main, "d"), LoopState.BoosterDraft },
+                { new StateTransition(LoopState.Main, "e"), LoopState.DeckCreator },
                 { new StateTransition(LoopState.Main, "f"), LoopState.FolderPrint },
                 { new StateTransition(LoopState.Main, "o"), LoopState.Options },
+                { new StateTransition(LoopState.Main, "p"), LoopState.PriceChecker },
                 { new StateTransition(LoopState.Main, "r"), LoopState.RawListManager },
                 { new StateTransition(LoopState.Main, "s"), LoopState.SetManager },
                 { new StateTransition(LoopState.Main, "x"), LoopState.Exit },
@@ -82,6 +81,8 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.SetManager, "r"), LoopState.SetManager },
                 { new StateTransition(LoopState.SetManager, "b"), LoopState.Main },
 
+                { new StateTransition(LoopState.PriceChecker, "b"), LoopState.Main },
+                
                 { new StateTransition(LoopState.RawListManager, "b"), LoopState.Main },
             };
         }

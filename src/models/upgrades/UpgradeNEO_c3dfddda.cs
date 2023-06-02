@@ -9,6 +9,7 @@ public long? FoilSfcUncommon { get; set; }
 public long? NinjaCommonUncommon { get; set; }
 public long? SamuraiCommonUncommon { get; set; }
 public long? NeonInk { get; set; }
+public long? PrereleasePromo { get; set; }
  } 
 public partial class Sheets { 
 public Sheet ExtendedOrBorderlessRareMythic { get; set; }
@@ -21,5 +22,6 @@ public Sheet FoilSfcUncommon { get; set; }
 public Sheet NinjaCommonUncommon { get; set; }
 public Sheet SamuraiCommonUncommon { get; set; }
 public Sheet NeonInk { get; set; }
+public Sheet PrereleasePromo { get; set; }
  } }
 

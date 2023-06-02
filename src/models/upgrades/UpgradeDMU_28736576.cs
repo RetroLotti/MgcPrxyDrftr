@@ -1,14 +1,12 @@
 namespace MgcPrxyDrftr.models { public partial class Contents { 
 public long? FoilLegendsRetold { get; set; }
 public long? FoilAltBorderRareMythic { get; set; }
-public long? FoilUncommonShowcase { get; set; }
 public long? RetoldUncommon { get; set; }
 public long? ShowcaseRareMythic { get; set; }
 public long? TexturedFoil { get; set; }
 public long? EtchedRetoldUncommon { get; set; }
 public long? EtchedRetoldRareMythic { get; set; }
 public long? LostLegends { get; set; }
-public long? NonfoilRareMythic { get; set; }
 public long? ArcaneMischief { get; set; }
 public long? ArcaneMischiefFoils { get; set; }
 public long? RareMythicBlue { get; set; }
@@ -38,14 +36,12 @@ public long? TotallyRuthlessFoils { get; set; }
 public partial class Sheets { 
 public Sheet FoilLegendsRetold { get; set; }
 public Sheet FoilAltBorderRareMythic { get; set; }
-public Sheet FoilUncommonShowcase { get; set; }
 public Sheet RetoldUncommon { get; set; }
 public Sheet ShowcaseRareMythic { get; set; }
 public Sheet TexturedFoil { get; set; }
 public Sheet EtchedRetoldUncommon { get; set; }
 public Sheet EtchedRetoldRareMythic { get; set; }
 public Sheet LostLegends { get; set; }
-public Sheet NonfoilRareMythic { get; set; }
 public Sheet ArcaneMischief { get; set; }
 public Sheet ArcaneMischiefFoils { get; set; }
 public Sheet RareMythicBlue { get; set; }

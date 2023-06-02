@@ -1,10 +1,6 @@
-﻿using Newtonsoft.Json;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MgcPrxyDrftr.models
 {
@@ -136,7 +132,7 @@ namespace MgcPrxyDrftr.models
         public Legality? Standard { get; set; }
     }
 
-    public partial class PurchaseUrls
+    public class PurchaseUrls
     {
         public Uri CardKingdom { get; set; }
         public Uri CardKingdomFoil { get; set; }
@@ -178,39 +174,39 @@ namespace MgcPrxyDrftr.models
     }
 
     #region Enums
-    public enum Availability { Arena, Dreamcast, Mtgo, Paper, Shandalar };
+    public enum Availability { Arena, Dreamcast, Mtgo, Paper, Shandalar }
 
-    public enum BorderColor { Black, White, Borderless, Silver, Gold };
+    public enum BorderColor { Black, White, Borderless, Silver, Gold }
 
-    public enum ColorIdentity { B, G, R, U, W };
+    public enum ColorIdentity { B, G, R, U, W }
 
-    public enum ColorIdicator { B, G, R, U, W };
+    public enum ColorIdicator { B, G, R, U, W }
 
-    public enum Color { B, G, R, U, W };
+    public enum Color { B, G, R, U, W }
 
-    public enum Finish { Foil, Nonfoil, Etched, Glossy, Signed };
+    public enum Finish { Foil, Nonfoil, Etched, Glossy, Signed }
 
-    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, upsidedowndfc, convertdfc, storyspotlight, thick, shatteredglass, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc };
+    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, upsidedowndfc, convertdfc, storyspotlight, thick, shatteredglass, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc }
 
     //public enum FrameVersion { x1993, x1997, x2003, x2015, Future };
 
-    public enum Layout { Adventure, Aftermath, Art_Series, Augment, Class, Double_Faced_Token, Emblem, Flip, Host, Leveler, Meld, Modal_Dfc, Normal, Planar, Reversible_Card, Saga, Scheme, Split, Token, Transform, Vanguard };
+    public enum Layout { Adventure, Aftermath, Art_Series, Augment, Class, Double_Faced_Token, Emblem, Flip, Host, Leveler, Meld, Modal_Dfc, Normal, Planar, Reversible_Card, Saga, Scheme, Split, Token, Transform, Vanguard }
 
     // TODO
     //"arenaleague", "boosterfun", "boxtopper", "brawldeck", "bundle", "buyabox", "convention", "datestamped", "draculaseries", "draftweekend", "duels", "event", "fnm", "gameday", "gateway", "giftbox", "godzillaseries", "instore", "intropack", "jpwalker", "judgegift", "league", "mediainsert", "openhouse", "planeswalkerstamped", "playerrewards", "playpromo", "premiereshop", "prerelease", "promopack", "release", "setpromo", "stamped", "themepack", "tourney", "wizardsplaynetwork"
     //public enum PromoType { Boosterfun, Bundle, Buyabox, Promopack, Themepack, Intropack, Setpromo, brawldeck, godzillaseries, boxtopper, release };
 
-    public enum Rarity { Bonus, Common, Mythic, Rare, Special, Uncommon };
+    public enum Rarity { Bonus, Common, Mythic, Rare, Special, Uncommon }
 
-    public enum Side { A, B, C, D, E };
+    public enum Side { A, B, C, D, E }
 
-    public enum SecurityStamp { Acorn, Arena, Oval, Triangle };
+    public enum SecurityStamp { Acorn, Arena, Oval, Triangle }
 
     // TODO
     // "Abian", "Adventure", "Advisor", "Aetherborn", "Ajani", "Alara", "Alicorn", "Alien", "Ally", "Aminatou", "Angel", "Angrath", "Antelope", "Ape", "Arcane", "Archer", "Archon", "Arkhos", "Arlinn", "Army", "Art", "Artificer", "Ashiok", "Assassin", "Assembly-Worker", "Atog", "Aura", "Aurochs", "Autobot", "Avatar", "Azgol", "Azra", "B.O.B.", "Baddest,", "Badger", "Bahamut", "Barbarian", "Bard", "Basilisk", "Basri", "Bat", "Bear", "Beast", "Beaver", "Beeble", "Beholder", "Belenon", "Berserker", "Biggest,", "Bird", "Blood", "Boar", "Bolas", "Bolas’s Meditation Realm", "Brainiac", "Bringer", "Brushwagg", "Bureaucrat", "Calix", "Camel", "Carrier", "Cartouche", "Cat", "Centaur", "Cephalid", "Chameleon", "Chandra", "Chicken", "Child", "Chimera", "Citizen", "Clamfolk", "Class", "Cleric", "Cloud", "Clown", "Clue", "Cockatrice", "Construct", "Contraption", "Cow", "Coward", "Crab", "Crocodile", "Curse", "Cyborg", "Cyclops", "Dack", "Dakkon", "Daretti", "Dauthi", "Davriel", "Deer", "Demigod", "Demon", "Desert", "Designer", "Devil", "Dihada", "Dinosaur", "Djinn", "Dog", "Dominaria", "Domri", "Donkey", "Dovin", "Dragon", "Drake", "Dreadnought", "Drone", "Druid", "Dryad", "Duck", "Dungeon", "Dwarf", "Efreet", "Egg", "Elder", "Eldrazi", "Elemental", "Elemental?", "Elephant", "Elf", "Elk", "Ellywick", "Elspeth", "Elves", "Equilor", "Equipment", "Ergamon", "Estrid", "Etiquette", "Eye", "Fabacin", "Faerie", "Ferret", "Fire", "Fish", "Flagbearer", "Food", "Forest", "Fortification", "Fox", "Fractal", "Freyalise", "Frog", "Fungus", "Gamer", "Gargoyle", "Garruk", "Gate", "Germ", "Giant", "Gideon", "Gnoll", "Gnome", "Goat", "Goblin", "God", "Gold", "Golem", "Gorgon", "Grandchild", "Gremlin", "Griffin", "Grist", "Guest", "Gus", "Hag", "Halfling", "Hamster", "Harpy", "Hatificer", "Head", "Hellion", "Hero", "Hippo", "Hippogriff", "Homarid", "Homunculus", "Horror", "Horse", "Huatli", "Human", "Hydra", "Hyena", "Igpay", "Illusion", "Imp", "Incarnation", "Inkling", "Innistrad", "Insect", "Inzerva", "Iquatana", "Ir", "Island", "Jace", "Jackal", "Jaya", "Jellyfish", "Jeska", "Juggernaut", "Kaito", "Kaldheim", "Kamigawa", "Kangaroo", "Karn", "Karsus", "Kasmina", "Kavu", "Kaya", "Kephalai", "Key", "Killbot", "Kinshala", "Kiora", "Kirin", "Kithkin", "Knight", "Kobold", "Kolbahan", "Kor", "Koth", "Kraken", "Kyneth", "Lady", "Lair", "Lamia", "Lammasu", "Leech", "Legend", "Lesson", "Leviathan", "Lhurgoyf", "Licid", "Liliana", "Lizard", "Lobster", "Locus", "Lolth", "Lorwyn", "Lukka", "Luvion", "Mammoth", "Manticore", "Master", "Masticore", "Mercadia", "Mercenary", "Merfolk", "Metathran", "Mime", "Mine", "Minion", "Minotaur", "Mirrodin", "Moag", "Mole", "Monger", "Mongoose", "Mongseng", "Monk", "Monkey", "Moonfolk", "Mordenkainen", "Mountain", "Mouse", "Mummy", "Muraganda", "Mutant", "Myr", "Mystic", "Naga", "Nahiri", "Narset", "Nastiest,", "Nautilus", "Nephilim", "New Phyrexia", "Nightmare", "Nightstalker", "Niko", "Ninja", "Nissa", "Nixilis", "Noble", "Noggle", "Nomad", "Nymph", "Octopus", "Ogre", "Oko", "Ooze", "Orc", "Orgg", "Otter", "Ouphe", "Ox", "Oyster", "Pangolin", "Paratrooper", "Peasant", "Pegasus", "Penguin", "Pentavite", "Pest", "Phelddagrif", "Phoenix", "Phyrexia", "Phyrexian", "Pilot", "Pirate", "Plains", "Plant", "Power-Plant", "Praetor", "Processor", "Proper", "Pyrulea", "Rabbit", "Rabiah", "Raccoon", "Ral", "Ranger", "Rat", "Rath", "Ravnica", "Rebel", "Reflection", "Regatha", "Reveler", "Rhino", "Rigger", "Robot", "Rogue", "Rowan", "Rune", "Sable", "Saga", "Saheeli", "Salamander", "Samurai", "Samut", "Saproling", "Sarkhan", "Satyr", "Scarecrow", "Scientist", "Scion", "Scorpion", "Scout", "Sculpture", "Segovia", "Serf", "Serpent", "Serra", "Serra’s Realm", "Servo", "Shade", "Shadowmoor", "Shaman", "Shandalar", "Shapeshifter", "Shard", "Shark", "Sheep", "Ship", "Shrine", "Siren", "Skeleton", "Slith", "Sliver", "Slug", "Snake", "Soldier", "Soltari", "Sorin", "Spawn", "Specter", "Spellshaper", "Sphinx", "Spider", "Spike", "Spirit", "Sponge", "Spy", "Squid", "Squirrel", "Starfish", "Surrakar", "Survivor", "Swamp", "Szat", "Tamiyo", "Teddy", "Teferi", "Tentacle", "Teyo", "Tezzeret", "Thalakos", "The", "Thopter", "Thrull", "Tibalt", "Tiefling", "Tower", "Townsfolk", "Trap", "Treasure", "Treefolk", "Trilobite", "Triskelavite", "Troll", "Turtle", "Tyvar", "Ugin", "Ulgrotha", "Unicorn", "Urza", "Urza’s", "Valla", "Vampire", "Vampyre", "Vedalken", "Vehicle", "Venser", "Viashino", "Villain", "Vivien", "Volver", "Vraska", "Vryn", "Waiter", "Wall", "Warlock", "Warrior", "Weird", "Werewolf", "Whale", "Wildfire", "Will", "Windgrace", "Wizard", "Wolf", "Wolverine", "Wombat", "Worm", "Wraith", "Wrenn", "Wrestler", "Wurm", "Xenagos", "Xerex", "Yanggu", "Yanling", "Yeti", "Zariel", "Zendikar", "Zombie", "Zubera", "and/or", "of"
     //public enum SubType { Abian };
 
-    public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World };
+    public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World }
 
     // TODO
     public enum Type { Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
@@ -224,8 +220,8 @@ namespace MgcPrxyDrftr.models
 
     //public enum CardLayout { Normal, Class, Transform };
 
-    public enum Legality { Banned, Legal, Restricted };
+    public enum Legality { Banned, Legal, Restricted }
 
-    public enum BoosterType { Default, Collector, Set, Jumpstart, Arena }
+    public enum BoosterType { Default, Collector, Set, Jumpstart, Arena, Tournament }
     #endregion
 }
