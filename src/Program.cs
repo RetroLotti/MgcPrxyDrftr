@@ -73,7 +73,7 @@ namespace MgcPrxyDrftr
             if (IsWindows) { Console.SetWindowSize(136, 40); }
 #pragma warning restore CA1416 // Validate platform compatibility
 
-            if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
+            //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
             WriteHeader();
 

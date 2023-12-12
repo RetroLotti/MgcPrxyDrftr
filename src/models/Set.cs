@@ -190,7 +190,7 @@ namespace MgcPrxyDrftr.models
 
     //public enum FrameVersion { x1993, x1997, x2003, x2015, Future };
 
-    public enum Layout { Adventure, Aftermath, Art_Series, Augment, Class, Double_Faced_Token, Emblem, Flip, Host, Leveler, Meld, Modal_Dfc, Normal, Planar, Reversible_Card, Saga, Scheme, Split, Token, Transform, Vanguard }
+    public enum Layout { Adventure, Aftermath, Art_Series, Augment, Class, Double_Faced_Token, Emblem, Flip, Host, Leveler, Meld, Modal_Dfc, Normal, Planar, Reversible_Card, Saga, Scheme, Split, Token, Transform, Vanguard, Prototype, Mutate }
 
     // TODO
     //"arenaleague", "boosterfun", "boxtopper", "brawldeck", "bundle", "buyabox", "convention", "datestamped", "draculaseries", "draftweekend", "duels", "event", "fnm", "gameday", "gateway", "giftbox", "godzillaseries", "instore", "intropack", "jpwalker", "judgegift", "league", "mediainsert", "openhouse", "planeswalkerstamped", "playerrewards", "playpromo", "premiereshop", "prerelease", "promopack", "release", "setpromo", "stamped", "themepack", "tourney", "wizardsplaynetwork"
