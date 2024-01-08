@@ -186,11 +186,11 @@ namespace MgcPrxyDrftr.models
 
     public enum Finish { Foil, Nonfoil, Etched, Glossy, Signed }
 
-    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, upsidedowndfc, convertdfc, storyspotlight, thick, shatteredglass, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc }
+    public enum FrameEffect { Colorshifted, Companion, Compasslanddfc, Borderless, upsidedowndfc, convertdfc, storyspotlight, thick, shatteredglass, Devoid, Draft, Etched, Extendedart, Fandfc, Fullart, Inverted, Legendary, Lesson, Miracle, Mooneldrazidfc, Nyxborn, Nyxtouched, Originpwdfc, Showcase, Snow, Sunmoondfc, Textless, Tombstone, Waxingandwaningmoondfc }
 
     //public enum FrameVersion { x1993, x1997, x2003, x2015, Future };
 
-    public enum Layout { Adventure, Aftermath, Art_Series, Augment, Class, Double_Faced_Token, Emblem, Flip, Host, Leveler, Meld, Modal_Dfc, Normal, Planar, Reversible_Card, Saga, Scheme, Split, Token, Transform, Vanguard }
+    public enum Layout { Adventure, Aftermath, Art_Series, Augment, Class, Double_Faced_Token, Mutate, Emblem, Flip, Host, Leveler, Meld, Modal_Dfc, Normal, Planar, Reversible_Card, Saga, Scheme, Split, Token, Transform, Vanguard, Prototype }
 
     // TODO
     //"arenaleague", "boosterfun", "boxtopper", "brawldeck", "bundle", "buyabox", "convention", "datestamped", "draculaseries", "draftweekend", "duels", "event", "fnm", "gameday", "gateway", "giftbox", "godzillaseries", "instore", "intropack", "jpwalker", "judgegift", "league", "mediainsert", "openhouse", "planeswalkerstamped", "playerrewards", "playpromo", "premiereshop", "prerelease", "promopack", "release", "setpromo", "stamped", "themepack", "tourney", "wizardsplaynetwork"
@@ -209,7 +209,7 @@ namespace MgcPrxyDrftr.models
     public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World }
 
     // TODO
-    public enum Type { Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
+    public enum Type { Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Tolkien, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf, Youll }
 
     // TODO 
     //public enum Watermark { Abzan };
@@ -222,6 +222,6 @@ namespace MgcPrxyDrftr.models
 
     public enum Legality { Banned, Legal, Restricted }
 
-    public enum BoosterType { Default, Collector, Set, Jumpstart, Arena, Tournament }
+    public enum BoosterType { Default, Collector, Set, Jumpstart, Arena, Tournament, BoxTopper }
     #endregion
 }

@@ -69,11 +69,11 @@ namespace MgcPrxyDrftr
         {
             if (args.Length > 0) { IsCommandLineMode = true; }
 
+            //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
+
 #pragma warning disable CA1416 // Validate platform compatibility
             if (IsWindows) { Console.SetWindowSize(136, 40); }
 #pragma warning restore CA1416 // Validate platform compatibility
-
-            if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
             WriteHeader();
 
@@ -149,6 +149,8 @@ namespace MgcPrxyDrftr
             // main loop
             _ = await EnterTheLoop();
 
+            //_ = await EnterTheLorcanaLoop();
+
             // Magic: Online Arena
             //_ = await DraftToSql("ARN|60");
             //_ = await DraftToSql("LEB|36");
@@ -202,6 +204,9 @@ namespace MgcPrxyDrftr
             SetDependencies["NEO"] = new List<string> { "PLIST", "NEC", "NCC" };
             SetDependencies["DMU"] = new List<string> { "PLIST", "DMC" };
             SetDependencies["MOM"] = new List<string> { "PLIST", "MOC", "MUL" };
+            SetDependencies["LTR"] = new List<string> { "PLIST", "LTC" };
+            SetDependencies["WOE"] = new List<string> { "PLIST", "WOC", "WOT" };
+            SetDependencies["UNF"] = new List<string> { "SUNF" };
         }
 
         private static void DownloadAllSetFiles()
@@ -330,29 +335,33 @@ namespace MgcPrxyDrftr
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in Sets.Where(x => x.Value.Data.Code == "LEA" || x.Value.Data.Code == "ARN" || x.Value.Data.Code == "DRK" || x.Value.Data.Code == "LEG" || x.Value.Data.Code == "ATQ" || x.Value.Data.Code == "BRO" || x.Value.Data.Code == "NEO" || x.Value.Data.Code == "3RD"))
+            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "LTR" or "BRO" or "3ED"))
             //foreach (var set in sets)
             {
                 setCounter++;
                 sb.AppendLine($"insert into rs_set (id, setcode, `name`, releasedate) values ({setCounter}, '{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name.Replace("\'", "\\\'")}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
+                sb.AppendLine("commit;");
                 sb.AppendLine($"insert into rs_magicproduct (productname, purchaseprice, setid) values ('{set.Value.Data.Name.Replace("\'", "\\\'")} Booster', 230, {setCounter});");
+                sb.AppendLine("commit;");
 
                 // add all cards of this set
                 foreach (var item in set.Value.Data.Cards)
                 {
                     //item.Colors
-                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{item.Rarity}'), '{string.Join("", item.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Types.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Subtypes.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Supertypes.Select(s => s.ToString()).ToArray())}');");
+                    sb.AppendLine(
+                        $"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{item.Rarity}'), '{string.Join("", item.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", item.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", item.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
                 }
 
-                // if set is BRO then add BRR cards
-                if(set.Value.Data.Code == "BRO")
+                // add sub sets
+                if (SetDependencies.TryGetValue(set.Value.Data.Code, out var subSets))
                 {
-                    foreach (var card in Sets["BRR"].Data.Cards)
+                    foreach (var card in subSets.SelectMany(dep => Sets[dep].Data.Cards))
                     {
-                        sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', '{$"https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png"}', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString()).ToArray())}');");
+                        sb.AppendLine(
+                            $"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
                     }
                 }
-
+                
                 sb.AppendLine("commit;");
                 sb.AppendLine($"update rs_set set boostertotalweight = {set.Value.Data.Booster.Default.BoostersTotalWeight} where setcode = '{set.Value.Data.Code}';");
                 sb.AppendLine("commit;");
@@ -366,6 +375,7 @@ namespace MgcPrxyDrftr
 
                     sheetCounter++;
                     sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheetName}', {actualSheet.TotalWeight});");
+                    sb.AppendLine("commit;");
 
                     foreach (var card in actualSheet.Cards)
                     {
@@ -379,6 +389,7 @@ namespace MgcPrxyDrftr
                 {
                     boosterBlueprintCounter++;
                     sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, {setCounter}, {booster.Weight});");
+                    sb.AppendLine("commit;");
 
                     foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
                     {
@@ -790,6 +801,17 @@ namespace MgcPrxyDrftr
             } while (StateMachine.CurrentState != LoopState.Exit);
 
             return 0;
+        }
+
+        private static async Task EnterTheLorcanaLoop()
+        {
+
+
+            do
+            {
+
+
+            } while (Console.ReadKey().Key != ConsoleKey.X);
         }
 
         private static void GetPrice(string cardName)
