@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -810,6 +811,7 @@ namespace MgcPrxyDrftr
             do
             {
 
+                
 
             } while (Console.ReadKey().Key != ConsoleKey.X);
         }
@@ -847,9 +849,9 @@ namespace MgcPrxyDrftr
                 case LoopState.Options:
                     H.Write($"P => enable / disable automatic printing [{(Settings.AutomaticPrinting ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 1);
                     H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 2);
-                    H.Write($"D => enable / disable prompting for confirmation where drafting booster [{(Settings.PromptForDraftConfirmation ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 3);
+                    H.Write($"D => enable / disable prompting for confirmation when drafting booster [{(Settings.PromptForDraftConfirmation ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 3);
                     H.Write($"A => enable / disable alternative (new) draft menu [{(Settings.NewDraftMenu ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 4);
-                    H.Write("R => reset all settings and folders !I mean it everything will be deleted!", startLeftPosition, startTopPosition + 6);
+                    H.Write("R => reset all settings and folders !I mean it - everything will be deleted!", startLeftPosition, startTopPosition + 6);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 10);
                     break;
                 case LoopState.BoosterDraft:
@@ -1717,6 +1719,17 @@ namespace MgcPrxyDrftr
                 }
                 
                 Console.Clear();
+            }
+
+            // open draft directory
+            if (IsWindows) 
+            {
+                Process process = new();
+                process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.FileName = "explorer.exe";
+                process.StartInfo.Arguments = $@"{draftDirectory}";
+                process.Start();
             }
 
             return true;
