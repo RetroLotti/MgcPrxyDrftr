@@ -336,7 +336,7 @@ namespace MgcPrxyDrftr
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "LTR" or "BRO" or "3ED"))
+            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "3ED" or "WOE"))
             //foreach (var set in sets)
             {
                 setCounter++;
@@ -900,8 +900,8 @@ namespace MgcPrxyDrftr
 
             // get new list id
             var guid = Guid.NewGuid();
-            //Guid subGuid = Guid.NewGuid();
-            
+            WriteLine("");
+
             var rawCardString = await clipboard.GetTextAsync().ConfigureAwait(false);
             if (rawCardString != null)
             {
@@ -927,12 +927,14 @@ namespace MgcPrxyDrftr
                 }
 
                 // create pdf
-                var proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
-                if (proc.ExitCode != 0) return true;
+                _ = H.CreatePdfDocument(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}");
             }
 
-            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+            // move file to output
+            FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{guid}.pdf");
             if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\clipboard_{guid}.pdf"); }
+
+            WriteLine("Finished!");
 
             return true;
         }
@@ -1633,7 +1635,7 @@ namespace MgcPrxyDrftr
                 foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
                 // generate and move pdf file
-                H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
                 if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf"); }
 
@@ -1695,7 +1697,7 @@ namespace MgcPrxyDrftr
                 // load images
                 foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
-                var foo = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
                 
