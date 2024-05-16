@@ -5,11 +5,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Flurl.Util;
 using MgcPrxyDrftr.lib;
 using MgcPrxyDrftr.models;
 using MtgApiManager.Lib.Model;
@@ -201,13 +203,15 @@ namespace MgcPrxyDrftr
         private static void InitSetDependencies()
         {
             // TODO: complete
-            SetDependencies["BRO"] = new List<string> { "PLIST", "BRR", "BRC", "BOT" };
-            SetDependencies["NEO"] = new List<string> { "PLIST", "NEC", "NCC" };
-            SetDependencies["DMU"] = new List<string> { "PLIST", "DMC" };
-            SetDependencies["MOM"] = new List<string> { "PLIST", "MOC", "MUL" };
-            SetDependencies["LTR"] = new List<string> { "PLIST", "LTC" };
-            SetDependencies["WOE"] = new List<string> { "PLIST", "WOC", "WOT" };
+            SetDependencies["BRO"] = new List<string> { "PLST", "BRR", "BRC", "BOT" };
+            SetDependencies["NEO"] = new List<string> { "PLST", "NEC", "NCC" };
+            SetDependencies["DMU"] = new List<string> { "PLST", "DMC" };
+            SetDependencies["MOM"] = new List<string> { "PLST", "MOC", "MUL" };
+            SetDependencies["LTR"] = new List<string> { "PLST", "LTC" };
+            SetDependencies["WOE"] = new List<string> { "PLST", "WOC", "WOT" };
             SetDependencies["UNF"] = new List<string> { "SUNF" };
+            SetDependencies["CLU"] = new List<string> { "FCLU" };
+            SetDependencies["MKM"] = new List<string> { "PLST", "MKC" };
         }
 
         private static void DownloadAllSetFiles()
@@ -1269,10 +1273,7 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            foreach (var item in generalCardDictionary)
-            {
-                s += $"{item.Key}\t{item.Value}\n";
-            }
+            s = generalCardDictionary.Aggregate(s, (current, item) => current + $"{item.Key}\t{item.Value}\n");
 
             //return s;
             return generalCardDictionary;
@@ -1292,12 +1293,25 @@ namespace MgcPrxyDrftr
             //if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) { return null; }
             if (set.Data.Booster == null) { return null; }
 
-            // name of booster to generate
-            var type = Enum.GetName(boosterType) ?? "Default";
-            var dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type)!.GetValue(set.Data.Booster, null) ?? (DefaultBooster)set.Data.Booster.GetType().GetProperty("Default")!.GetValue(set.Data.Booster, null);
+            // check if there is only one booster type. If that's the case use this as "default"
+            // separate determination of total weight as a set can also have only one booster type like collector
+            var validProperties = set.Data.Booster.GetType().GetProperties().Count(p => p.GetValue(set.Data.Booster) != null);
+            DefaultBooster dynamicBooster;
+
+            // check if the only property in fact is default
+            if (validProperties == 1 && boosterType == BoosterType.Default)
+            {
+                dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperties().First(f => f.GetValue(set.Data.Booster, null) != null).GetValue(set.Data.Booster, null);
+            }
+            else
+            {
+                // name of booster to generate
+                var type = Enum.GetName(boosterType) ?? "Default";
+                dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type)!.GetValue(set.Data.Booster, null) ?? (DefaultBooster)set.Data.Booster.GetType().GetProperty("Default")!.GetValue(set.Data.Booster, null);
+            }
 
             // determine booster blueprint
-            var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
+            var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)dynamicBooster.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
             // determine booster contents

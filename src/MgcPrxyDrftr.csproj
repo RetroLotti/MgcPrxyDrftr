@@ -75,7 +75,6 @@
     <Folder Include="cache\scryfall\" />
     <Folder Include="json\decks\" />
     <Folder Include="models\upgrades\" />
-    <Folder Include="json\sets\" />
     <Folder Include="output\decks\" />
     <Folder Include="output\draft\" />
     <Folder Include="output\lists\" />
