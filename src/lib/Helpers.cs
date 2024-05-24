@@ -39,13 +39,11 @@ namespace MgcPrxyDrftr.lib
         public static void CheckNanDeck(string fullPath)
         {
             FileInfo nandeck = new(fullPath);
-            if (!nandeck.Exists)
-            {
-                Console.WriteLine("NanDECK not found. Please enter path to nandeck.exe manually!");
-                Console.Write("> ");
-                fullPath = Console.ReadLine();
-                ConfigurationManager.AppSettings["NanDeckFullPath"] = fullPath;
-            }
+            if (nandeck.Exists) return;
+            Console.WriteLine("NanDECK not found. Please enter path to nandeck.exe manually!");
+            Console.Write("> ");
+            fullPath = Console.ReadLine();
+            ConfigurationManager.AppSettings["NanDeckFullPath"] = fullPath;
         }
 
         /// <summary>

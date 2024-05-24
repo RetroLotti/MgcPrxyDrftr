@@ -1,3 +1,5 @@
+using Newtonsoft.Json;
+
 namespace MgcPrxyDrftr.models { public partial class Contents { 
 public long? FoilAttraction { get; set; }
 public long? FoilUnlist { get; set; }
@@ -15,6 +17,7 @@ public long? Shock { get; set; }
  } 
 public partial class Sheets { 
 public Sheet FoilAttraction { get; set; }
+[JsonProperty(PropertyName = "foilUn-list")]
 public Sheet FoilUnlist { get; set; }
 public Sheet GalaxyBasic { get; set; }
 public Sheet GalaxyCommonUncommon { get; set; }

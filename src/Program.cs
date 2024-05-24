@@ -5,11 +5,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Flurl.Util;
 using MgcPrxyDrftr.lib;
 using MgcPrxyDrftr.models;
 using MtgApiManager.Lib.Model;
@@ -57,7 +59,9 @@ namespace MgcPrxyDrftr
         private static readonly ApiCaller Api = new();
         private static Settings Settings { get; set; }
 
-        private static string Language { get; set; } = "de";
+#pragma warning disable IDE0051 // Remove unused private members
+        private static string Language { get; set; } = "en";
+#pragma warning restore IDE0051 // Remove unused private members
 
         // decks
         private static DeckList DeckList { get; set; }
@@ -95,21 +99,23 @@ namespace MgcPrxyDrftr
             await LoadSetList().ConfigureAwait(false);
 
             //Settings.RunsForFirstTime = true;
-            //if (Settings.RunsForFirstTime)
-            //{
-            //    Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
-            //    Console.WriteLine(">> All available set files will be downloaded from mtgjson.");
+            if (Settings.RunsForFirstTime)
+            {
+                Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
+                Console.WriteLine(">> All available set files will be downloaded from mtgjson.");
 
-            //    var tempList = Settings.SetsToLoad;
+                // TODO: first get update for SetList file from mtgjson
 
-            //    DownloadAllSetFiles();
+                var tempList = Settings.SetsToLoad;
 
-            //    AnalyseAllSets();
+                DownloadAllSetFiles();
 
-            //    Settings.RunsForFirstTime = false;
-            //    Settings.SetsToLoad = tempList;
-            //    Settings.Save();
-            //}
+                AnalyseAllSets();
+
+                Settings.RunsForFirstTime = false;
+                Settings.SetsToLoad = tempList;
+                Settings.Save();
+            }
 
             Console.WriteLine(">> Reading sets from disk...");
             if (UseSetList) { await ReadAllConfiguredSets(Settings.SetsToLoad).ConfigureAwait(false); } else { ReadAllSets(); }
@@ -201,13 +207,15 @@ namespace MgcPrxyDrftr
         private static void InitSetDependencies()
         {
             // TODO: complete
-            SetDependencies["BRO"] = new List<string> { "PLIST", "BRR", "BRC", "BOT" };
-            SetDependencies["NEO"] = new List<string> { "PLIST", "NEC", "NCC" };
-            SetDependencies["DMU"] = new List<string> { "PLIST", "DMC" };
-            SetDependencies["MOM"] = new List<string> { "PLIST", "MOC", "MUL" };
-            SetDependencies["LTR"] = new List<string> { "PLIST", "LTC" };
-            SetDependencies["WOE"] = new List<string> { "PLIST", "WOC", "WOT" };
+            SetDependencies["BRO"] = new List<string> { "PLST", "BRR", "BRC", "BOT" };
+            SetDependencies["NEO"] = new List<string> { "PLST", "NEC", "NCC" };
+            SetDependencies["DMU"] = new List<string> { "PLST", "DMC" };
+            SetDependencies["MOM"] = new List<string> { "PLST", "MOC", "MUL" };
+            SetDependencies["LTR"] = new List<string> { "PLST", "LTC" };
+            SetDependencies["WOE"] = new List<string> { "PLST", "WOC", "WOT" };
             SetDependencies["UNF"] = new List<string> { "SUNF" };
+            SetDependencies["CLU"] = new List<string> { "FCLU" };
+            SetDependencies["MKM"] = new List<string> { "PLST", "MKC" };
         }
 
         private static void DownloadAllSetFiles()
@@ -336,7 +344,7 @@ namespace MgcPrxyDrftr
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "LTR" or "BRO" or "3ED"))
+            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "3ED" or "WOE"))
             //foreach (var set in sets)
             {
                 setCounter++;
@@ -774,7 +782,12 @@ namespace MgcPrxyDrftr
                             _ = await PrintDeck(command);
                             break;
                         case LoopState.BoosterDraft:
-                            _ = await Draft(command);
+
+                            // if there is a comma separated list of commands this step is called multiple times
+                            foreach (var singleCommand in command.Split(',').ToList())
+                            {
+                                _ = await Draft(singleCommand);
+                            }
                             break;
                         case LoopState.RawListManager:
                             _ = await PrintRawList(command);
@@ -900,8 +913,8 @@ namespace MgcPrxyDrftr
 
             // get new list id
             var guid = Guid.NewGuid();
-            //Guid subGuid = Guid.NewGuid();
-            
+            WriteLine("");
+
             var rawCardString = await clipboard.GetTextAsync().ConfigureAwait(false);
             if (rawCardString != null)
             {
@@ -927,12 +940,14 @@ namespace MgcPrxyDrftr
                 }
 
                 // create pdf
-                var proc = CreatePdf(directory.FullName, Settings.AutomaticPrinting);
-                if (proc.ExitCode != 0) return true;
+                _ = H.CreatePdfDocument(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}");
             }
 
-            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+            // move file to output
+            FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{guid}.pdf");
             if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\clipboard_{guid}.pdf"); }
+
+            WriteLine("Finished!");
 
             return true;
         }
@@ -967,8 +982,7 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            var setlist = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\SetList.json")
-                .ConfigureAwait(false);
+            var setlist = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\SetList.json").ConfigureAwait(false);
             SetList = JsonConvert.DeserializeObject<SetList>(setlist);
         }
 
@@ -1267,16 +1281,13 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            foreach (var item in generalCardDictionary)
-            {
-                s += $"{item.Key}\t{item.Value}\n";
-            }
+            s = generalCardDictionary.Aggregate(s, (current, item) => current + $"{item.Key}\t{item.Value}\n");
 
             //return s;
             return generalCardDictionary;
         }
 
-        private static List<Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, BoosterType boosterType = BoosterType.Default)
+        private static List<Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, BoosterType boosterType = BoosterType.Play)
         {
             List<Guid> boosterCards = new();
             List<CardIdentifiers> boosterCardIdentifier = new();
@@ -1290,61 +1301,78 @@ namespace MgcPrxyDrftr
             //if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) { return null; }
             if (set.Data.Booster == null) { return null; }
 
+            // check if there is only one booster type. If that's the case use this as "default"
+            // separate determination of total weight as a set can also have only one booster type like collector
+            var validProperties = set.Data.Booster.GetType().GetProperties().Count(p => p.GetValue(set.Data.Booster) != null);
+            DefaultBooster dynamicBooster = null;
+
+            // TODO: use "priority list" of booster types if given or default was not found
+            // I guess "default" is not used anymore in newer sets
+            // maybe "draft" -> "play" -> "default" -> exception
+
             // name of booster to generate
-            var type = Enum.GetName(boosterType) ?? "Default";
-            var dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type)!.GetValue(set.Data.Booster, null) ?? (DefaultBooster)set.Data.Booster.GetType().GetProperty("Default")!.GetValue(set.Data.Booster, null);
+            var type = Enum.GetName(boosterType) ?? "Play";
+            dynamicBooster = (DefaultBooster)set.Data.Booster.GetType().GetProperty(type)!.GetValue(set.Data.Booster, null) ?? (DefaultBooster)set.Data.Booster.GetType().GetProperty("Play")!.GetValue(set.Data.Booster, null);
 
             // determine booster blueprint
-            var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight);
+            var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)dynamicBooster.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
-            // determine booster contents
-            foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
+            // TODO: is the a dynamic way to identify fixed booster contents??
+            if (set.Data.Code.Equals("CLU"))
             {
-                // how many cards should be added for this sheet
-                var cardCount = (long)sheet.GetValue(booster.Key, null)!;
-
-                // name of the sheet
-                var sheetName = sheet.Name;
-
-                // get the actual sheet
-                var actualSheetReflection = dynamicBooster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamicBooster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                var actualSheet = ((Sheet)actualSheetReflection.GetValue(dynamicBooster.Sheets));
-
-                // add all cards to a temporary list with correct weight
-                if (actualSheet == null) continue;
-                var temporarySheet = actualSheet.Cards.ToDictionary(item => Guid.Parse(item.Key), item => item.Value / (float)actualSheet.TotalWeight);
-
-                // get cards from sheet and add to booster
-                for (var i = 0; i < cardCount; i++)
+                // for this set add all cards 
+                //
+            }
+            else
+            {
+                // determine booster contents
+                foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
                 {
-                    // reset card id
-                    var card = Guid.Empty;
+                    // how many cards should be added for this sheet
+                    var cardCount = (long)sheet.GetValue(booster.Key, null)!;
 
-                    // prevent added duplicate cards
-                    // exclude jumpstart as they may? contain duplicates???
-                    // TODO: check this assumption
-                    if (boosterType is BoosterType.Jumpstart or BoosterType.Tournament)
+                    // name of the sheet
+                    var sheetName = sheet.Name;
+
+                    // get the actual sheet
+                    var actualSheetReflection = dynamicBooster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamicBooster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                    var actualSheet = ((Sheet)actualSheetReflection.GetValue(dynamicBooster.Sheets));
+
+                    // add all cards to a temporary list with correct weight
+                    if (actualSheet == null) continue;
+                    var temporarySheet = actualSheet.Cards.ToDictionary(item => Guid.Parse(item.Key), item => item.Value / (float)actualSheet.TotalWeight);
+
+                    // get cards from sheet and add to booster
+                    for (var i = 0; i < cardCount; i++)
                     {
-                        card = temporarySheet.RandomElementByWeight(e => e.Value).Key;
+                        // reset card id
+                        Guid card;
+
+                        // TODO: check this assumption
+                        // prevent added duplicate cards
+                        // exclude jumpstart as they may? contain duplicates???
+                        if (boosterType is BoosterType.Jumpstart or BoosterType.Tournament)
+                        {
+                            card = temporarySheet.RandomElementByWeight(e => e.Value).Key;
+                        }
+                        else
+                        {
+                            do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
+                        }
+
+                        // add card to booster
+                        boosterCards.Add(card);
                     }
-                    else
-                    {
-                        do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
-                    }
-                    
-                    // add card to booster
-                    boosterCards.Add(card);
                 }
             }
 
             // if there are addtional sets given they will only be used to get their cards like BRO needs BRR
-            if (additionalSetCodes != null)
+            if (additionalSetCodes == null) return boosterCards.Select(t => cards[t]).ToList();
+            
+            foreach (var item in additionalSetCodes.Select(addSetCode => Sets[addSetCode.ToUpper()]).SelectMany(addSet => addSet.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or Side.A)))
             {
-                foreach (var item in additionalSetCodes.Select(addSetCode => Sets[addSetCode.ToUpper()]).SelectMany(addSet => addSet.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or Side.A)))
-                {
-                    cards.Add(item.Uuid, item);
-                }
+                cards.Add(item.Uuid, item);
             }
 
             return boosterCards.Select(t => cards[t]).ToList();
@@ -1600,13 +1628,14 @@ namespace MgcPrxyDrftr
         {
             return boosterType switch
             {
-                "c" => BoosterType.Collector,
-                "d" => BoosterType.Default,
-                "j" => BoosterType.Jumpstart,
-                "s" => BoosterType.Set,
                 "a" => BoosterType.Arena,
+                "c" => BoosterType.Collector,
+                "d" => BoosterType.Draft,
+                "j" => BoosterType.Jumpstart,
+                "p" => BoosterType.Play,
+                "s" => BoosterType.Set,
                 "t" => BoosterType.Tournament,
-                _ => BoosterType.Default
+                _ => BoosterType.Draft
             };
         }
 
@@ -1633,7 +1662,7 @@ namespace MgcPrxyDrftr
                 foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
                 // generate and move pdf file
-                H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
                 if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf"); }
 
@@ -1652,7 +1681,7 @@ namespace MgcPrxyDrftr
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
             var boosterType = draftString.Split('|').Length == 2
-                ? BoosterType.Default
+                ? BoosterType.Play
                 : MapBoosterType(draftString.Split('|')[2]);
 
             var set = (await setService.FindAsync(setCode).ConfigureAwait(false)).Value;
@@ -1695,7 +1724,7 @@ namespace MgcPrxyDrftr
                 // load images
                 foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
-                var foo = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
                 
