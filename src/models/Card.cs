@@ -16,7 +16,7 @@ namespace MgcPrxyDrftr.models
         public List<Finish> Finishes { get; set; }
         public List<ForeignData> ForeignData { get; set; }
         public List<FrameEffect> FrameEffects { get; set; }
-        public string FrameVersion { get; set; }
+        public FrameVersion FrameVersion { get; set; }
         public bool HasFoil { get; set; }
         public bool HasNonFoil { get; set; }
         public CardIdentifiers Identifiers { get; set; }
@@ -36,12 +36,14 @@ namespace MgcPrxyDrftr.models
         public List<Ruling> Rulings { get; set; }
         //public Code SetCode { get; set; }
         public string SetCode { get; set; }
-        //public List<SubType> Subtypes { get; set; }
-        public List<string> Subtypes { get; set; }
+        // ReSharper disable once CollectionNeverUpdated.Global
+        public List<SubType> Subtypes { get; set; }
+        // ReSharper disable once CollectionNeverUpdated.Global
         public List<Supertype> Supertypes { get; set; }
         public string Text { get; set; }
         public string Toughness { get; set; }
         public string Type { get; set; }
+        // ReSharper disable once CollectionNeverUpdated.Global
         public List<Type> Types { get; set; }
         public Guid Uuid { get; set; }
         public List<Guid> Variations { get; set; }
@@ -56,8 +58,7 @@ namespace MgcPrxyDrftr.models
         public string? Loyalty { get; set; }
 #nullable disable
         public bool? IsStarter { get; set; }
-        //public List<PromoType> PromoTypes { get; set; }
-        public List<string> PromoTypes { get; set; }
+        public List<PromoType> PromoTypes { get; set; }
         public bool? IsPromo { get; set; }
         public string Watermark { get; set; }
         public long? FaceConvertedManaCost { get; set; }
