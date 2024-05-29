@@ -142,6 +142,10 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
 #if DEBUG
+            // main loop
+            //_ = await EnterTheLoop();
+            //_ = await EnterTheLorcanaLoop();
+
             //OmniCardList = ReadAllCards();
 
             //GenerateCubeDraftBooster();
@@ -153,17 +157,12 @@ namespace MgcPrxyDrftr
 
             //ResetAndCleanEverything();
 
-            // main loop
-            _ = await EnterTheLoop();
-
-            //_ = await EnterTheLorcanaLoop();
-
             // Magic: Online Arena
             //_ = await DraftToSql("ARN|60");
             //_ = await DraftToSql("LEB|36");
 
             // convert all given sets to sql inserts for mtgoa
-            //string foo = SetToSql();
+            string foo = SetToSql();
 #else
             // start application loop
             _ = await EnterTheLoop();
@@ -340,11 +339,12 @@ namespace MgcPrxyDrftr
         private static string SetToSql()
         {
             var sb = new StringBuilder();
+            var boosterCounter = 0;
             var boosterBlueprintCounter = 0;
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "3ED" or "WOE"))
+            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "3ED" or "LTR" or "WOE" or "UNF"))
             //foreach (var set in sets)
             {
                 setCounter++;
@@ -370,49 +370,106 @@ namespace MgcPrxyDrftr
                             $"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
                     }
                 }
+                sb.AppendLine("commit;");
                 
-                sb.AppendLine("commit;");
-                sb.AppendLine($"update rs_set set boostertotalweight = {set.Value.Data.Booster.Default.BoostersTotalWeight} where setcode = '{set.Value.Data.Code}';");
-                sb.AppendLine("commit;");
+                // I'll leave that here as it hurts nobody but it is probably no longer needed
+                //sb.AppendLine($"update rs_set set boostertotalweight = {set.Value.Data.Booster.Default.BoostersTotalWeight} where setcode = '{set.Value.Data.Code}';");
+                //sb.AppendLine("commit;");
 
-                foreach (var sheet in set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().Where(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null))
+                // iterate all available booster types
+                var boosterList = set.Value.Data.Booster.GetType().GetProperties()
+                    .Where(b => b.GetValue(set.Value.Data.Booster) != null);
+
+                foreach (var boosterInfo in boosterList)
                 {
-                    long cardCount = (((Sheet)sheet.GetValue(set.Value.Data.Booster.Default.Sheets, null))!).Cards.Count;
-                    var sheetName = sheet.Name;
-                    var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                    var actualSheet = ((Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+                    var boosterInfoObject = (DefaultBooster)boosterInfo.GetValue(set.Value.Data.Booster, null);
 
-                    sheetCounter++;
-                    sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheetName}', {actualSheet.TotalWeight});");
-                    sb.AppendLine("commit;");
-
-                    foreach (var card in actualSheet.Cards)
+                    // create sheets
+                    foreach (var sheet in boosterInfoObject!.Sheets.GetType().GetProperties()
+                                 .Where(s => s.GetValue(boosterInfoObject.Sheets, null) != null))
                     {
-                        sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
-                    }
+                        var sheetObject = (Sheet)sheet.GetValue(boosterInfoObject.Sheets, null);
 
-                    sb.AppendLine("commit;");
-                }
+                        sheetCounter++;
+                        sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheet.Name}', {sheetObject!.TotalWeight});");
+                        sb.AppendLine("commit;");
 
-                foreach (var booster in set.Value.Data.Booster.Default.Boosters)
-                {
-                    boosterBlueprintCounter++;
-                    sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, {setCounter}, {booster.Weight});");
-                    sb.AppendLine("commit;");
-
-                    foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
-                    {
-                        var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
-                        var sheetName = sheet.Name;
-                        //var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                        //var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
-                        
-                        //sheetCounter++;
-                        sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
+                        foreach (var card in sheetObject!.Cards)
+                        {
+                            sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
+                        }
 
                         sb.AppendLine("commit;");
                     }
+
+                    boosterCounter++;
+                    // TODO: determine the boostertype by mapping the name of the booster to the enum
+                    var boosterType = "PLAY";
+                    sb.AppendLine($"insert into rs_booster (id, setid, totalboosterweight, boostername, boostertype) values ({boosterCounter}, {setCounter}, {boosterInfoObject.BoostersTotalWeight}, '{boosterInfoObject.Name ?? set.Value.Data.Name + " Booster"}', '{boosterType}');");
+                    sb.AppendLine("commit;");
+
+                    // now create booster as we needed the sheets first
+                    foreach (var booster in boosterInfoObject.Boosters)
+                    {
+                        boosterBlueprintCounter++;
+                        
+                        // TODO: add foreign key boosterid here
+
+                        sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, {setCounter}, {booster.Weight});");
+                        sb.AppendLine("commit;");
+
+                        foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
+                        {
+                            var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
+                            var sheetName = sheet.Name;
+                            
+                            sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
+                            sb.AppendLine("commit;");
+                        }
+                    }
                 }
+
+                
+
+                //foreach (var sheet in set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().Where(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null))
+                //{
+                //    long cardCount = (((Sheet)sheet.GetValue(set.Value.Data.Booster.Default.Sheets, null))!).Cards.Count;
+                //    var sheetName = sheet.Name;
+                //    var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                //    var actualSheet = ((Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+
+                //    sheetCounter++;
+                //    sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheetName}', {actualSheet.TotalWeight});");
+                //    sb.AppendLine("commit;");
+
+                //    foreach (var card in actualSheet.Cards)
+                //    {
+                //        sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
+                //    }
+
+                //    sb.AppendLine("commit;");
+                //}
+
+                //// now create booster as we needed the sheets first
+                //foreach (var booster in set.Value.Data.Booster.Default.Boosters)
+                //{
+                //    boosterBlueprintCounter++;
+                //    sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, {setCounter}, {booster.Weight});");
+                //    sb.AppendLine("commit;");
+
+                //    foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
+                //    {
+                //        var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
+                //        var sheetName = sheet.Name;
+                //        //var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                //        //var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+                        
+                //        //sheetCounter++;
+                //        sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
+
+                //        sb.AppendLine("commit;");
+                //    }
+                //}
             }
 
             return sb.ToString();

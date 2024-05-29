@@ -714,6 +714,6 @@ namespace MgcPrxyDrftr.models
     public enum Legality { Banned, Legal, Restricted }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum BoosterType { Default, Draft, Collector, [System.Runtime.Serialization.EnumMember(Value = "collector-sample")] CollectorSample, Set, Jumpstart, Arena, Tournament, Play, BoxTopper }
+    public enum BoosterType { Default, Draft, Collector, [System.Runtime.Serialization.EnumMember(Value = "collector-sample")] CollectorSample, Set, Jumpstart, Arena, Tournament, Play, [System.Runtime.Serialization.EnumMember(Value = "box-topper")] BoxTopper }
     #endregion
 }
