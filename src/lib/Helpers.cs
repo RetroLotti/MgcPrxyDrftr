@@ -70,6 +70,7 @@ namespace MgcPrxyDrftr.lib
             await using var stream = await httpClient.GetStreamAsync(uri);
             await using var fileStream = new FileStream(targetFile, FileMode.CreateNew);
             await stream.CopyToAsync(fileStream);
+            
             return true;
         }
 

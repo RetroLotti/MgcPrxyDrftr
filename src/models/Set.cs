@@ -76,9 +76,12 @@ namespace MgcPrxyDrftr.models
 
     public class Sheet
     {
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
+        public bool AllowDuplicates { get; set; }
         public bool BalanceColors { get; set; }
         public Dictionary<string, long> Cards { get; set; }
         public bool Foil { get; set; }
+        public bool Fixed { get; set; }
         public long TotalWeight { get; set; }
 
         public static explicit operator Sheet(PropertyInfo v)
@@ -568,7 +571,7 @@ namespace MgcPrxyDrftr.models
         Ral, Ranger, Rat, Rath, Ravnica, Rebel, Reflection, Regatha, Reveler, Rhino, Rigger, Robot, Rogue, Role, Rowan, Rune, Sable, Saga,
         Saheeli, Salamander, Samurai, Samut, Sand, Saproling, Sarkhan, Satyr, Scarecrow, Scientist, Scion, Scorpion, Scout, Sculpture, Segovia,
         Serf, Serpent, Serra,
-        [System.Runtime.Serialization.EnumMember(Value = "Serra's Realm")]
+        [System.Runtime.Serialization.EnumMember(Value = "Serra’s Realm")]
         SerrasRealm,
         Servo, Shade, Shadowmoor, Shaman, Shandalar, Shapeshifter, Shard, Shark, Sheep, Shenmeng, Ship, Shrine,
         Siege, Siren, Sivitri, Skaro, Skeleton, Slith, Sliver, Sloth, Slug, Snail, Snake, Soldier, Soltari, Sorin, Spacecraft, Spawn, Specter,
@@ -714,6 +717,6 @@ namespace MgcPrxyDrftr.models
     public enum Legality { Banned, Legal, Restricted }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum BoosterType { Default, Draft, Collector, [System.Runtime.Serialization.EnumMember(Value = "collector-sample")] CollectorSample, Set, Jumpstart, Arena, Tournament, Play, BoxTopper }
+    public enum BoosterType { Default, Draft, Collector, [System.Runtime.Serialization.EnumMember(Value = "collector-sample")] CollectorSample, Set, Jumpstart, Arena, Tournament, Play, [System.Runtime.Serialization.EnumMember(Value = "box-topper")] BoxTopper }
     #endregion
 }

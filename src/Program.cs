@@ -8,6 +8,7 @@ using System.Net;
 using System.Reflection;
 using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -98,7 +99,7 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Reading setlist...");
             await LoadSetList().ConfigureAwait(false);
 
-            //Settings.RunsForFirstTime = true;
+            Settings.RunsForFirstTime = false;
             if (Settings.RunsForFirstTime)
             {
                 Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
@@ -142,6 +143,9 @@ namespace MgcPrxyDrftr
             Console.Clear();
 
 #if DEBUG
+            // main loop
+            _ = await EnterTheLoop();
+
             //OmniCardList = ReadAllCards();
 
             //GenerateCubeDraftBooster();
@@ -153,17 +157,13 @@ namespace MgcPrxyDrftr
 
             //ResetAndCleanEverything();
 
-            // main loop
-            _ = await EnterTheLoop();
-
-            //_ = await EnterTheLorcanaLoop();
-
             // Magic: Online Arena
             //_ = await DraftToSql("ARN|60");
             //_ = await DraftToSql("LEB|36");
 
             // convert all given sets to sql inserts for mtgoa
-            //string foo = SetToSql();
+            //SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
+            //SetToSql(Sets, true);
 #else
             // start application loop
             _ = await EnterTheLoop();
@@ -180,7 +180,7 @@ namespace MgcPrxyDrftr
 
             var setCode = (args[0] ?? "LEA").ToUpper();
             var numberOfBoosters = int.TryParse(args[1], out var boosteResult) ? boosteResult : 1;
-            var boosterType = MapBoosterType(args[2] ?? "d");
+            var boosterType = MapBoosterType(args[2].ToCharArray()[0]);
 
             Settings = new Settings();
             Settings.Load();
@@ -220,9 +220,22 @@ namespace MgcPrxyDrftr
 
         private static void DownloadAllSetFiles()
         {
-            foreach (var set in SetList.Data.Where(s => s.IsOnlineOnly == false && s.IsPartialPreview == false))
+            // TODO: implement fix for filename CON as it is a reserved keyword in windows
+            foreach (var set in SetList.Data.Where(s =>
+                         s.IsOnlineOnly == false && s.IsPartialPreview == false && s.Code.ToUpper() != "CON" && s.Type is SetType.Commander
+                             or SetType.Core or SetType.DraftInnovation or SetType.Commander or SetType.Expansion
+                             or SetType.Masterpiece or SetType.Masters).OrderBy(s => s.ReleaseDate))
             {
-                _ = ReadSingleSetWithUpdateCheck(set.Code.ToUpper());
+                try
+                {
+                    Console.WriteLine($"Downloading {set.Code.ToUpper()} ...");
+                    _ = ReadSingleSetWithUpdateCheck(set.Code.ToUpper());
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error ({set.Code}): {ex.Message}");
+                    continue;
+                }
             }
         }
 
@@ -337,20 +350,26 @@ namespace MgcPrxyDrftr
             writer.WriteLine(upgradeFileString);
         }
 
-        private static string SetToSql()
+        private static void SetToSql(SortedList<string, SetRoot> sets, bool individualFiles = false)
         {
             var sb = new StringBuilder();
+            var sbHeader = new StringBuilder();
+            var boosterCounter = 0;
             var boosterBlueprintCounter = 0;
             var sheetCounter = 0;
             var setCounter = 0;
 
-            foreach (var set in Sets.Where(x => x.Value.Data.Code is "LEA" or "LEB" or "2ED" or "ARN" or "DRK" or "LEG" or "ATQ" or "3ED" or "WOE"))
-            //foreach (var set in sets)
+            sbHeader.AppendLine("set character_set_server = 'utf8mb4';");
+            sbHeader.AppendLine("set collation_server = 'utf8mb4_unicode_520_ci';");
+            sbHeader.AppendLine("set names latin1;");
+            sbHeader.AppendLine("update rs_casino set maintenancesw = 1 where casinoname = 'Magic: Online Arena';");
+            sbHeader.AppendLine("commit;");
+
+            // handle all sets that have a least one booster
+            foreach (var set in sets.Where(s => s.Value.Data.Booster != null))
             {
                 setCounter++;
                 sb.AppendLine($"insert into rs_set (id, setcode, `name`, releasedate) values ({setCounter}, '{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name.Replace("\'", "\\\'")}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
-                sb.AppendLine("commit;");
-                sb.AppendLine($"insert into rs_magicproduct (productname, purchaseprice, setid) values ('{set.Value.Data.Name.Replace("\'", "\\\'")} Booster', 230, {setCounter});");
                 sb.AppendLine("commit;");
 
                 // add all cards of this set
@@ -364,58 +383,93 @@ namespace MgcPrxyDrftr
                 // add sub sets
                 if (SetDependencies.TryGetValue(set.Value.Data.Code, out var subSets))
                 {
-                    foreach (var card in subSets.SelectMany(dep => Sets[dep].Data.Cards))
+                    foreach (var card in subSets.Where(sub => Sets.ContainsKey(sub)).SelectMany(dep => Sets[dep].Data.Cards))
                     {
                         sb.AppendLine(
                             $"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
                     }
                 }
+                sb.AppendLine("commit;");
                 
-                sb.AppendLine("commit;");
-                sb.AppendLine($"update rs_set set boostertotalweight = {set.Value.Data.Booster.Default.BoostersTotalWeight} where setcode = '{set.Value.Data.Code}';");
-                sb.AppendLine("commit;");
+                // iterate all available booster types
+                var boosterList = set.Value.Data.Booster.GetType().GetProperties()
+                    .Where(b => b.GetValue(set.Value.Data.Booster) != null);
 
-                foreach (var sheet in set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().Where(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null))
+                foreach (var boosterInfo in boosterList)
                 {
-                    long cardCount = (((Sheet)sheet.GetValue(set.Value.Data.Booster.Default.Sheets, null))!).Cards.Count;
-                    var sheetName = sheet.Name;
-                    var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                    var actualSheet = ((Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
+                    var boosterInfoObject = (DefaultBooster)boosterInfo.GetValue(set.Value.Data.Booster, null);
+                    var boosterName = $"{(boosterInfoObject!.Name ?? set.Value.Data.Name + " Booster").Replace("\'", "\\\'")}";
 
-                    sheetCounter++;
-                    sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheetName}', {actualSheet.TotalWeight});");
+                    // TODO: skip some booster types for now
+                    if (boosterName.Contains("Sample") || boosterName.Contains("Arena")) continue;
+
+                    sb.AppendLine($"insert into rs_magicproduct (productname, purchaseprice, setid) values ('{boosterName}', 230, {setCounter});");
                     sb.AppendLine("commit;");
 
-                    foreach (var card in actualSheet.Cards)
+                    // create sheets
+                    foreach (var sheet in boosterInfoObject!.Sheets.GetType().GetProperties()
+                                 .Where(s => s.GetValue(boosterInfoObject.Sheets, null) != null))
                     {
-                        sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
-                    }
+                        var sheetObject = (Sheet)sheet.GetValue(boosterInfoObject.Sheets, null);
 
-                    sb.AppendLine("commit;");
-                }
+                        sheetCounter++;
+                        sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheet.Name}', {sheetObject!.TotalWeight});");
+                        sb.AppendLine("commit;");
 
-                foreach (var booster in set.Value.Data.Booster.Default.Boosters)
-                {
-                    boosterBlueprintCounter++;
-                    sb.AppendLine($"insert into rs_boosterblueprint (id, setid, boosterweight) values ({boosterBlueprintCounter}, {setCounter}, {booster.Weight});");
-                    sb.AppendLine("commit;");
-
-                    foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
-                    {
-                        var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
-                        var sheetName = sheet.Name;
-                        //var actualSheetReflection = set.Value.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Value.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                        //var actualSheet = ((models.Sheet)actualSheetReflection.GetValue(set.Value.Data.Booster.Default.Sheets));
-                        
-                        //sheetCounter++;
-                        sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
+                        foreach (var card in sheetObject!.Cards)
+                        {
+                            sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
+                        }
 
                         sb.AppendLine("commit;");
                     }
+
+                    boosterCounter++;
+                    var boosterType = MapBoosterType(boosterInfoObject.Name);
+                    sb.AppendLine($"insert into rs_booster (id, setid, totalboosterweight, boostername, boostertype) values ({boosterCounter}, {setCounter}, {boosterInfoObject.BoostersTotalWeight}, '{boosterName}', '{boosterType}');");
+                    sb.AppendLine("commit;");
+
+                    // now create booster as we needed the sheets first
+                    foreach (var booster in boosterInfoObject.Boosters)
+                    {
+                        boosterBlueprintCounter++;
+                        sb.AppendLine($"insert into rs_boosterblueprint (id, boosterid, boosterweight) values ({boosterBlueprintCounter}, {boosterCounter}, {booster.Weight});");
+                        sb.AppendLine("commit;");
+
+                        foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
+                        {
+                            var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
+                            var sheetName = sheet.Name;
+                            
+                            sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
+                        }
+                        sb.AppendLine("commit;");
+                    }
                 }
+
+                // skip if big file is written at the end
+                if (!individualFiles) continue;
+
+                // write single set sql file
+                using (var file = File.CreateText(@$"C:\dev\{set.Value.Data.Code.ToLower()}.sql"))
+                {
+                    file.Write(sbHeader);
+                    file.Write(sb);
+                    file.Close();
+                }
+
+                sb.Clear();
             }
 
-            return sb.ToString();
+            // write one big file
+            if (individualFiles) return;
+            {
+                // write set sql file
+                using var file = File.CreateText(@$"C:\dev\set_data.sql");
+                file.Write(sbHeader);
+                file.Write(sb);
+                file.Close();
+            }
         }
 
         private static void Write(string text, ConsoleColor backgroundColor = ConsoleColor.Black, ConsoleColor foregroundColor = ConsoleColor.White)
@@ -817,18 +871,6 @@ namespace MgcPrxyDrftr
             return 0;
         }
 
-        private static async Task EnterTheLorcanaLoop()
-        {
-
-
-            do
-            {
-
-                
-
-            } while (Console.ReadKey().Key != ConsoleKey.X);
-        }
-
         private static void GetPrice(string cardName)
         {
             // clear the screen
@@ -968,12 +1010,15 @@ namespace MgcPrxyDrftr
             DeckList = JsonConvert.DeserializeObject<DeckList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json").ConfigureAwait(false));
         }
 
-        private static async Task LoadSetList()
+        private static async Task LoadSetList(bool forceDownload = false)
         {
-            // TODO: check for new version of set list
-
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\SetList.json");
-            if (!file.Exists)
+
+            // remove file if force download is used
+            if (file.Exists && forceDownload) { file.Delete(); }
+            
+            // download file if it is missing or force download is used
+            if (!file.Exists || forceDownload)
             {
                 var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/SetList.json", "https://mtgjson.com/api/v5/SetList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
                 if (!valid)
@@ -1099,28 +1144,20 @@ namespace MgcPrxyDrftr
         {
             FileInfo fileInfo = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
 
-            //if (!fileInfo.Exists)
-            //{
-            //    Settings.CheckSetFile(setCode, @$"{BaseDirectory}\{JsonDirectory}\", SetDirectory);
-
-
-            //    //var isValid = H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
-            //}
-
             return ReadSingleSet(fileInfo);
         }
 
         private static SetRoot ReadSingleSet(FileInfo fileInfo)
         {
-            var txt = File.ReadAllText(fileInfo.FullName);
+            var txt = File.ReadAllText(fileInfo.ToString());
             var o = JsonConvert.DeserializeObject<SetRoot>(txt);
 
             var json = JObject.Parse(txt);
-            if(json.SelectToken("data").SelectToken("booster") != null && json.SelectToken("data").SelectToken("booster").SelectToken("default") != null)
+            if(json.SelectToken("data")?.SelectToken("booster") != null && json.SelectToken("data")?.SelectToken("booster")?.SelectToken("default") != null)
             {
-                foreach (var item in json.SelectToken("data").SelectToken("booster")?.SelectToken("default").SelectToken("boosters")!)
+                foreach (var item in json.SelectToken("data")?.SelectToken("booster")?.SelectToken("default")?.SelectToken("boosters")!)
                 {
-                    foreach (var item1 in item.SelectToken("contents"))
+                    foreach (var item1 in item.SelectToken("contents")!)
                     {
                         var name = ((JProperty)item1).Name;
                         if (!SheetList.TryGetValue(name, out _))
@@ -1131,10 +1168,7 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            if (!Sets.ContainsKey(o.Data.Code))
-            {
-                Sets.Add(o.Data.Code, o);
-            }
+            Sets.TryAdd(o.Data.Code, o);
 
             if (!ReleaseTimelineSets.ContainsValue(o.Data.Code))
             {
@@ -1144,7 +1178,6 @@ namespace MgcPrxyDrftr
             return o;
         }
 
-        //static string GenerateBoosterPlain(string setCode)
         private static SortedDictionary<string, int> GenerateBoosterPlain(string setCode)
         {
             _ = ReadSingleSet(setCode);
@@ -1317,49 +1350,53 @@ namespace MgcPrxyDrftr
             // determine booster blueprint
             var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)dynamicBooster.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
+            
+            // determine booster contents
+            foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
+            {
+                // how many cards should be added for this sheet
+                var cardCount = (long)sheet.GetValue(booster.Key, null)!;
 
-            // TODO: is the a dynamic way to identify fixed booster contents??
-            if (set.Data.Code.Equals("CLU"))
-            {
-                // for this set add all cards 
-                //
-            }
-            else
-            {
-                // determine booster contents
-                foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
+                // name of the sheet
+                var sheetName = sheet.Name;
+
+                // get the actual sheet
+                var actualSheetReflection = dynamicBooster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamicBooster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
+                var actualSheet = ((Sheet)actualSheetReflection.GetValue(dynamicBooster.Sheets));
+
+                // add all cards to a temporary list with correct weight
+                if (actualSheet == null) continue;
+                var temporarySheet = actualSheet.Cards.ToDictionary(item => Guid.Parse(item.Key), item => item.Value / (float)actualSheet.TotalWeight);
+
+                // differentiate between fixed and random boosters
+                if (actualSheet.Fixed)
                 {
-                    // how many cards should be added for this sheet
-                    var cardCount = (long)sheet.GetValue(booster.Key, null)!;
-
-                    // name of the sheet
-                    var sheetName = sheet.Name;
-
-                    // get the actual sheet
-                    var actualSheetReflection = dynamicBooster.Sheets.GetType().GetProperties().First(s => s.GetValue(dynamicBooster.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
-                    var actualSheet = ((Sheet)actualSheetReflection.GetValue(dynamicBooster.Sheets));
-
-                    // add all cards to a temporary list with correct weight
-                    if (actualSheet == null) continue;
-                    var temporarySheet = actualSheet.Cards.ToDictionary(item => Guid.Parse(item.Key), item => item.Value / (float)actualSheet.TotalWeight);
-
+                    // for this sheet add all cards 
+                    foreach (var cardKeyValue in actualSheet.Cards)
+                    {
+                        if (cardKeyValue.Value > 1)
+                        {
+                            for (var i = 0; i < cardKeyValue.Value; i++)
+                            {
+                                boosterCards.Add(new Guid(cardKeyValue.Key));
+                            }
+                        }
+                        else
+                        {
+                            boosterCards.Add(new Guid(cardKeyValue.Key));
+                        }
+                    }
+                }
+                else
+                {
                     // get cards from sheet and add to booster
                     for (var i = 0; i < cardCount; i++)
                     {
                         // reset card id
                         Guid card;
 
-                        // TODO: check this assumption
-                        // prevent added duplicate cards
-                        // exclude jumpstart as they may? contain duplicates???
-                        if (boosterType is BoosterType.Jumpstart or BoosterType.Tournament)
-                        {
-                            card = temporarySheet.RandomElementByWeight(e => e.Value).Key;
-                        }
-                        else
-                        {
-                            do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
-                        }
+                        // add cards
+                        do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
 
                         // add card to booster
                         boosterCards.Add(card);
@@ -1624,18 +1661,35 @@ namespace MgcPrxyDrftr
             return true;
         }
 
-        private static BoosterType MapBoosterType(string boosterType)
+        private static BoosterType MapBoosterType(char boosterType)
         {
             return boosterType switch
             {
-                "a" => BoosterType.Arena,
-                "c" => BoosterType.Collector,
-                "d" => BoosterType.Draft,
-                "j" => BoosterType.Jumpstart,
-                "p" => BoosterType.Play,
-                "s" => BoosterType.Set,
-                "t" => BoosterType.Tournament,
-                _ => BoosterType.Draft
+                'a' => BoosterType.Arena,
+                'c' => BoosterType.Collector,
+                'd' => BoosterType.Draft,
+                'j' => BoosterType.Jumpstart,
+                'p' => BoosterType.Play,
+                's' => BoosterType.Set,
+                't' => BoosterType.Tournament,
+                _ => BoosterType.Play
+            };
+        }
+
+        private static BoosterType MapBoosterType(string boosterName)
+        {
+            return boosterName switch
+            {
+                not null when boosterName.ToUpper().Contains("ARENA") => BoosterType.Arena,
+                not null when boosterName.ToUpper().Contains("BOX TOPPER") => BoosterType.BoxTopper,
+                not null when boosterName.ToUpper().Contains("COLLECTOR SAMPLE") => BoosterType.CollectorSample,
+                not null when boosterName.ToUpper().Contains("COLLECTOR") => BoosterType.Collector,
+                not null when boosterName.ToUpper().Contains("DRAFT") => BoosterType.Draft,
+                not null when boosterName.ToUpper().Contains("JUMPSTART") => BoosterType.Jumpstart,
+                not null when boosterName.ToUpper().Contains("PLAY") => BoosterType.Play,
+                not null when boosterName.ToUpper().Contains("SET") => BoosterType.Set,
+                not null when boosterName.ToUpper().Contains("TOURNAMENT") => BoosterType.Tournament,
+                _ => BoosterType.Draft,
             };
         }
 
@@ -1681,8 +1735,8 @@ namespace MgcPrxyDrftr
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
             var boosterType = draftString.Split('|').Length == 2
-                ? BoosterType.Play
-                : MapBoosterType(draftString.Split('|')[2]);
+                ? BoosterType.Default
+                : MapBoosterType(draftString.Split('|')[2].ToCharArray()[0]);
 
             var set = (await setService.FindAsync(setCode).ConfigureAwait(false)).Value;
             Settings.LastGeneratedSet = set?.Code ?? setCode.ToUpper();
@@ -1962,9 +2016,8 @@ namespace MgcPrxyDrftr
 
             // copy to booster directory
             FileInfo newFile = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
-            if (newFile.Exists) { _ = newFile.CopyTo($"{targetBoosterDirectory}{fileName}"); return true; }
-
-            return false;
+            if (!newFile.Exists) return false;
+            _ = newFile.CopyTo($"{targetBoosterDirectory}{fileName}"); return true;
         }
 
         private static ConsoleColor GetColorByRarity(string rarity)
