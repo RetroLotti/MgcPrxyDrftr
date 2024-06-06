@@ -36,6 +36,8 @@ namespace MgcPrxyDrftr.models
         public string MtgoCode { get; set; }
         public long McmId { get; set; }
         public string McmName { get; set; }
+        public string ParentCode { get; set; }
+        public string TokenSetCode { get; set; }
     }
 
     public class ForeignData

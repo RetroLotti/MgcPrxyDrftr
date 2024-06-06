@@ -77,9 +77,7 @@ namespace MgcPrxyDrftr
 
             //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
-#pragma warning disable CA1416 // Validate platform compatibility
             if (IsWindows) { Console.SetWindowSize(136, 40); }
-#pragma warning restore CA1416 // Validate platform compatibility
 
             WriteHeader();
 
@@ -89,17 +87,21 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
-            Console.WriteLine(">> Init set dependencies...");
-            InitSetDependencies();
+            Console.WriteLine(">> Determine and init set dependencies...");
+            await DetermineChildSets();
 
             Console.WriteLine(">> Reading settings...");
             Settings = new Settings();
             Settings.Load();
 
             Console.WriteLine(">> Reading setlist...");
-            await LoadSetList().ConfigureAwait(false);
+            SetList = await LoadSetList().ConfigureAwait(false);
 
-            Settings.RunsForFirstTime = false;
+            //Console.WriteLine(">> Reading Prices...");
+            //await LoadTodaysPriceList().ConfigureAwait(false);
+            //await LoadPriceList().ConfigureAwait(false);
+
+            Settings.RunsForFirstTime = true;
             if (Settings.RunsForFirstTime)
             {
                 Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
@@ -110,6 +112,8 @@ namespace MgcPrxyDrftr
                 var tempList = Settings.SetsToLoad;
 
                 DownloadAllSetFiles();
+
+                //SetToSql(Sets, true);
 
                 AnalyseAllSets();
 
@@ -144,7 +148,7 @@ namespace MgcPrxyDrftr
 
 #if DEBUG
             // main loop
-            _ = await EnterTheLoop();
+            //_ = await EnterTheLoop();
 
             //OmniCardList = ReadAllCards();
 
@@ -163,11 +167,43 @@ namespace MgcPrxyDrftr
 
             // convert all given sets to sql inserts for mtgoa
             //SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
-            //SetToSql(Sets, true);
+            SetToSql(Sets, true);
 #else
             // start application loop
             _ = await EnterTheLoop();
 #endif
+        }
+
+        private static async Task<OverallPriceList> LoadTodaysPriceList(bool forceDownload = false)
+        {
+            const string fileName = "AllPricesToday.json";
+            FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{fileName}");
+
+            if (Settings.LastPriceDownload < DateTime.Today)
+            {
+                Settings.LastPriceDownload = DateTime.Today;
+                forceDownload = true;
+            }
+
+            // remove file if force download is used
+            if (file.Exists && forceDownload) { file.Delete(); }
+
+            // download file if it is missing or force download is used
+            if (!file.Exists || forceDownload)
+            {
+                var valid = await H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/{fileName}", $"https://mtgjson.com/api/v5/{fileName}.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                if (!valid)
+                {
+                    throw new Exception("Filechecksum is invalid!");
+                }
+            }
+
+            var todaysPriceList = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\{fileName}").ConfigureAwait(false);
+            var list = JsonConvert.DeserializeObject<OverallPriceList>(todaysPriceList);
+
+            Settings.Save();
+
+            return list;
         }
 
         /// <summary>
@@ -187,7 +223,7 @@ namespace MgcPrxyDrftr
 
             CheckAllDirectories();
 
-            InitSetDependencies();
+            await DetermineChildSets();
 
             await Settings.CheckSetFile(setCode, @$"{BaseDirectory}\{JsonDirectory}\", @$"{SetDirectory}").ConfigureAwait(false);
             Sets[setCode] = ReadSingleSet(setCode);
@@ -204,18 +240,29 @@ namespace MgcPrxyDrftr
             await SimpleDraft(setCode, numberOfBoosters, boosterType, dependency);
         }
 
-        private static void InitSetDependencies()
+        // TODO: read set list to determine child sets
+        private static async Task DetermineChildSets()
         {
-            // TODO: complete
-            SetDependencies["BRO"] = new List<string> { "PLST", "BRR", "BRC", "BOT" };
-            SetDependencies["NEO"] = new List<string> { "PLST", "NEC", "NCC" };
-            SetDependencies["DMU"] = new List<string> { "PLST", "DMC" };
-            SetDependencies["MOM"] = new List<string> { "PLST", "MOC", "MUL" };
-            SetDependencies["LTR"] = new List<string> { "PLST", "LTC" };
-            SetDependencies["WOE"] = new List<string> { "PLST", "WOC", "WOT" };
-            SetDependencies["UNF"] = new List<string> { "SUNF" };
-            SetDependencies["CLU"] = new List<string> { "FCLU" };
-            SetDependencies["MKM"] = new List<string> { "PLST", "MKC" };
+            var mtgjsonSetList = await LoadSetList().ConfigureAwait(false);
+
+            foreach (var set in mtgjsonSetList.Data.Where(s =>
+                         s.IsOnlineOnly == false && s.IsPartialPreview == false && s.Code.ToUpper() != "CON" && s.Type is SetType.Commander
+                             or SetType.Core or SetType.DraftInnovation or SetType.Commander or SetType.Expansion
+                             or SetType.Masterpiece or SetType.Masters).OrderBy(s => s.ReleaseDate))
+            {
+                // ignore if no parent is found
+                if (string.IsNullOrEmpty(set.ParentCode)) continue;
+
+                // get parent
+                _ = ReadSingleSetWithUpdateCheck(set.ParentCode);
+
+                // add dependency
+                SetDependencies.TryAdd(set.ParentCode.ToUpper(), new List<string>());
+                if (SetDependencies.TryGetValue(set.ParentCode, out var dependencyList)) { dependencyList.Add(set.Code); }
+
+                // load child into list
+                _ = ReadSingleSetWithUpdateCheck(set.Code);
+            }
         }
 
         private static void DownloadAllSetFiles()
@@ -234,7 +281,6 @@ namespace MgcPrxyDrftr
                 catch (Exception ex)
                 {
                     Console.WriteLine($"Error ({set.Code}): {ex.Message}");
-                    continue;
                 }
             }
         }
@@ -358,15 +404,16 @@ namespace MgcPrxyDrftr
             var boosterBlueprintCounter = 0;
             var sheetCounter = 0;
             var setCounter = 0;
+            var addedSheets = new List<string>();
 
             sbHeader.AppendLine("set character_set_server = 'utf8mb4';");
             sbHeader.AppendLine("set collation_server = 'utf8mb4_unicode_520_ci';");
             sbHeader.AppendLine("set names latin1;");
-            sbHeader.AppendLine("update rs_casino set maintenancesw = 1 where casinoname = 'Magic: Online Arena';");
+            //sbHeader.AppendLine("update rs_casino set maintenancesw = 1 where casinoname = 'Magic: Online Arena';");
             sbHeader.AppendLine("commit;");
 
             // handle all sets that have a least one booster
-            foreach (var set in sets.Where(s => s.Value.Data.Booster != null))
+            foreach (var set in sets.Where(s => s.Value is { Data.Booster: not null }))
             {
                 setCounter++;
                 sb.AppendLine($"insert into rs_set (id, setcode, `name`, releasedate) values ({setCounter}, '{set.Value.Data.Code.ToUpper()}', '{set.Value.Data.Name.Replace("\'", "\\\'")}', '{set.Value.Data.ReleaseDate.ToString("yyyy-MM-dd")}');");
@@ -376,8 +423,7 @@ namespace MgcPrxyDrftr
                 foreach (var item in set.Value.Data.Cards)
                 {
                     //item.Colors
-                    sb.AppendLine(
-                        $"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{item.Rarity}'), '{string.Join("", item.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", item.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", item.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
+                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{item.Name.Replace("\'", "\\\'")}', {setCounter}, '{item.Identifiers.ScryfallId}', '{item.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{item.Identifiers.ScryfallId.ToString()[0]}/{item.Identifiers.ScryfallId.ToString()[1]}/{item.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{item.Rarity}'), '{string.Join("", item.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", item.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", item.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", item.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
                 }
 
                 // add sub sets
@@ -385,16 +431,16 @@ namespace MgcPrxyDrftr
                 {
                     foreach (var card in subSets.Where(sub => Sets.ContainsKey(sub)).SelectMany(dep => Sets[dep].Data.Cards))
                     {
-                        sb.AppendLine(
-                            $"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
+                        sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
                     }
                 }
                 sb.AppendLine("commit;");
-                
+
                 // iterate all available booster types
                 var boosterList = set.Value.Data.Booster.GetType().GetProperties()
                     .Where(b => b.GetValue(set.Value.Data.Booster) != null);
 
+                addedSheets = new List<string>();
                 foreach (var boosterInfo in boosterList)
                 {
                     var boosterInfoObject = (DefaultBooster)boosterInfo.GetValue(set.Value.Data.Booster, null);
@@ -403,8 +449,8 @@ namespace MgcPrxyDrftr
                     // TODO: skip some booster types for now
                     if (boosterName.Contains("Sample") || boosterName.Contains("Arena")) continue;
 
-                    sb.AppendLine($"insert into rs_magicproduct (productname, purchaseprice, setid) values ('{boosterName}', 230, {setCounter});");
-                    sb.AppendLine("commit;");
+                    //sb.AppendLine($"insert into rs_magicproduct (productname, purchaseprice, setid) values ('{boosterName}', 230, {setCounter});");
+                    //sb.AppendLine("commit;");
 
                     // create sheets
                     foreach (var sheet in boosterInfoObject!.Sheets.GetType().GetProperties()
@@ -412,13 +458,31 @@ namespace MgcPrxyDrftr
                     {
                         var sheetObject = (Sheet)sheet.GetValue(boosterInfoObject.Sheets, null);
 
+                        // check for existing sheet
+                        if (addedSheets.Contains(sheet.Name)) continue;
+
                         sheetCounter++;
+                        addedSheets.Add(sheet.Name);
                         sb.AppendLine($"insert into rs_sheet (id, setid, sheetname, totalweight) values ({sheetCounter}, {setCounter}, '{sheet.Name}', {sheetObject!.TotalWeight});");
                         sb.AppendLine("commit;");
 
+                        // also check for a sheet named theList. if found we need to load subset PLST
+                        if (sheet.Name.Equals("TheList"))
+                        {
+                            if (Sets.TryGetValue("PLST", out var theList))
+                            {
+                                foreach (var card in theList.Data.Cards)
+                                {
+                                    sb.AppendLine($"insert into rs_card (`name`, setid, scryfallid, mtgjsonid, scryfallimageuri, rarityid, colors, types, subtypes, supertypes) values ('{card.Name.Replace("\'", "\\\'")}', {setCounter}, '{card.Identifiers.ScryfallId}', '{card.Uuid.ToString()}', 'https://c1.scryfall.com/file/scryfall-cards/png/front/{card.Identifiers.ScryfallId.ToString()[0]}/{card.Identifiers.ScryfallId.ToString()[1]}/{card.Identifiers.ScryfallId}.png', (select id from rs_rarity where rarityname = '{card.Rarity}'), '{string.Join("", card.Colors.Select(s => s.ToString()).ToArray())}', '{string.Join(",", card.Types.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Subtypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}', '{string.Join(",", card.Supertypes.Select(s => s.ToString().Replace("\'", "\\\'")).ToArray())}');");
+                                }
+
+                                sb.AppendLine("commit;");
+                            }
+                        }
+
                         foreach (var card in sheetObject!.Cards)
                         {
-                            sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}'), {card.Value});");
+                            sb.AppendLine($"insert into rs_sheetcards (sheetid, cardid, cardweight) values ({sheetCounter}, (select id from rs_card where mtgjsonid = '{card.Key}' and setid = {setCounter}), {card.Value});");
                         }
 
                         sb.AppendLine("commit;");
@@ -439,9 +503,8 @@ namespace MgcPrxyDrftr
                         foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
                         {
                             var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
-                            var sheetName = sheet.Name;
                             
-                            sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheetName}' and setid = {setCounter}), {cardCount});");
+                            sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheet.Name}' and setid = {setCounter}), {cardCount});");
                         }
                         sb.AppendLine("commit;");
                     }
@@ -791,6 +854,8 @@ namespace MgcPrxyDrftr
                                     break;
                                 case LoopState.Exit:
                                     break;
+                                case LoopState.PriceChecker:
+                                    break;
                                 default:
                                     throw new ArgumentOutOfRangeException();
                             }
@@ -1010,7 +1075,7 @@ namespace MgcPrxyDrftr
             DeckList = JsonConvert.DeserializeObject<DeckList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json").ConfigureAwait(false));
         }
 
-        private static async Task LoadSetList(bool forceDownload = false)
+        private static async Task<SetList> LoadSetList(bool forceDownload = false)
         {
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\SetList.json");
 
@@ -1028,28 +1093,30 @@ namespace MgcPrxyDrftr
             }
 
             var setlist = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\SetList.json").ConfigureAwait(false);
-            SetList = JsonConvert.DeserializeObject<SetList>(setlist);
+            return JsonConvert.DeserializeObject<SetList>(setlist);
         }
 
-        private static async Task<PriceList> LoadPriceList()
+        private static async Task<OverallPriceList> LoadPriceList()
         {
+            const string fileName = "AllPrices.json";
+
             // TODO: check for new version of set list
 
-            FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\Anpm audit llPrices.json");
+            FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{fileName}");
             if (!file.Exists)
             {
-                var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/AllPrices.json", "https://mtgjson.com/api/v5/AllPrices.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
+                var valid = await H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/{fileName}", $"https://mtgjson.com/api/v5/{fileName}.sha256", @$"{BaseDirectory}\{JsonDirectory}\");
                 if (!valid)
                 {
                     throw new Exception("Filechecksum is invalid!");
                 }
             }
 
-            //var bar = JsonConvert.DeserializeObject<PriceList>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\AllPrices.json"));
-            var bar = JsonConvert.DeserializeObject<dynamic>(File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\AllPrices.json"));
+            
+            var completePriceList = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\{fileName}").ConfigureAwait(false);
+            var list = JsonConvert.DeserializeObject<OverallPriceList>(completePriceList);
 
-            //return JsonConvert.DeserializeObject<PriceList>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\PriceList.json"));
-            return null;
+            return list;
         }
 
         private static void ReadAllDecks() 

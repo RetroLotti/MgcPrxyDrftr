@@ -16,6 +16,7 @@ namespace MgcPrxyDrftr.models
         public bool PromptForDraftConfirmation { get; set; }
         public bool NewDraftMenu { get; set; }
         public string LastGeneratedSet { get; set; }
+        public DateTime LastPriceDownload { get; set; }
         public Dictionary<string, DateTime> LastUpdatesList { get; set; }
         private Dictionary<string, string> Statistics { get; set; }
         public List<string> SetsToLoad { get; set; }
@@ -29,6 +30,7 @@ namespace MgcPrxyDrftr.models
             Statistics = new Dictionary<string, string>();
             SetsToLoad = new List<string>();
             SupportSetsToLoad = new List<string>();
+            LastPriceDownload = DateTime.Today.AddDays(-1);
         }
 
         private void AddSetGeneric(string setCode, ICollection<string> list)
