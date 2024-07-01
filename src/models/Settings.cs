@@ -75,7 +75,7 @@ namespace MgcPrxyDrftr.models
             LastUpdatesList.TryAdd(setCode, DateTime.Now.AddDays(-2));
 
             if (LastUpdatesList[setCode].AddDays(1) >= DateTime.Now) return true;
-            await Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder).ConfigureAwait(false);
+            await Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder);
             LastUpdatesList[setCode] = DateTime.Now;
             Save();
 

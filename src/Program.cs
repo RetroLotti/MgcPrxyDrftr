@@ -87,21 +87,21 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
-            Console.WriteLine(">> Determine and init set dependencies...");
-            await DetermineChildSets();
-
             Console.WriteLine(">> Reading settings...");
             Settings = new Settings();
             Settings.Load();
 
             Console.WriteLine(">> Reading setlist...");
-            SetList = await LoadSetList().ConfigureAwait(false);
+            SetList = await LoadSetList();
+
+            Console.WriteLine(">> Determine and init set dependencies...");
+            await DetermineChildSets();
 
             //Console.WriteLine(">> Reading Prices...");
             //await LoadTodaysPriceList().ConfigureAwait(false);
             //await LoadPriceList().ConfigureAwait(false);
 
-            Settings.RunsForFirstTime = true;
+            Settings.RunsForFirstTime = false;
             if (Settings.RunsForFirstTime)
             {
                 Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
@@ -148,7 +148,7 @@ namespace MgcPrxyDrftr
 
 #if DEBUG
             // main loop
-            //_ = await EnterTheLoop();
+            _ = await EnterTheLoop();
 
             //OmniCardList = ReadAllCards();
 
@@ -167,7 +167,8 @@ namespace MgcPrxyDrftr
 
             // convert all given sets to sql inserts for mtgoa
             //SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
-            SetToSql(Sets, true);
+            
+            //SetToSql(Sets, true);
 #else
             // start application loop
             _ = await EnterTheLoop();
