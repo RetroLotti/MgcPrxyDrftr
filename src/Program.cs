@@ -5,14 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics.Arm;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Flurl.Util;
 using MgcPrxyDrftr.lib;
 using MgcPrxyDrftr.models;
 using MtgApiManager.Lib.Model;
@@ -20,6 +16,7 @@ using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using TextCopy;
+using File = System.IO.File;
 using H = MgcPrxyDrftr.lib.Helpers;
 
 namespace MgcPrxyDrftr
@@ -77,9 +74,13 @@ namespace MgcPrxyDrftr
 
             //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
+#pragma warning disable CA1416
             if (IsWindows) { Console.SetWindowSize(136, 40); }
+#pragma warning restore CA1416
 
             WriteHeader();
+
+            _ = await DraftApi("mh3|36|p");
 
             Console.WriteLine(">> Pre-Clean-Up...");
             CleanFolders();
@@ -903,10 +904,14 @@ namespace MgcPrxyDrftr
                             break;
                         case LoopState.BoosterDraft:
 
+                            var targetDirectory =
+                                @$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}";
+
                             // if there is a comma separated list of commands this step is called multiple times
                             foreach (var singleCommand in command.Split(',').ToList())
                             {
-                                _ = await Draft(singleCommand);
+                                //_ = await Draft(singleCommand);
+                                _ = await DraftApi(singleCommand, targetDirectory);
                             }
                             break;
                         case LoopState.RawListManager:
@@ -1793,6 +1798,92 @@ namespace MgcPrxyDrftr
         }
 
         /// <summary>
+        /// Draft boosters from given set but from the open boosters api
+        /// </summary>
+        /// <param name="draftString">set + count + [boostertype] i.e. MH3|36[|p/play]</param>
+        /// <param name="targetDirectory">if booster from multiple sets are created this is the target directory</param>
+        /// <returns></returns>
+        private static async Task<bool> DraftApi(string draftString, string targetDirectory = "")
+        {
+            var setService = ServiceProvider.GetSetService();
+            var setCode = draftString.Split('|')[0];
+            var boosterCountParam = draftString.Split('|')[1];
+            var boosterType = draftString.Split('|').Length == 2
+                ? BoosterType.Play
+                : MapBoosterType(draftString.Split('|')[2].ToCharArray()[0]);
+            var set = (await setService.FindAsync(setCode)).Value;
+            int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
+
+            if (Settings != null)
+            {
+                Settings.LastGeneratedSet = set?.Code ?? setCode.ToUpper();
+                Settings.AddSet(set?.Code ?? setCode.ToUpper());
+                Settings.Save();
+
+                if (Settings.PromptForDraftConfirmation)
+                {
+                    Console.WriteLine(
+                        $"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set?.Name}\".");
+                    Console.CursorVisible = false;
+                    Console.Write("Press any key to start generating.");
+                    Console.ReadKey();
+                }
+            }
+
+            // create new draft folder
+            var draftDirectory = targetDirectory != string.Empty ? new DirectoryInfo(targetDirectory) : new DirectoryInfo(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+            if (!draftDirectory.Exists) { draftDirectory.Create(); }
+
+            // create all boosters at once and iterate them afterwards
+            var boosterBox = await Api.GenerateBooster(set?.Code ?? setCode.ToUpper(), boosterType, boosterCount);
+
+            // create all pdfs
+            foreach (var booster in boosterBox.Booster)
+            {
+                // new booster guid 
+                var boosterGuid = Guid.NewGuid();
+
+                // create directory
+                DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
+                if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
+
+                Console.WriteLine("Downloading images...");
+                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+
+                // load images
+                foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
+
+                // create pdf
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+
+                FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
+
+                if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{Enum.GetName(boosterType)}_{boosterGuid}.pdf"); }
+
+                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
+                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+
+                // update booster count just for fun
+                Settings?.UpdateBoosterCount(1);
+
+                Console.Clear();
+            }
+
+            // open draft directory
+            if (!IsWindows) return true;
+
+            Process process = new();
+            process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.FileName = "explorer.exe";
+            process.StartInfo.Arguments = $@"{draftDirectory}";
+            process.Start();
+
+            return true;
+        }
+
+        /// <summary>
         /// Draft boosters from given set
         /// </summary>
         /// <param name="draftString">set + count + [boostertype] i.e. NEO|6[|c]</param>
@@ -2066,41 +2157,62 @@ namespace MgcPrxyDrftr
             return proc;
         }
 
-        private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory)
+        private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory, string face = "front")
         {
             // get unique file name guid
             var fileName = $"{Guid.NewGuid()}.png";
 
             // check for image
-            FileInfo file = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+            FileInfo file = new(@$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
             if (file.Exists) { _ = file.CopyTo($"{targetBoosterDirectory}{fileName}"); return true; }
 
             // check target directory
-            DirectoryInfo directoryInfo = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\");
+            DirectoryInfo directoryInfo = new(@$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\");
             if(!directoryInfo.Exists) { directoryInfo.Create(); }
 
-            // download if not present
-            await Client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+            try
+            {
+                // download if not present
+#pragma warning disable CS0618 // Type or member is obsolete
+                await Client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+#pragma warning restore CS0618 // Type or member is obsolete
+            }
+            catch (WebException webException)
+            {
+                Console.WriteLine(webException.Message);
+            }
 
             // copy to booster directory
-            FileInfo newFile = new(@$"{cacheDirectory}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
+            FileInfo newFile = new(@$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
             if (!newFile.Exists) return false;
             _ = newFile.CopyTo($"{targetBoosterDirectory}{fileName}"); return true;
         }
 
-        private static ConsoleColor GetColorByRarity(string rarity)
+        private static async Task GetImage(OpenBoosterCard card, string targetDirectory)
         {
-            return rarity switch
-            {
-                "common" => ConsoleColor.Gray,
-                "uncommon" => ConsoleColor.White,
-                "rare" => ConsoleColor.Yellow,
-                "mythic" => ConsoleColor.Red,
-                "land" => ConsoleColor.DarkYellow,
-                "special" => ConsoleColor.Magenta,
-                "bonus" => ConsoleColor.Magenta,
-                _ => ConsoleColor.Gray,
-            };
+            // skip if side b is an adventure
+            if (card.Side is not "a" && card.Layout is "adventure") return;
+
+            // determine wether to download front or back cards
+            var face = card.Side is null or "a" ? "front" : "back";
+
+            // build png url
+            var imageUrl = $@"https://cards.scryfall.io/png/{face}/{card.Scryfallid[..1]}/{card.Scryfallid[1..2]}/{card.Scryfallid}.png";
+            var currentColor = Console.ForegroundColor;
+
+            // set font color according to rarity
+            Console.ForegroundColor = GetColorByRarity(card.Rarity);
+            Console.WriteLine($"Downloading {card.Name} ...");
+
+            // download image if not in cache
+            await GetImage(imageUrl, card.Scryfallid, "png", @$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}", targetDirectory, face);
+
+            // reset original font color
+            Console.ForegroundColor = currentColor;
+
+            // get other faces
+            if (card.OtherCards is null) return;
+            foreach (var otherCard in card.OtherCards) { await GetImage(otherCard, targetDirectory); }
         }
 
         private static async Task<bool> GetImage(ScryfallApi.Client.Models.Card card, string targetDirectory)
@@ -2144,6 +2256,28 @@ namespace MgcPrxyDrftr
             
             return await GetImage(scryfallCard, targetDirectory);
         }
+        private static async Task<bool> GetImage(string scryfallId, string targetDirectory)
+        {
+            // get scryfall card
+            var scryfallCard = await Api.GetCardByScryfallIdAsync(scryfallId);
+
+            return await GetImage(scryfallCard, targetDirectory);
+        }
+
+        private static ConsoleColor GetColorByRarity(string rarity)
+        {
+            return rarity switch
+            {
+                "common" => ConsoleColor.Gray,
+                "uncommon" => ConsoleColor.White,
+                "rare" => ConsoleColor.Yellow,
+                "mythic" => ConsoleColor.Red,
+                "land" => ConsoleColor.DarkYellow,
+                "special" => ConsoleColor.Magenta,
+                "bonus" => ConsoleColor.Magenta,
+                _ => ConsoleColor.Gray,
+            };
+        }
 
         private static void CleanFolders()
         {
@@ -2166,9 +2300,14 @@ namespace MgcPrxyDrftr
 
         private static void DeleteFilesInDirectory(DirectoryInfo directory, string filePattern)
         {
-            if(directory.Exists)
+            if (!directory.Exists) return;
+            foreach (var file in directory.GetFiles(filePattern))
             {
-                foreach (var file in directory.GetFiles(filePattern)) { file.Delete(); }
+                try
+                {
+                    file.Delete();
+                }
+                catch (IOException ioexception) { }
             }
         }
     }
