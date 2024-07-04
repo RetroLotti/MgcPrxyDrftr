@@ -224,10 +224,11 @@ namespace MgcPrxyDrftr.models
     [JsonConverter(typeof(StringEnumConverter))]
     public enum PromoType 
     { 
-        Alchemy, ArenaLeague, BoosterFun, Boxtopper, BrawlDeck, BringAFriend, Bundle, Buyabox, CommanderParty, Concept, ConfettiFoil, Convention, DateStamped, Dossier, DoubleRainbow, DraculaSeries, DraftWeekend, Duels, Embossed, Event,
+        Alchemy, Ampersand, ArenaLeague, BoosterFun, Boxtopper, BrawlDeck, BringAFriend, Bundle, Buyabox, CommanderParty, Concept, ConfettiFoil, Convention, DateStamped, Dossier, Doubleexposure, DoubleRainbow, DraculaSeries, DraftWeekend, Duels, Embossed, Event,
+        Fracturefoil,
         [System.Runtime.Serialization.EnumMember(Value = "fnm")]
         FridayNightMagic, 
-        Galaxyfoil, Gameday, Giftbox, Gilded, Glossy, Godzillaseries, Halofoil, Instore, Intropack, Invisibleink, Jpwalker, Judgegift, League, Magnified, Mediainsert, Moonlitland, Neonink, Oilslick, Openhouse, Planeswalkerstamped, Plastic, Playerrewards, Playpromo, Portrait, Poster, Premiereshop, Prerelease, Promopack, Rainbowfoil, Raisedfoil, Ravnicacity, Rebalanced, Release, Ripplefoil, Schinesealtart, Scroll, Serialized, Setextension, Setpromo, Silverfoil, Stamped, Starterdeck, Stepandcompleat, Storechampionship, Surgefoil, Textured, Themepack, Thick, Tourney, Vault, Wizardsplaynetwork };
+        Galaxyfoil, Gameday, Giftbox, Gilded, Glossy, Godzillaseries, Halofoil, Imagine, Instore, Intropack, Invisibleink, Jpwalker, Judgegift, League, Magnified, Mediainsert, Moonlitland, Neonink, Oilslick, Openhouse, Planeswalkerstamped, Plastic, Playerrewards, Playpromo, Portrait, Poster, Premiereshop, Prerelease, Promopack, Rainbowfoil, Raisedfoil, Ravnicacity, Rebalanced, Release, Ripplefoil, Schinesealtart, Scroll, Serialized, Setextension, Setpromo, Silverfoil, Stamped, Starterdeck, Stepandcompleat, Storechampionship, Surgefoil, Textured, Themepack, Thick, Tourney, Vault, Wizardsplaynetwork };
 
     public enum Rarity { Bonus, Common, Mythic, Rare, Special, Uncommon }
 
@@ -389,6 +390,7 @@ namespace MgcPrxyDrftr.models
         Giant,
         Gideon,
         Gith,
+        Glimmer,
         Gnoll,
         Gnome,
         Goat,
@@ -420,7 +422,7 @@ namespace MgcPrxyDrftr.models
         Homunculus,
         Horror,
         Horse,
-        [System.Runtime.Serialization.EnumMember(Value = "HorseheadNebula")]
+        [System.Runtime.Serialization.EnumMember(Value = "Horsehead Nebula")]
         HorseheadNebula,
         Huatli,
         Human,
@@ -480,6 +482,7 @@ namespace MgcPrxyDrftr.models
         Lamia,
         Lammasu,
         Leech,
+        Legend,
         Lesson,
         Leviathan,
         Lhurgoyf,
@@ -568,7 +571,7 @@ namespace MgcPrxyDrftr.models
         [System.Runtime.Serialization.EnumMember(Value = "Power-Plant")]
         PowerPlant,
         Powerstone, Praetor, Primarch, Processor, Proper, Pyrulea, Quintorius, Rabbit, Rabiah, Raccoon,
-        Ral, Ranger, Rat, Rath, Ravnica, Rebel, Reflection, Regatha, Reveler, Rhino, Rigger, Robot, Rogue, Role, Rowan, Rune, Sable, Saga,
+        Ral, Ranger, Rat, Rath, Ravnica, Rebel, Reflection, Regatha, Reveler, Rhino, Rigger, Robot, Rogue, Role, Rowan, Rukh, Rune, Sable, Saga,
         Saheeli, Salamander, Samurai, Samut, Sand, Saproling, Sarkhan, Satyr, Scarecrow, Scientist, Scion, Scorpion, Scout, Sculpture, Segovia,
         Serf, Serpent, Serra,
         [System.Runtime.Serialization.EnumMember(Value = "Serra’s Realm")]
@@ -579,14 +582,14 @@ namespace MgcPrxyDrftr.models
         Tamiyo, Tarkir, Tasha, Teddy, Teferi, Tentacle, Teyo, Tezzeret, Thalakos, The,
         [System.Runtime.Serialization.EnumMember(Value = "The Abyss")]
         TheAbyss,
-        [System.Runtime.Serialization.EnumMember(Value = "TheDalekAsylum")]
+        [System.Runtime.Serialization.EnumMember(Value = "The Dalek Asylum")]
         TheDalekAsylum,
         [System.Runtime.Serialization.EnumMember(Value = "The Library")]
         TheLibrary,
         Theros, Thopter, Thrull, Tibalt, Tiefling, Time,
         [System.Runtime.Serialization.EnumMember(Value = "Time Lord")]
         TimeLord,
-        Tower, Townsfolk, Trap, Treasure, Treefolk, Trenzalore,
+        Tower, Townsfolk, Toy, Trap, Treasure, Treefolk, Trenzalore,
         Trilobite,
         Triskelavite,
         Troll,
@@ -659,7 +662,7 @@ namespace MgcPrxyDrftr.models
     [JsonConverter(typeof(StringEnumConverter))]
     public enum Type 
     { 
-        Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Tolkien, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Kindred, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf,
+        Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Tolkien, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Kindred, Knights, Land, Legend, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf,
         [System.Runtime.Serialization.EnumMember(Value = "You'll")]
         Youll
     }

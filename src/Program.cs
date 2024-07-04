@@ -15,7 +15,9 @@ using MtgApiManager.Lib.Model;
 using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using ScryfallApi.Client.Models;
 using TextCopy;
+using Card = MgcPrxyDrftr.models.Card;
 using File = System.IO.File;
 using H = MgcPrxyDrftr.lib.Helpers;
 
@@ -80,13 +82,13 @@ namespace MgcPrxyDrftr
 
             WriteHeader();
 
-            _ = await DraftApi("mh3|36|p");
-
             Console.WriteLine(">> Pre-Clean-Up...");
             CleanFolders();
 
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
+
+            //_ = await DraftApi("mh3|36|p");
 
             Console.WriteLine(">> Reading settings...");
             Settings = new Settings();
@@ -336,6 +338,56 @@ namespace MgcPrxyDrftr
             {
                 AnalyseSet(code);
             }
+        }
+
+        private static void GenerateFixedBoosterSheetSqlUpdate()
+        {
+            ReadAllSets();
+
+            foreach (var code in ReleaseTimelineSets.Select(releaseTimelineSet => Sets[releaseTimelineSet.Value].Data.Code == "CON" ? "CON_" : Sets[releaseTimelineSet.Value].Data.Code))
+            {
+                GetFixedBoosterSheets(code);
+            }
+        }
+
+        private static void GetFixedBoosterSheets(string setCode)
+        {
+            var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
+            var json = JObject.Parse(file);
+            var foo = json.SelectToken("data")?.SelectToken("booster");
+            var sqlUpdateString = new StringBuilder();
+            var sampleContent = new Contents();
+
+            var isPreview = json.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>() ?? false;
+            if (isPreview)
+            {
+                Console.WriteLine("Skipping preview set");
+                return;
+            }
+
+            Console.WriteLine($"Processing set sheets for {setCode}");
+
+            if (foo is null) return;
+
+            foreach (var jToken in foo)
+            {
+                var boosterName = ((JProperty)jToken).Name;
+
+                foreach (var _ in jToken.ToList()[0].SelectToken("sheets")!.ToList()
+                             .Select(sheetToken => (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>())
+                             .Where(isFixed => isFixed))
+                {
+                    foreach (var sheetName in jToken.ToList()[0].SelectToken("sheets")!.ToList().Select(sheet => ((JProperty)sheet).Name)) 
+                    {
+                        sqlUpdateString.AppendLine($"update setBoosterSheets set sheetIsFixed = 1 where setCode = '{setCode}' and boosterName = '{boosterName}' and sheetName = '{sheetName}';");
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(sqlUpdateString.ToString())) return;
+
+            using var writer = new StreamWriter(@$"{BaseDirectory}\output\update.sql", true);
+            writer.WriteLine(sqlUpdateString);
         }
 
         private static void AnalyseSet(string setCode)
@@ -1169,6 +1221,7 @@ namespace MgcPrxyDrftr
             var files = setDirectory.GetFiles("*.json");
             foreach (var file in files)
             {
+                Console.WriteLine($"Reading {file.Name} ...");
                 _ = ReadSingleSet(file);
             }
             if(files.Length <= 0)
