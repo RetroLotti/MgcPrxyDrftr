@@ -90,6 +90,8 @@ namespace MgcPrxyDrftr
 
             //_ = await DraftApi("mh3|36|p");
 
+            GenerateFixedBoosterSheetSqlUpdate();
+
             Console.WriteLine(">> Reading settings...");
             Settings = new Settings();
             Settings.Load();
@@ -352,35 +354,29 @@ namespace MgcPrxyDrftr
 
         private static void GetFixedBoosterSheets(string setCode)
         {
-            var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
-            var json = JObject.Parse(file);
-            var foo = json.SelectToken("data")?.SelectToken("booster");
+            var setFileContent= File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
+            var setJsonObject = JObject.Parse(setFileContent);
+            var boosterDataToken = setJsonObject.SelectToken("data")?.SelectToken("booster");
             var sqlUpdateString = new StringBuilder();
-            var sampleContent = new Contents();
 
-            var isPreview = json.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>() ?? false;
-            if (isPreview)
-            {
-                Console.WriteLine("Skipping preview set");
-                return;
-            }
+            var isPreview = setJsonObject.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>() ?? false;
+            if (isPreview) { Console.WriteLine($"Skipping preview set {setCode}"); return; }
 
-            Console.WriteLine($"Processing set sheets for {setCode}");
+            if (boosterDataToken is null) return;
 
-            if (foo is null) return;
+            Console.WriteLine($"Processing sheets for set {setCode}");
 
-            foreach (var jToken in foo)
+            foreach (var jToken in boosterDataToken)
             {
                 var boosterName = ((JProperty)jToken).Name;
 
-                foreach (var _ in jToken.ToList()[0].SelectToken("sheets")!.ToList()
-                             .Select(sheetToken => (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>())
-                             .Where(isFixed => isFixed))
+                foreach (var sheetName in from sheetToken in jToken.ToList()[0].SelectToken("sheets")!.ToList()
+                         let isFixed = (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>()
+                         let sheetName = ((JProperty)sheetToken).Name
+                         where isFixed
+                         select sheetName)
                 {
-                    foreach (var sheetName in jToken.ToList()[0].SelectToken("sheets")!.ToList().Select(sheet => ((JProperty)sheet).Name)) 
-                    {
-                        sqlUpdateString.AppendLine($"update setBoosterSheets set sheetIsFixed = 1 where setCode = '{setCode}' and boosterName = '{boosterName}' and sheetName = '{sheetName}';");
-                    }
+                    sqlUpdateString.AppendLine($"update setBoosterSheets set sheetIsFixed = 1 where setCode = '{setCode}' and boosterName = '{boosterName}' and sheetName = '{sheetName}';");
                 }
             }
 
