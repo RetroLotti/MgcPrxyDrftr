@@ -183,13 +183,20 @@ namespace MgcPrxyDrftr.lib
             var page = pdfDocument.Pages.Add(PdfPageSize.A4, new PdfMargins(marginLeftRight, marginTopBottom));
 
             // get card count
-            var maxCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png").Length;
+            //var maxCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png").Length;
 
             foreach (var file in Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png"))
             {
                 cardCounter++;
 
+                if (string.IsNullOrEmpty(file))
+                {
+                    Console.WriteLine("foo");
+                }
+
+#pragma warning disable CA1416
                 var image = Image.FromFile(file);
+#pragma warning restore CA1416
                 var pdfImage = PdfImage.FromImage(image);
                 
                 // put image on page

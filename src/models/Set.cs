@@ -36,6 +36,8 @@ namespace MgcPrxyDrftr.models
         public string MtgoCode { get; set; }
         public long McmId { get; set; }
         public string McmName { get; set; }
+        public string ParentCode { get; set; }
+        public string TokenSetCode { get; set; }
     }
 
     public class ForeignData
@@ -222,10 +224,11 @@ namespace MgcPrxyDrftr.models
     [JsonConverter(typeof(StringEnumConverter))]
     public enum PromoType 
     { 
-        Alchemy, ArenaLeague, BoosterFun, Boxtopper, BrawlDeck, BringAFriend, Bundle, Buyabox, CommanderParty, Concept, ConfettiFoil, Convention, DateStamped, Dossier, DoubleRainbow, DraculaSeries, DraftWeekend, Duels, Embossed, Event,
+        Alchemy, Ampersand, ArenaLeague, BoosterFun, Boxtopper, BrawlDeck, BringAFriend, Bundle, Buyabox, CommanderParty, Concept, ConfettiFoil, Convention, DateStamped, Dossier, Doubleexposure, DoubleRainbow, DraculaSeries, DraftWeekend, Duels, Embossed, Event,
+        Fracturefoil,
         [System.Runtime.Serialization.EnumMember(Value = "fnm")]
         FridayNightMagic, 
-        galaxyfoil, gameday, giftbox, gilded, glossy, godzillaseries, halofoil, instore, intropack, invisibleink, jpwalker, judgegift, league, magnified, mediainsert, moonlitland, neonink, oilslick, openhouse, planeswalkerstamped, plastic, playerrewards, playpromo, poster, premiereshop, prerelease, promopack, rainbowfoil, raisedfoil, ravnicacity, rebalanced, release, schinesealtart, scroll, serialized, setextension, setpromo, silverfoil, stamped, starterdeck, stepandcompleat, storechampionship, surgefoil, textured, themepack, thick, tourney, vault, wizardsplaynetwork };
+        Galaxyfoil, Gameday, Giftbox, Gilded, Glossy, Godzillaseries, Halofoil, Imagine, Instore, Intropack, Invisibleink, Jpwalker, Judgegift, League, Magnified, Mediainsert, Moonlitland, Neonink, Oilslick, Openhouse, Planeswalkerstamped, Plastic, Playerrewards, Playpromo, Portrait, Poster, Premiereshop, Prerelease, Promopack, Rainbowfoil, Raisedfoil, Ravnicacity, Rebalanced, Release, Ripplefoil, Schinesealtart, Scroll, Serialized, Setextension, Setpromo, Silverfoil, Stamped, Starterdeck, Stepandcompleat, Storechampionship, Surgefoil, Textured, Themepack, Thick, Tourney, Vault, Wizardsplaynetwork };
 
     public enum Rarity { Bonus, Common, Mythic, Rare, Special, Uncommon }
 
@@ -233,8 +236,6 @@ namespace MgcPrxyDrftr.models
 
     public enum SecurityStamp { Acorn, Arena, Circle, Heart, Oval, Triangle }
 
-    // TODO
-    // "Abian", "Adventure", "Advisor", "Aetherborn", "Ajani", "Alara", "Alfava Metraxis", "Alicorn", "Alien", "Ally", "Aminatou", "Amonkhet", "Androzani Minor", "Angel", "Angrath", "Antausia", "Antelope", "Apalapucia", "Ape", "Arcane", "Arcavios", "Archer", "Archon", "Arkhos", "Arlinn", "Armadillo", "Army", "Art", "Artificer", "Ashiok", "Assassin", "Assembly-Worker", "Astartes", "Atog", "Attraction", "Aura", "Aurochs", "Autobot", "Automaton", "Avatar", "Azgol", "Azra", "B.O.B.", "Background", "Baddest,", "Badger", "Bahamut", "Balloon", "Barbarian", "Bard", "Basilisk", "Basri", "Bat", "Bear", "Beast", "Beaver", "Beeble", "Beholder", "Belenon", "Berserker", "Biggest,", "Bird", "Blood", "Boar", "Bobblehead", "Bolas", "Bolas's Meditation Realm", "Brainiac", "Bringer", "Brushwagg", "Bureaucrat", "Byode", "C'tan", "Calix", "Camel", "Capenna", "Capybara", "Carrier", "Cartouche", "Case", "Cat", "Cave", "Centaur", "Cephalid", "Chameleon", "Chandra", "Chicken", "Child", "Chimera", "Chorus", "Citizen", "Clamfolk", "Class", "Cleric", "Cloud", "Clown", "Clue", "Cockatrice", "Comet", "Construct", "Contraption", "Cow", "Coward", "Coyote", "Crab", "Cridhe", "Crocodile", "Curse", "Custodes", "Cyberman", "Cyborg", "Cyclops", "Dack", "Dakkon", "Dalek", "Daretti", "Darillium", "Dauthi", "Davriel", "Deb", "Deer", "Demigod", "Demon", "Desert", "Designer", "Detective", "Devil", "Dihada", "Dinosaur", "Djinn", "Doctor", "Dog", "Dominaria", "Domri", "Donkey", "Dovin", "Dragon", "Drake", "Dreadnought", "Drone", "Druid", "Dryad", "Duck", "Dungeon", "Dwarf", "Earth", "Echoir", "Efreet", "Egg", "Elder", "Eldraine", "Eldrazi", "Elemental", "Elemental?", "Elephant", "Elf", "Elk", "Ellywick", "Elminster", "Elspeth", "Elves", "Employee", "Equilor", "Equipment", "Ergamon", "Ersta", "Estrid", "Etiquette", "Eye", "Fabacin", "Faerie", "Ferret", "Fiora", "Fire", "Fish", "Flagbearer", "Food", "Forest", "Fortification", "Fox", "Fractal", "Freyalise", "Frog", "Fungus", "Gallifrey", "Gamer", "Gargantikar", "Gargoyle", "Garruk", "Gate", "Germ", "Giant", "Gideon", "Gith", "Gnoll", "Gnome", "Goat", "Gobakhan", "Goblin", "God", "Gold", "Golem", "Gorgon", "Grandchild", "Graveborn", "Gremlin", "Griffin", "Grist", "Guest", "Guff", "Gus", "Hag", "Halfling", "Hamster", "Harpy", "Hatificer", "Head", "Hellion", "Hero", "Hippo", "Hippogriff", "Homarid", "Homunculus", "Horror", "Horse", "Horsehead Nebula", "Huatli", "Human", "Hydra", "Hyena", "Igpay", "Ikoria", "Illusion", "Imp", "Incarnation", "Incubator", "Inkling", "Innistrad", "Inquisitor", "Insect", "Inzerva", "Iquatana", "Ir", "Island", "Ixalan", "Jace", "Jackal", "Jared", "Jaya", "Jellyfish", "Jeska", "Juggernaut", "Junk", "Kaito", "Kaladesh", "Kaldheim", "Kamigawa", "Kandoka", "Kangaroo", "Karn", "Karsus", "Kasmina", "Kavu", "Kaya", "Kephalai", "Key", "Killbot", "Kinshala", "Kiora", "Kirin", "Kithkin", "Knight", "Kobold", "Kolbahan", "Kor", "Koth", "Kraken", "Kylem", "Kyneth", "Lady", "Lair", "Lamia", "Lammasu", "Leech", "Lesson", "Leviathan", "Lhurgoyf", "Licid", "Liliana", "Lizard", "Lobster", "Locus", "Lolth", "Lorwyn", "Lukka", "Luvion", "Mammoth", "Manticore", "Map", "Mars", "Master", "Masticore", "Mercadia", "Mercenary", "Merfolk", "Metathran", "Mime", "Mine", "Minion", "Minotaur", "Minsc", "Mirrodin", "Mite", "Moag", "Mole", "Monger", "Mongoose", "Mongseng", "Monk", "Monkey", "Moon", "Moonfolk", "Mordenkainen", "Mount", "Mountain", "Mouse", "Mummy", "Muraganda", "Mutant", "Myr", "Mystic", "Naga", "Nahiri", "Narset", "Nastiest,", "Nautilus", "Necron", "Necros", "Nephilim", "New Earth", "New Phyrexia", "Nightmare", "Nightstalker", "Niko", "Ninja", "Nissa", "Nixilis", "Noble", "Noggle", "Nomad", "Nymph", "Octopus", "Ogre", "Oko", "Ooze", "Orc", "Orgg", "Otter", "Ouphe", "Outside Mutter's Spiral", "Ox", "Oyster", "Pangolin", "Paratrooper", "Peasant", "Pegasus", "Penguin", "Pentavite", "Performer", "Pest", "Phelddagrif", "Phoenix", "Phyrexia", "Phyrexian", "Pilot", "Pirate", "Plains", "Plant", "Pony", "Porcupine", "Possum", "Power-Plant", "Powerstone", "Praetor", "Primarch", "Processor", "Proper", "Pyrulea", "Quintorius", "Rabbit", "Rabiah", "Raccoon", "Ral", "Ranger", "Rat", "Rath", "Ravnica", "Rebel", "Reflection", "Regatha", "Reveler", "Rhino", "Rigger", "Robot", "Rogue", "Role", "Rowan", "Rune", "Sable", "Saga", "Saheeli", "Salamander", "Samurai", "Samut", "Sand", "Saproling", "Sarkhan", "Satyr", "Scarecrow", "Scientist", "Scion", "Scorpion", "Scout", "Sculpture", "Segovia", "Serf", "Serpent", "Serra", "Serra’s Realm", "Servo", "Shade", "Shadowmoor", "Shaman", "Shandalar", "Shapeshifter", "Shard", "Shark", "Sheep", "Shenmeng", "Ship", "Shrine", "Siege", "Siren", "Sivitri", "Skaro", "Skeleton", "Slith", "Sliver", "Sloth", "Slug", "Snail", "Snake", "Soldier", "Soltari", "Sorin", "Spacecraft", "Spawn", "Specter", "Spellshaper", "Sphere", "Sphinx", "Spider", "Spike", "Spirit", "Sponge", "Spy", "Squid", "Squirrel", "Starfish", "Surrakar", "Survivor", "Svega", "Swamp", "Synth", "Szat", "Tamiyo", "Tarkir", "Tasha", "Teddy", "Teferi", "Tentacle", "Teyo", "Tezzeret", "Thalakos", "The", "The Abyss", "The Dalek Asylum", "The Library", "Theros", "Thopter", "Thrull", "Tibalt", "Tiefling", "Time", "Time Lord", "Tower", "Townsfolk", "Trap", "Treasure", "Treefolk", "Trenzalore", "Trilobite", "Triskelavite", "Troll", "Turtle", "Tyranid", "Tyvar", "Ugin", "Ulgrotha", "Undercity", "Unicorn", "Unknown Planet", "Urza", "Urza's", "Urzan", "Valla", "Vampire", "Vampyre", "Varmint", "Vedalken", "Vehicle", "Venser", "Viashino", "Villain", "Vivien", "Volver", "Vraska", "Vronos", "Vryn", "Waiter", "Wall", "Walrus", "Wanderer", "Warlock", "Warrior", "Weird", "Werewolf", "Whale", "Wildfire", "Will", "Windgrace", "Wizard", "Wolf", "Wolverine", "Wombat", "Worm", "Wraith", "Wrenn", "Wrestler", "Wurm", "Xenagos", "Xerex", "Yanggu", "Yanling", "Yeti", "Zariel", "Zendikar", "Zhalfir", "Zombie", "Zubera", "and/or", "of"
     [JsonConverter(typeof(StringEnumConverter))]
     public enum SubType
     {
@@ -389,6 +390,7 @@ namespace MgcPrxyDrftr.models
         Giant,
         Gideon,
         Gith,
+        Glimmer,
         Gnoll,
         Gnome,
         Goat,
@@ -420,7 +422,7 @@ namespace MgcPrxyDrftr.models
         Homunculus,
         Horror,
         Horse,
-        [System.Runtime.Serialization.EnumMember(Value = "HorseheadNebula")]
+        [System.Runtime.Serialization.EnumMember(Value = "Horsehead Nebula")]
         HorseheadNebula,
         Huatli,
         Human,
@@ -480,6 +482,7 @@ namespace MgcPrxyDrftr.models
         Lamia,
         Lammasu,
         Leech,
+        Legend,
         Lesson,
         Leviathan,
         Lhurgoyf,
@@ -568,7 +571,7 @@ namespace MgcPrxyDrftr.models
         [System.Runtime.Serialization.EnumMember(Value = "Power-Plant")]
         PowerPlant,
         Powerstone, Praetor, Primarch, Processor, Proper, Pyrulea, Quintorius, Rabbit, Rabiah, Raccoon,
-        Ral, Ranger, Rat, Rath, Ravnica, Rebel, Reflection, Regatha, Reveler, Rhino, Rigger, Robot, Rogue, Role, Rowan, Rune, Sable, Saga,
+        Ral, Ranger, Rat, Rath, Ravnica, Rebel, Reflection, Regatha, Reveler, Rhino, Rigger, Robot, Rogue, Role, Rowan, Rukh, Rune, Sable, Saga,
         Saheeli, Salamander, Samurai, Samut, Sand, Saproling, Sarkhan, Satyr, Scarecrow, Scientist, Scion, Scorpion, Scout, Sculpture, Segovia,
         Serf, Serpent, Serra,
         [System.Runtime.Serialization.EnumMember(Value = "Serra’s Realm")]
@@ -579,14 +582,14 @@ namespace MgcPrxyDrftr.models
         Tamiyo, Tarkir, Tasha, Teddy, Teferi, Tentacle, Teyo, Tezzeret, Thalakos, The,
         [System.Runtime.Serialization.EnumMember(Value = "The Abyss")]
         TheAbyss,
-        [System.Runtime.Serialization.EnumMember(Value = "TheDalekAsylum")]
+        [System.Runtime.Serialization.EnumMember(Value = "The Dalek Asylum")]
         TheDalekAsylum,
         [System.Runtime.Serialization.EnumMember(Value = "The Library")]
         TheLibrary,
         Theros, Thopter, Thrull, Tibalt, Tiefling, Time,
         [System.Runtime.Serialization.EnumMember(Value = "Time Lord")]
         TimeLord,
-        Tower, Townsfolk, Trap, Treasure, Treefolk, Trenzalore,
+        Tower, Townsfolk, Toy, Trap, Treasure, Treefolk, Trenzalore,
         Trilobite,
         Triskelavite,
         Troll,
@@ -659,7 +662,7 @@ namespace MgcPrxyDrftr.models
     [JsonConverter(typeof(StringEnumConverter))]
     public enum Type 
     { 
-        Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Tolkien, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Knights, Land, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf,
+        Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Tolkien, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Kindred, Knights, Land, Legend, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf,
         [System.Runtime.Serialization.EnumMember(Value = "You'll")]
         Youll
     }
