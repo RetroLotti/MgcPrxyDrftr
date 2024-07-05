@@ -15,23 +15,13 @@ namespace MgcPrxyDrftr.models
         public bool DownloadBasicLands { get; set; }
         public bool PromptForDraftConfirmation { get; set; }
         public bool NewDraftMenu { get; set; }
+        public bool PrintFoils { get; set; }
         public string LastGeneratedSet { get; set; }
-        public DateTime LastPriceDownload { get; set; }
-        public Dictionary<string, DateTime> LastUpdatesList { get; set; }
-        private Dictionary<string, string> Statistics { get; set; }
-        public List<string> SetsToLoad { get; set; }
-        public List<string> SupportSetsToLoad { get; set; }
-
-        //private bool HasChanges { get; set; }
-
-        public Settings()
-        {
-            LastUpdatesList = new Dictionary<string, DateTime>();
-            Statistics = new Dictionary<string, string>();
-            SetsToLoad = new List<string>();
-            SupportSetsToLoad = new List<string>();
-            LastPriceDownload = DateTime.Today.AddDays(-1);
-        }
+        public DateTime LastPriceDownload { get; set; } = DateTime.Today.AddDays(-1);
+        public Dictionary<string, DateTime> LastUpdatesList { get; set; } = new();
+        private Dictionary<string, string> Statistics { get; set; } = new();
+        public List<string> SetsToLoad { get; set; } = new();
+        public List<string> SupportSetsToLoad { get; set; } = new();
 
         private void AddSetGeneric(string setCode, ICollection<string> list)
         {

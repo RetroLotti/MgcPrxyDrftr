@@ -70,6 +70,7 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.Options, "e"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "d"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "a"), LoopState.Options },
+                { new StateTransition(LoopState.Options, "f"), LoopState.Options },
                 { new StateTransition(LoopState.Options, "b"), LoopState.Main },
 
                 { new StateTransition(LoopState.DeckCreator, "a"), LoopState.DeckCreator },

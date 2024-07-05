@@ -29,6 +29,8 @@ namespace MgcPrxyDrftr.models
         public string Rarity { get; set; }
         [JsonProperty("layout")]
         public string Layout { get; set; }
+        [JsonProperty("foil")]
+        public bool Foil { get; set; }
         [JsonProperty("otherCards")]
         public List<OpenBoosterCard> OtherCards { get; set; }
     }
