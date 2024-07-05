@@ -92,63 +92,59 @@ namespace MgcPrxyDrftr
             Settings = new Settings();
             Settings.Load();
 
-            _ = await DraftApi("mh3|3|c");
+            //Console.WriteLine(">> Reading setlist...");
+            //SetList = await LoadSetList();
 
-            //GenerateFixedBoosterSheetSqlUpdate();
-
-            Console.WriteLine(">> Reading setlist...");
-            SetList = await LoadSetList();
-
-            Console.WriteLine(">> Determine and init set dependencies...");
-            await DetermineChildSets();
+            //Console.WriteLine(">> Determine and init set dependencies...");
+            //await DetermineChildSets();
 
             //Console.WriteLine(">> Reading Prices...");
             //await LoadTodaysPriceList().ConfigureAwait(false);
             //await LoadPriceList().ConfigureAwait(false);
 
-            Settings.RunsForFirstTime = false;
-            if (Settings.RunsForFirstTime)
-            {
-                Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
-                Console.WriteLine(">> All available set files will be downloaded from mtgjson.");
+            //Settings.RunsForFirstTime = false;
+            //if (Settings.RunsForFirstTime)
+            //{
+            //    Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
+            //    Console.WriteLine(">> All available set files will be downloaded from mtgjson.");
 
-                // TODO: first get update for SetList file from mtgjson
+            //    // TODO: first get update for SetList file from mtgjson
 
-                var tempList = Settings.SetsToLoad;
+            //    var tempList = Settings.SetsToLoad;
 
-                DownloadAllSetFiles();
+            //    DownloadAllSetFiles();
 
-                //SetToSql(Sets, true);
+            //    //SetToSql(Sets, true);
 
-                AnalyseAllSets();
+            //    AnalyseAllSets();
 
-                Settings.RunsForFirstTime = false;
-                Settings.SetsToLoad = tempList;
-                Settings.Save();
-            }
+            //    Settings.RunsForFirstTime = false;
+            //    Settings.SetsToLoad = tempList;
+            //    Settings.Save();
+            //}
 
-            Console.WriteLine(">> Reading sets from disk...");
-            if (UseSetList) { await ReadAllConfiguredSets(Settings.SetsToLoad).ConfigureAwait(false); } else { ReadAllSets(); }
-            Console.WriteLine(">> Reading support sets from disk...");
-            await ReadAllConfiguredSets(Settings.SupportSetsToLoad);
+            //Console.WriteLine(">> Reading sets from disk...");
+            //if (UseSetList) { await ReadAllConfiguredSets(Settings.SetsToLoad).ConfigureAwait(false); } else { ReadAllSets(); }
+            //Console.WriteLine(">> Reading support sets from disk...");
+            //await ReadAllConfiguredSets(Settings.SupportSetsToLoad);
 
-            Console.WriteLine(">> Reading decklist...");
-            await LoadDeckList().ConfigureAwait(false);
-            Console.WriteLine(">> Reading decks from disk...");
-            ReadAllDecks();
+            //Console.WriteLine(">> Reading decklist...");
+            //await LoadDeckList().ConfigureAwait(false);
+            //Console.WriteLine(">> Reading decks from disk...");
+            //ReadAllDecks();
 
-            if (IsWindows)
-            {
-                Console.WriteLine(">> Looking for nanDeck...");
-                H.CheckNanDeck(NanDeckPath);
-            }
-            else
-            {
-                Console.WriteLine(">> nanDeck disabled");
-            }
+            //if (IsWindows)
+            //{
+            //    Console.WriteLine(">> Looking for nanDeck...");
+            //    H.CheckNanDeck(NanDeckPath);
+            //}
+            //else
+            //{
+            //    Console.WriteLine(">> nanDeck disabled");
+            //}
 
             Console.WriteLine(">> Starting...");
-            Thread.Sleep(666);
+            Thread.Sleep(100);
             Console.Clear();
 
 #if DEBUG
@@ -810,7 +806,7 @@ namespace MgcPrxyDrftr
                 PrintMenu(StateMachine.CurrentState, 0, 10);
 
                 // move cursor
-                Console.SetCursorPosition(0, 21);
+                Console.SetCursorPosition(0, 23);
                 Console.Write(">>> ");
 
                 // read entered string
@@ -1018,12 +1014,12 @@ namespace MgcPrxyDrftr
             {
                 case LoopState.Main:
                     H.Write("D => Draft Booster", startLeftPosition, startTopPosition + 1);
-                    H.Write("E => Create Deck", startLeftPosition, startTopPosition + 2);
-                    H.Write("S => Add or Remove Sets", startLeftPosition, startTopPosition + 3);
-                    H.Write("R => Print Raw List", startLeftPosition, startTopPosition + 4);
-                    H.Write("C => Clipboard", startLeftPosition, startTopPosition + 5);
-                    H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
-                    H.Write("P => Price Checker", startLeftPosition, startTopPosition + 7);
+                    //H.Write("E => Create Deck", startLeftPosition, startTopPosition + 2);
+                    //H.Write("S => Add or Remove Sets", startLeftPosition, startTopPosition + 3);
+                    //H.Write("R => Print Raw List", startLeftPosition, startTopPosition + 4);
+                    //H.Write("C => Clipboard", startLeftPosition, startTopPosition + 5);
+                    //H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
+                    //H.Write("P => Price Checker", startLeftPosition, startTopPosition + 7);
                     H.Write("O => Options", startLeftPosition, startTopPosition + 8);
                     H.Write("X => Exit", startLeftPosition, startTopPosition + 10);
                     break;
@@ -1037,9 +1033,8 @@ namespace MgcPrxyDrftr
                     H.Write("B => Back", startLeftPosition, startTopPosition + 11);
                     break;
                 case LoopState.BoosterDraft:
-                    H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
-                    H.Write("L => List downloaded sets with booster", startLeftPosition, startTopPosition + 2);
-                    //H.Write("G => Create general draft booster", startLeftPosition, startTopPosition + 3);
+                    //H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
+                    //H.Write("L => List downloaded sets with booster", startLeftPosition, startTopPosition + 2);
                     H.Write("Format: {SetCode}|{HowManyBoosters}[|BoosterType]", startLeftPosition, startTopPosition + 6);
                     H.Write("B => Back", startLeftPosition, startTopPosition + 8);
                     break;
@@ -1068,6 +1063,8 @@ namespace MgcPrxyDrftr
                 case LoopState.FolderPrint:
                     break;
                 case LoopState.Exit:
+                    break;
+                default:
                     break;
             }
         }
