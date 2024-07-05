@@ -88,11 +88,13 @@ namespace MgcPrxyDrftr
             Console.WriteLine(">> Checking directories...");
             CheckAllDirectories();
 
-            //_ = await DraftApi("mh3|36|p");
-
             Console.WriteLine(">> Reading settings...");
             Settings = new Settings();
             Settings.Load();
+
+            _ = await DraftApi("mh3|3|c");
+
+            //GenerateFixedBoosterSheetSqlUpdate();
 
             Console.WriteLine(">> Reading setlist...");
             SetList = await LoadSetList();
@@ -352,35 +354,29 @@ namespace MgcPrxyDrftr
 
         private static void GetFixedBoosterSheets(string setCode)
         {
-            var file = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
-            var json = JObject.Parse(file);
-            var foo = json.SelectToken("data")?.SelectToken("booster");
+            var setFileContent= File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
+            var setJsonObject = JObject.Parse(setFileContent);
+            var boosterDataToken = setJsonObject.SelectToken("data")?.SelectToken("booster");
             var sqlUpdateString = new StringBuilder();
-            var sampleContent = new Contents();
 
-            var isPreview = json.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>() ?? false;
-            if (isPreview)
-            {
-                Console.WriteLine("Skipping preview set");
-                return;
-            }
+            var isPreview = setJsonObject.SelectToken("data")?.SelectToken("isPartialPreview")?.Value<bool>() ?? false;
+            if (isPreview) { Console.WriteLine($"Skipping preview set {setCode}"); return; }
 
-            Console.WriteLine($"Processing set sheets for {setCode}");
+            if (boosterDataToken is null) return;
 
-            if (foo is null) return;
+            Console.WriteLine($"Processing sheets for set {setCode}");
 
-            foreach (var jToken in foo)
+            foreach (var jToken in boosterDataToken)
             {
                 var boosterName = ((JProperty)jToken).Name;
 
-                foreach (var _ in jToken.ToList()[0].SelectToken("sheets")!.ToList()
-                             .Select(sheetToken => (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>())
-                             .Where(isFixed => isFixed))
+                foreach (var sheetName in from sheetToken in jToken.ToList()[0].SelectToken("sheets")!.ToList()
+                         let isFixed = (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>()
+                         let sheetName = ((JProperty)sheetToken).Name
+                         where isFixed
+                         select sheetName)
                 {
-                    foreach (var sheetName in jToken.ToList()[0].SelectToken("sheets")!.ToList().Select(sheet => ((JProperty)sheet).Name)) 
-                    {
-                        sqlUpdateString.AppendLine($"update setBoosterSheets set sheetIsFixed = 1 where setCode = '{setCode}' and boosterName = '{boosterName}' and sheetName = '{sheetName}';");
-                    }
+                    sqlUpdateString.AppendLine($"update setBoosterSheets set sheetIsFixed = 1 where setCode = '{setCode}' and boosterName = '{boosterName}' and sheetName = '{sheetName}';");
                 }
             }
 
@@ -914,6 +910,13 @@ namespace MgcPrxyDrftr
                                     throw new ArgumentOutOfRangeException();
                             }
                             break;
+                        case "f":
+                            if (StateMachine.CurrentState == LoopState.Options)
+                            {
+                                Settings.PrintFoils = !Settings.PrintFoils;
+                                Settings.Save();
+                            }
+                            break;
                         case "e":
                             if (StateMachine.CurrentState == LoopState.Options)
                             {
@@ -1029,8 +1032,9 @@ namespace MgcPrxyDrftr
                     H.Write($"E => enable / disable basic land download [{(Settings.DownloadBasicLands ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 2);
                     H.Write($"D => enable / disable prompting for confirmation when drafting booster [{(Settings.PromptForDraftConfirmation ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 3);
                     H.Write($"A => enable / disable alternative (new) draft menu [{(Settings.NewDraftMenu ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 4);
-                    H.Write("R => reset all settings and folders !I mean it - everything will be deleted!", startLeftPosition, startTopPosition + 6);
-                    H.Write("B => Back", startLeftPosition, startTopPosition + 10);
+                    H.Write($"F => enable / disable foil generation [{(Settings.PrintFoils ? "enabled" : "disabled")}]", startLeftPosition, startTopPosition + 5);
+                    H.Write("R => reset all settings and folders !I mean it - everything will be deleted!", startLeftPosition, startTopPosition + 7);
+                    H.Write("B => Back", startLeftPosition, startTopPosition + 11);
                     break;
                 case LoopState.BoosterDraft:
                     H.Write("A => List all sets", startLeftPosition, startTopPosition + 1);
@@ -1407,24 +1411,16 @@ namespace MgcPrxyDrftr
 
                 if(cards[boosterCards[i]].Rarity == Rarity.Rare || cards[boosterCards[i]].Rarity == Rarity.Mythic)
                 {
-                    if (generalCardDictionary.ContainsKey("R/M"))
+                    if (!generalCardDictionary.TryAdd("R/M", 1))
                     {
                         generalCardDictionary["R/M"]++;
-                    }
-                    else
-                    {
-                        generalCardDictionary.Add("R/M", 1);
                     }
                 }
                 else if(cards[boosterCards[i]].OtherFaceIds != null && cards[boosterCards[i]].SetCode.ToUpper().Equals("NEO") && (cards[boosterCards[i]].Rarity == Rarity.Common || cards[boosterCards[i]].Rarity == Rarity.Uncommon))
                 {
-                    if (generalCardDictionary.ContainsKey("C/U"))
+                    if (!generalCardDictionary.TryAdd("C/U", 1))
                     {
                         generalCardDictionary["C/U"]++;
-                    }
-                    else
-                    {
-                        generalCardDictionary.Add("C/U", 1);
                     }
                 }
                 else
@@ -1907,7 +1903,7 @@ namespace MgcPrxyDrftr
                 foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
 
                 // create pdf
-                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings.PrintFoils);
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
 
@@ -2256,6 +2252,12 @@ namespace MgcPrxyDrftr
             // set font color according to rarity
             Console.ForegroundColor = GetColorByRarity(card.Rarity);
             Console.WriteLine($"Downloading {card.Name} ...");
+
+            if (card.Foil)
+            {
+                targetDirectory += @"foil\";
+                H.CheckDirectory(targetDirectory);
+            }
 
             // download image if not in cache
             await GetImage(imageUrl, card.Scryfallid, "png", @$"{BaseDirectory}\{CacheDirectory}\{ScryfallCacheDirectory}", targetDirectory, face);

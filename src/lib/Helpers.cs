@@ -161,7 +161,7 @@ namespace MgcPrxyDrftr.lib
             return checksum.ToLower();
         }
 
-        public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder)
+        public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder, bool printFoils = false)
         {
 
             // TODO: check folder
@@ -185,22 +185,29 @@ namespace MgcPrxyDrftr.lib
             // get card count
             //var maxCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png").Length;
 
-            foreach (var file in Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png"))
+            var cards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png");
+            var foilCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\foil\", "*.png");
+
+            var allCards = cards.Concat(foilCards).ToArray();
+
+            foreach (var file in allCards)
             {
                 cardCounter++;
-
-                if (string.IsNullOrEmpty(file))
-                {
-                    Console.WriteLine("foo");
-                }
 
 #pragma warning disable CA1416
                 var image = Image.FromFile(file);
 #pragma warning restore CA1416
-                var pdfImage = PdfImage.FromImage(image);
-                
+
                 // put image on page
+                var pdfImage = PdfImage.FromImage(image);
                 page.Canvas.DrawImage(pdfImage, x, y, cardWidth, cardHeight);
+
+                // if card is marked as foil also add this image to the same position for foil effect
+                if (file.Contains(@"\foil\") && printFoils)
+                {
+                    var foilImage = PdfImage.FromFile(@$"C:\Users\19137590\Source\Repos\MgcPrxyDrftr\src\foil.png");
+                    page.Canvas.DrawImage(foilImage, x, y, cardWidth, cardHeight);
+                }
 
                 if (cardCounter % 3 > 0) { x += cardWidth; } else { x = 0; }
 
