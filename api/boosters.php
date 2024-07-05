@@ -11,10 +11,10 @@
         die(json_encode(['error' => 'Die MessagePack-Erweiterung ist nicht verfügbar. Bitte installiere und aktiviere die MessagePack PHP-Erweiterung.']));
     }
 
-    $redis = new Redis();
-    $redis->connect($config['redisserver'], 6379);
-
     try {
+
+        $redis = new Redis();
+        $redis->connect($config['redisserver'], 6379);
 
         $helper = new Helper();
 
@@ -27,9 +27,9 @@
 
         $pdo = new PDO($dsn, $config['databaseusername'], $config['databasepassword'], $options);
 
-        $setCode = isset($_GET['x']) ? strtoupper($_GET['s']) : 'MH3';
-        $boosterName = isset($_GET['y']) ? strtolower($_GET['b']) : 'play';
-        $amount = isset($_GET['z']) ? intval($_GET['a']) : 1;
+        $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'LEB';
+        $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'default';
+        $amount = isset($_GET['a']) ? intval($_GET['a']) : 1;
 
         $data = [
             "set" => $setCode,

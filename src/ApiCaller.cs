@@ -32,7 +32,7 @@ namespace MgcPrxyDrftr
 
         public async Task<OpenBoosterBox> GenerateBooster(string setCode, BoosterType boosterType, int amount)
         {
-            var response = await _openBoostersClient.GetAsync($"open/boosters.php?x={setCode}&y={Enum.GetName(boosterType).ToLower()}&z={amount}");
+            var response = await _openBoostersClient.GetAsync($"boosters.php?s={setCode}&b={Enum.GetName(boosterType).ToLower()}&a={amount}");
             if (!response.IsSuccessStatusCode) return null;
 
             var json = await response.Content.ReadAsStringAsync();
