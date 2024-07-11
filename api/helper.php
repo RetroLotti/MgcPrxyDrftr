@@ -4,19 +4,19 @@
 	{
         public function curlFetch($url) 
         {
-          $curl = curl_init();
-          curl_setopt($curl, CURLOPT_URL, $url);
-          curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-          $result = curl_exec($curl);
-          curl_close($curl);
+            $curl = curl_init();
+            curl_setopt($curl, CURLOPT_URL, $url);
+            curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
+            $result = curl_exec($curl);
+            curl_close($curl);
       
-          return json_decode($result, true);
+            return json_decode($result, true);
         }
 
         public function packToRedis($redis, $cacheKey, $data, $timeToLive) {
-          $packedData = msgpack_pack($data);
-          $redis->set($cacheKey, $packedData);
-          $redis->expire($cacheKey, $timeToLive);
+            $packedData = msgpack_pack($data);
+            $redis->set($cacheKey, $packedData);
+            $redis->expire($cacheKey, $timeToLive);
         }
 
         public function unpackFromRedis($redis, $cacheKey) {
@@ -57,59 +57,59 @@
 		 * 
 		 * @param array $weightedValues
 		 */
-    public function getRandomWeightedElement(array $weightedValues) {
-      $totalWeight = array_sum($weightedValues);
-      $itemWeightIndex = $this->getRandomFloat() * $totalWeight;
-      $currentWeightIndex = 0;
+        public function getRandomWeightedElement(array $weightedValues) {
+            $totalWeight = array_sum($weightedValues);
+            $itemWeightIndex = $this->getRandomFloat() * $totalWeight;
+            $currentWeightIndex = 0;
 
-      foreach ($weightedValues as $key => $value) {
-          $currentWeightIndex += $value;
-          if ($currentWeightIndex >= $itemWeightIndex) {
-              return $key;
-          }
-      }
-    }
-
-    public function getRandomFloat($st_num = 0, $end_num = 1, $mul = 1000000) {
-        if ($st_num > $end_num) return false;
-        return mt_rand($st_num * $mul, $end_num * $mul) / $mul;
-    }
-
-    public function fetch($result)
-    {    
-      $array = array();
-      
-      if($result instanceof mysqli_stmt)
-      {
-        $result->store_result();
-        
-        $variables = array();
-        $data = array();
-        $meta = $result->result_metadata();
-        
-        while($field = $meta->fetch_field())
-          $variables[] = &$data[$field->name]; // pass by reference
-        
-        call_user_func_array(array($result, 'bind_result'), $variables);
-        
-        $i=0;
-        while($result->fetch())
-        {
-          $array[$i] = array();
-          foreach($data as $k=>$v)
-            $array[$i][$k] = $v;
-          $i++;
-          
-          // don't know why, but when I tried $array[] = $data, I got the same one result in all rows
+            foreach ($weightedValues as $key => $value) {
+                $currentWeightIndex += $value;
+                if ($currentWeightIndex >= $itemWeightIndex) {
+                    return $key;
+                }
+            }
         }
-      }
-      elseif($result instanceof mysqli_result)
-      {
-        while($row = $result->fetch_assoc())
-          $array[] = $row;
-      }
+
+        public function getRandomFloat($st_num = 0, $end_num = 1, $mul = 1000000) {
+            if ($st_num > $end_num) return false;
+            return mt_rand($st_num * $mul, $end_num * $mul) / $mul;
+        }
+
+        public function fetch($result)
+        {    
+            $array = array();
       
-      return $array;
-    }
+        if($result instanceof mysqli_stmt)
+        {
+            $result->store_result();
+        
+            $variables = array();
+            $data = array();
+            $meta = $result->result_metadata();
+        
+            while($field = $meta->fetch_field())
+                $variables[] = &$data[$field->name]; // pass by reference
+        
+            call_user_func_array(array($result, 'bind_result'), $variables);
+        
+            $i=0;
+            while($result->fetch())
+            {
+                $array[$i] = array();
+                foreach($data as $k=>$v)
+                $array[$i][$k] = $v;
+                $i++;
+          
+                // don't know why, but when I tried $array[] = $data, I got the same one result in all rows
+            }
+          }
+          elseif($result instanceof mysqli_result)
+          {
+            while($row = $result->fetch_assoc())
+              $array[] = $row;
+          }
+      
+          return $array;
+        }
   }
 ?>

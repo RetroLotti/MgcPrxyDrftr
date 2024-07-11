@@ -346,6 +346,10 @@ namespace MgcPrxyDrftr
             {
                 GetFixedBoosterSheets(code);
             }
+
+            // TODO: add
+            // ALTER TABLE `setBoosterSheets` ADD `sheetIsFixed` TINYINT(1) NOT NULL DEFAULT '0' AFTER `sheetIsFoil`;
+            // at the end
         }
 
         private static void GetFixedBoosterSheets(string setCode)
