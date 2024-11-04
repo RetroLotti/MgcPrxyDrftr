@@ -1907,7 +1907,7 @@ namespace MgcPrxyDrftr
                 foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
 
                 // create pdf
-                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings.PrintFoils);
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings!.PrintFoils);
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
 
@@ -2017,15 +2017,13 @@ namespace MgcPrxyDrftr
             }
 
             // open draft directory
-            if (IsWindows) 
-            {
-                Process process = new();
-                process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.FileName = "explorer.exe";
-                process.StartInfo.Arguments = $@"{draftDirectory}";
-                process.Start();
-            }
+            if (!IsWindows) return true;
+            Process process = new();
+            process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.FileName = "explorer.exe";
+            process.StartInfo.Arguments = $@"{draftDirectory}";
+            process.Start();
 
             return true;
         }
@@ -2244,7 +2242,7 @@ namespace MgcPrxyDrftr
         private static async Task GetImage(OpenBoosterCard card, string targetDirectory)
         {
             // skip if side b is an adventure
-            if (card.Side is not "a" && card.Layout is "adventure") return;
+            if (card.Side is not "a" && card.Layout is "adventure" or "split") return;
 
             // determine wether to download front or back cards
             var face = card.Side is null or "a" ? "front" : "back";
@@ -2271,10 +2269,7 @@ namespace MgcPrxyDrftr
 
             // get other faces
             if (card.OtherCards is null) return;
-            foreach (var otherCard in card.OtherCards.Where(otherCard => !otherCard.Layout.ToLower().Equals(Enum.GetName(Layout.Split)?.ToLower())))
-            {
-                await GetImage(otherCard, targetDirectory);
-            }
+            foreach (var otherCard in card.OtherCards) await GetImage(otherCard, targetDirectory);
         }
 
         private static async Task<bool> GetImage(ScryfallApi.Client.Models.Card card, string targetDirectory)
@@ -2369,7 +2364,7 @@ namespace MgcPrxyDrftr
                 {
                     file.Delete();
                 }
-                catch (IOException ioexception) { }
+                catch (IOException) { }
             }
         }
     }
