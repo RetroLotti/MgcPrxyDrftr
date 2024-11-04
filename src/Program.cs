@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -2270,7 +2271,10 @@ namespace MgcPrxyDrftr
 
             // get other faces
             if (card.OtherCards is null) return;
-            foreach (var otherCard in card.OtherCards) { await GetImage(otherCard, targetDirectory); }
+            foreach (var otherCard in card.OtherCards.Where(otherCard => !otherCard.Layout.ToLower().Equals(Enum.GetName(Layout.Split)?.ToLower())))
+            {
+                await GetImage(otherCard, targetDirectory);
+            }
         }
 
         private static async Task<bool> GetImage(ScryfallApi.Client.Models.Card card, string targetDirectory)
