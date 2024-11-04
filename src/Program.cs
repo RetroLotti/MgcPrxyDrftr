@@ -158,6 +158,8 @@ namespace MgcPrxyDrftr
 
             //AnalyseAllSets();
 
+            //GenerateFixedBoosterSheetSqlUpdate();
+
             //ReadFilteredSets();
 
             //ResetAndCleanEverything();
@@ -168,7 +170,7 @@ namespace MgcPrxyDrftr
 
             // convert all given sets to sql inserts for mtgoa
             //SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
-            
+
             //SetToSql(Sets, true);
 #else
             // start application loop
