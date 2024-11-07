@@ -1025,7 +1025,7 @@ namespace MgcPrxyDrftr
                     //H.Write("S => Add or Remove Sets", startLeftPosition, startTopPosition + 3);
                     //H.Write("R => Print Raw List", startLeftPosition, startTopPosition + 4);
                     //H.Write("C => Clipboard", startLeftPosition, startTopPosition + 5);
-                    //H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
+                    H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
                     //H.Write("P => Price Checker", startLeftPosition, startTopPosition + 7);
                     H.Write("O => Options", startLeftPosition, startTopPosition + 8);
                     H.Write("X => Exit", startLeftPosition, startTopPosition + 10);
@@ -1322,13 +1322,10 @@ namespace MgcPrxyDrftr
 
             // create Hashtable for cards identified by scryfall id
             SortedDictionary<Guid, Card> cards = new();
-            foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && (item.Side == null || item.Side == Side.A)) cards.Add(item.Uuid, item); }
+            foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && item.Side is null or Side.A) cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
-            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0)
-            {
-                return null;
-            }
+            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) return null;
 
             // determine booster blueprint
             Dictionary<Contents, float> blueprint = new();
@@ -1339,7 +1336,7 @@ namespace MgcPrxyDrftr
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
             {
                 // how many cards should be added for this sheet
-                var cardCount = (long)sheet.GetValue(booster.Key, null);
+                var cardCount = (long)sheet.GetValue(booster.Key, null)!;
 
                 // name of the sheet
                 var sheetName = sheet.Name;
@@ -1352,7 +1349,7 @@ namespace MgcPrxyDrftr
                 var actualSheet = ((Sheet)actualSheetReflection.GetValue(set.Data.Booster.Default.Sheets));
 
                 // add all cards to a temporary list with correct weight
-                foreach (var item in actualSheet.Cards)
+                foreach (var item in actualSheet!.Cards)
                 {
                     temporarySheet.Add(Guid.Parse(item.Key), item.Value / (float)actualSheet.TotalWeight);
                 }
@@ -1361,7 +1358,7 @@ namespace MgcPrxyDrftr
                 for (var i = 0; i < cardCount; i++)
                 {
                     // reset card id
-                    var card = Guid.Empty;
+                    Guid card;
 
                     // prevent added duplicate cards
                     do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
@@ -1693,12 +1690,10 @@ namespace MgcPrxyDrftr
         private static bool PrintDirectory(string directoryPath)
         {
             // create pdf
-            var proc = CreatePdf(@$"{directoryPath}", Settings.AutomaticPrinting);
-            if (proc.ExitCode == 0)
-            {
-                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
-                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
-            }
+            H.CreatePdfDocument(@$"{directoryPath}", $"{Guid.NewGuid()}.pdf");
+            
+            //FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
+            //if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
             return true;
         }
 

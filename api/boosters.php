@@ -4,12 +4,12 @@
     require "helper.php";
     $config = require "/var/config.php";
 
-    if (!class_exists('Redis')) {
-        die(json_encode(['error' => 'Die Redis-Klasse ist nicht verfuegbar. Bitte installiere und aktiviere die Redis PHP-Erweiterung.']));
-    }
-    if (!function_exists('msgpack_pack')) {
-        die(json_encode(['error' => 'Die MessagePack-Erweiterung ist nicht verfuegbar. Bitte installiere und aktiviere die MessagePack PHP-Erweiterung.']));
-    }
+	if (!class_exists('Redis')) {
+	    die(json_encode(['error' => 'Redis-Class is not available. Please install and activate the Redis PHP-Extension.']));
+	}
+	if (!function_exists('msgpack_pack')) {
+    	die(json_encode(['error' => 'MessagePack-Extension is not available. Please install and activate the MessagePack PHP-Extension.']));
+	}
 
     try {
 
