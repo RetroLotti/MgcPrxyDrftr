@@ -16,6 +16,7 @@ using MtgApiManager.Lib.Model;
 using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using QuestPDF.Infrastructure;
 using ScryfallApi.Client.Models;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
@@ -148,31 +149,39 @@ namespace MgcPrxyDrftr
             Thread.Sleep(100);
             Console.Clear();
 
+            // set quest pdf license
+            QuestPDF.Settings.License = LicenseType.Community;
+
 #if DEBUG
             // main loop
             _ = await EnterTheLoop();
+            
+            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\misc\splitted\neow", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
+            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\ironclad\splitted", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
+            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\misc\splitted\neow", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
+            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\misc\splitted\neow", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
 
-            //OmniCardList = ReadAllCards();
+            ////OmniCardList = ReadAllCards();
 
-            //GenerateCubeDraftBooster();
-            //GenerateCubeDraftMini();
+            ////GenerateCubeDraftBooster();
+            ////GenerateCubeDraftMini();
 
-            //AnalyseAllSets();
+            ////AnalyseAllSets();
 
-            //GenerateFixedBoosterSheetSqlUpdate();
+            ////GenerateFixedBoosterSheetSqlUpdate();
 
-            //ReadFilteredSets();
+            ////ReadFilteredSets();
 
-            //ResetAndCleanEverything();
+            ////ResetAndCleanEverything();
 
-            // Magic: Online Arena
-            //_ = await DraftToSql("ARN|60");
-            //_ = await DraftToSql("LEB|36");
+            //// Magic: Online Arena
+            ////_ = await DraftToSql("ARN|60");
+            ////_ = await DraftToSql("LEB|36");
 
-            // convert all given sets to sql inserts for mtgoa
-            //SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
+            //// convert all given sets to sql inserts for mtgoa
+            ////SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
 
-            //SetToSql(Sets, true);
+            ////SetToSql(Sets, true);
 #else
             // start application loop
             _ = await EnterTheLoop();
@@ -427,7 +436,7 @@ namespace MgcPrxyDrftr
                         // check if sheet exists
                         var contentSheet = sampleContent.GetType().GetProperty(sheetNameTitleCase);
 
-                        if (contentSheet != null || AddedSheets.Contains(sheetNameTitleCase)) continue;
+                        if (contentSheet != null || AddedSheets.Contains(sheetNameTitleCase) || sheetNameTitleCase.Equals("FoilUn-list")) continue;
                         newSheets = true;
                         AddedSheets.Add(sheetNameTitleCase);
 
@@ -1690,8 +1699,9 @@ namespace MgcPrxyDrftr
         private static bool PrintDirectory(string directoryPath)
         {
             // create pdf
-            H.CreatePdfDocument(@$"{directoryPath}", $"{Guid.NewGuid()}.pdf");
-            
+            //H.CreatePdfDocumentSpire(@$"{directoryPath}", $"{Guid.NewGuid()}.pdf");
+            //H.CreatePdfDocumentQuest(@$"{directoryPath}", $"{Guid.NewGuid()}.pdf");
+
             //FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
             //if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
             return true;

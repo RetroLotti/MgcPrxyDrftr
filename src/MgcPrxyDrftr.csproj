@@ -34,9 +34,10 @@
   </ItemGroup>
   
   <ItemGroup>
-    <PackageReference Include="FreeSpire.PDF" Version="8.6.0" />
+    <PackageReference Include="FreeSpire.PDF" Version="10.2.0" />
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="QuestPDF" Version="2024.10.2" />
     <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.1" />
     <PackageReference Include="TextCopy" Version="6.2.1" />

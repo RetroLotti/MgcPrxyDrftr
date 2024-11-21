@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Configuration;
 using System.Drawing;
 using System.IO;
@@ -8,6 +9,9 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using MgcPrxyDrftr.models;
 using Newtonsoft.Json;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using QuestPDF.Infrastructure;
 using Spire.Pdf;
 using Spire.Pdf.Graphics;
 
@@ -175,7 +179,63 @@ namespace MgcPrxyDrftr.lib
             return checksum.ToLower();
         }
 
-        public static bool CreatePdfDocument(string imageFolder, string targetFileName, bool printFoils = false)
+        public static bool CreatePdfDocumentQuest(string imageFolder, string targetFileName, string targetFolder)
+        {
+            const double millimetreToInch = 0.03937008;
+            const float cardWidthPoints = (62 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+            const float cardHeightPoints = (87 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+
+            const float marginLeftRight = (595 - cardWidthPoints * 3) / 2; 
+            const float marginTopBottom = (842 - cardHeightPoints * 3) / 2;
+
+            var cardStack = new Stack(Directory.GetFiles(@$"{imageFolder}\", "*.png"));
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+
+                    page.MarginLeft(marginLeftRight);
+                    page.MarginRight(marginLeftRight);
+                    page.MarginTop(marginTopBottom);
+                    page.MarginBottom(marginTopBottom);
+
+                    page.Content().Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            foreach (var foo in Enumerable.Range(0, 3))
+                            {
+                                columns.RelativeColumn();
+                            }
+                        });
+
+                        foreach (var card in cardStack)
+                        {
+                            table
+                                .Cell()
+                                .PaddingHorizontal(0)
+                                .Border(0)
+                                .Padding(0)
+                                .Column(column =>
+                                {
+                                    column
+                                        .Item()
+                                        .Width(cardWidthPoints)
+                                        .Height(cardHeightPoints)
+                                        .Image(card.ToString() ?? string.Empty).WithRasterDpi(150);
+                                });
+                        }
+                    });
+                });
+            });
+
+            document.GeneratePdf(@$"{targetFolder}\{targetFileName}");
+            return true;
+        }
+
+        public static bool CreatePdfDocumentSpire(string imageFolder, string targetFileName, bool printFoils = false)
         {
             // TODO: check folder
 
@@ -211,12 +271,8 @@ namespace MgcPrxyDrftr.lib
             {
                 cardCounter++;
 
-#pragma warning disable CA1416
-                var image = Image.FromFile(file);
-#pragma warning restore CA1416
-
                 // put image on page
-                var pdfImage = PdfImage.FromImage(image);
+                var pdfImage = PdfImage.FromFile(file);
                 page.Canvas.DrawImage(pdfImage, x, y, cardWidth, cardHeight);
 
                 // if card is marked as foil also add this image to the same position for foil effect
@@ -254,7 +310,7 @@ namespace MgcPrxyDrftr.lib
 
         public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder, bool printFoils = false)
         {
-            return CreatePdfDocument(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", printFoils);
+            return CreatePdfDocumentSpire(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", printFoils);
         }
     }
 }
