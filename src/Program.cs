@@ -15,7 +15,7 @@ using MtgApiManager.Lib.Model;
 using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using ScryfallApi.Client.Models;
+using QuestPDF.Infrastructure;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using File = System.IO.File;
@@ -59,21 +59,15 @@ namespace MgcPrxyDrftr
         private static readonly ApiCaller Api = new();
         private static Settings Settings { get; set; }
 
-#pragma warning disable IDE0051 // Remove unused private members
-        private static string Language { get; set; } = "en";
-#pragma warning restore IDE0051 // Remove unused private members
-
         // decks
         private static DeckList DeckList { get; set; }
         // sets
         private static SetList SetList { get; set; }
-        // cards
-        private static SortedDictionary<Guid, Card> OmniCardList { get; set; } = new(); 
 
         private static async Task Main(string[] args)
         {
+            // TODO: commandlinemode would be great, too
             if (args.Length > 0) { IsCommandLineMode = true; }
-
             //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
 #pragma warning disable CA1416
@@ -92,17 +86,12 @@ namespace MgcPrxyDrftr
             Settings = new Settings();
             Settings.Load();
 
-            //Console.WriteLine(">> Reading setlist...");
-            //SetList = await LoadSetList();
-
-            //Console.WriteLine(">> Determine and init set dependencies...");
-            //await DetermineChildSets();
-
+            // TODO: das auch
             //Console.WriteLine(">> Reading Prices...");
             //await LoadTodaysPriceList().ConfigureAwait(false);
             //await LoadPriceList().ConfigureAwait(false);
 
-            //Settings.RunsForFirstTime = false;
+            // TODO: das will ich noch machen!
             //if (Settings.RunsForFirstTime)
             //{
             //    Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
@@ -133,43 +122,24 @@ namespace MgcPrxyDrftr
             //Console.WriteLine(">> Reading decks from disk...");
             //ReadAllDecks();
 
-            //if (IsWindows)
-            //{
-            //    Console.WriteLine(">> Looking for nanDeck...");
-            //    H.CheckNanDeck(NanDeckPath);
-            //}
-            //else
-            //{
-            //    Console.WriteLine(">> nanDeck disabled");
-            //}
-
             Console.WriteLine(">> Starting...");
             Thread.Sleep(100);
             Console.Clear();
 
+            // set quest pdf license
+            QuestPDF.Settings.License = LicenseType.Community;
+
 #if DEBUG
             // main loop
             _ = await EnterTheLoop();
-
-            //OmniCardList = ReadAllCards();
-
-            //GenerateCubeDraftBooster();
-            //GenerateCubeDraftMini();
-
-            //AnalyseAllSets();
-
-            //ReadFilteredSets();
-
-            //ResetAndCleanEverything();
-
-            // Magic: Online Arena
-            //_ = await DraftToSql("ARN|60");
-            //_ = await DraftToSql("LEB|36");
-
-            // convert all given sets to sql inserts for mtgoa
-            //SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
             
-            //SetToSql(Sets, true);
+            ////AnalyseAllSets();
+            ////GenerateFixedBoosterSheetSqlUpdate();
+            ////ResetAndCleanEverything();
+
+            //// convert all given sets to sql inserts for mtgoa
+            ////SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
+            ////SetToSql(Sets, true);
 #else
             // start application loop
             _ = await EnterTheLoop();
@@ -346,6 +316,10 @@ namespace MgcPrxyDrftr
             {
                 GetFixedBoosterSheets(code);
             }
+
+            // TODO: add
+            // ALTER TABLE `setBoosterSheets` ADD `sheetIsFixed` TINYINT(1) NOT NULL DEFAULT '0' AFTER `sheetIsFoil`;
+            // at the end
         }
 
         private static void GetFixedBoosterSheets(string setCode)
@@ -420,7 +394,7 @@ namespace MgcPrxyDrftr
                         // check if sheet exists
                         var contentSheet = sampleContent.GetType().GetProperty(sheetNameTitleCase);
 
-                        if (contentSheet != null || AddedSheets.Contains(sheetNameTitleCase)) continue;
+                        if (contentSheet != null || AddedSheets.Contains(sheetNameTitleCase) || sheetNameTitleCase.Equals("FoilUn-list")) continue;
                         newSheets = true;
                         AddedSheets.Add(sheetNameTitleCase);
 
@@ -1018,7 +992,7 @@ namespace MgcPrxyDrftr
                     //H.Write("S => Add or Remove Sets", startLeftPosition, startTopPosition + 3);
                     //H.Write("R => Print Raw List", startLeftPosition, startTopPosition + 4);
                     //H.Write("C => Clipboard", startLeftPosition, startTopPosition + 5);
-                    //H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
+                    H.Write("F => Print Folder", startLeftPosition, startTopPosition + 6);
                     //H.Write("P => Price Checker", startLeftPosition, startTopPosition + 7);
                     H.Write("O => Options", startLeftPosition, startTopPosition + 8);
                     H.Write("X => Exit", startLeftPosition, startTopPosition + 10);
@@ -1315,13 +1289,10 @@ namespace MgcPrxyDrftr
 
             // create Hashtable for cards identified by scryfall id
             SortedDictionary<Guid, Card> cards = new();
-            foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && (item.Side == null || item.Side == Side.A)) cards.Add(item.Uuid, item); }
+            foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && item.Side is null or Side.A) cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
-            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0)
-            {
-                return null;
-            }
+            if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) return null;
 
             // determine booster blueprint
             Dictionary<Contents, float> blueprint = new();
@@ -1332,7 +1303,7 @@ namespace MgcPrxyDrftr
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
             {
                 // how many cards should be added for this sheet
-                var cardCount = (long)sheet.GetValue(booster.Key, null);
+                var cardCount = (long)sheet.GetValue(booster.Key, null)!;
 
                 // name of the sheet
                 var sheetName = sheet.Name;
@@ -1345,7 +1316,7 @@ namespace MgcPrxyDrftr
                 var actualSheet = ((Sheet)actualSheetReflection.GetValue(set.Data.Booster.Default.Sheets));
 
                 // add all cards to a temporary list with correct weight
-                foreach (var item in actualSheet.Cards)
+                foreach (var item in actualSheet!.Cards)
                 {
                     temporarySheet.Add(Guid.Parse(item.Key), item.Value / (float)actualSheet.TotalWeight);
                 }
@@ -1354,7 +1325,7 @@ namespace MgcPrxyDrftr
                 for (var i = 0; i < cardCount; i++)
                 {
                     // reset card id
-                    var card = Guid.Empty;
+                    Guid card;
 
                     // prevent added duplicate cards
                     do { card = temporarySheet.RandomElementByWeight(e => e.Value).Key; } while (boosterCards.Contains(card));
@@ -1686,12 +1657,11 @@ namespace MgcPrxyDrftr
         private static bool PrintDirectory(string directoryPath)
         {
             // create pdf
-            var proc = CreatePdf(@$"{directoryPath}", Settings.AutomaticPrinting);
-            if (proc.ExitCode == 0)
-            {
-                FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
-                if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
-            }
+            //H.CreatePdfDocumentSpire(@$"{directoryPath}", $"{Guid.NewGuid()}.pdf");
+            //H.CreatePdfDocumentQuest(@$"{directoryPath}", $"{Guid.NewGuid()}.pdf");
+
+            //FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptNameNoGuid}.pdf");
+            //if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\folder_{Guid.NewGuid()}.pdf"); }
             return true;
         }
 
@@ -1900,7 +1870,7 @@ namespace MgcPrxyDrftr
                 foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
 
                 // create pdf
-                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings.PrintFoils);
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings!.PrintFoils);
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
 
@@ -2010,15 +1980,13 @@ namespace MgcPrxyDrftr
             }
 
             // open draft directory
-            if (IsWindows) 
-            {
-                Process process = new();
-                process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
-                process.StartInfo.UseShellExecute = false;
-                process.StartInfo.FileName = "explorer.exe";
-                process.StartInfo.Arguments = $@"{draftDirectory}";
-                process.Start();
-            }
+            if (!IsWindows) return true;
+            Process process = new();
+            process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.FileName = "explorer.exe";
+            process.StartInfo.Arguments = $@"{draftDirectory}";
+            process.Start();
 
             return true;
         }
@@ -2237,7 +2205,7 @@ namespace MgcPrxyDrftr
         private static async Task GetImage(OpenBoosterCard card, string targetDirectory)
         {
             // skip if side b is an adventure
-            if (card.Side is not "a" && card.Layout is "adventure") return;
+            if (card.Side is not "a" && card.Layout is "adventure" or "split") return;
 
             // determine wether to download front or back cards
             var face = card.Side is null or "a" ? "front" : "back";
@@ -2264,7 +2232,7 @@ namespace MgcPrxyDrftr
 
             // get other faces
             if (card.OtherCards is null) return;
-            foreach (var otherCard in card.OtherCards) { await GetImage(otherCard, targetDirectory); }
+            foreach (var otherCard in card.OtherCards) await GetImage(otherCard, targetDirectory);
         }
 
         private static async Task<bool> GetImage(ScryfallApi.Client.Models.Card card, string targetDirectory)
@@ -2359,7 +2327,7 @@ namespace MgcPrxyDrftr
                 {
                     file.Delete();
                 }
-                catch (IOException ioexception) { }
+                catch (IOException) { }
             }
         }
     }

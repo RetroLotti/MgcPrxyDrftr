@@ -26,9 +26,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup dotnet
-        uses: actions/setup-dotnet@v1
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 6.0.x
+          dotnet-version: 8.0.x
 
       - name: Build
         shell: bash
@@ -36,7 +36,7 @@ jobs:
           tag=$(git describe --tags --abbrev=0)
           release_name="MgcPrxyDrftr-$tag-${{ matrix.target }}"
           # Build everything
-          dotnet publish src/MgcPrxyDrftr.csproj --framework net6.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name"
+          dotnet publish src/MgcPrxyDrftr.csproj --framework net8.0 --runtime "${{ matrix.target }}" -c Release -o "$release_name"
           # Pack files
           if [ "${{ matrix.target }}" == "win-x64" ]; then
             # Pack to zip for Windows
@@ -47,7 +47,7 @@ jobs:
           # Delete output directory
           rm -r "$release_name"
       - name: Publish .net
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: "MgcPrxyDrftr*"
         env:

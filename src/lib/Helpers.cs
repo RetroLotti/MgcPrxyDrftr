@@ -1,6 +1,6 @@
 ﻿using System;
+using System.Collections;
 using System.Configuration;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -8,6 +8,8 @@ using System.Security.Cryptography;
 using System.Threading.Tasks;
 using MgcPrxyDrftr.models;
 using Newtonsoft.Json;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using Spire.Pdf;
 using Spire.Pdf.Graphics;
 
@@ -17,7 +19,7 @@ namespace MgcPrxyDrftr.lib
     {
         public static bool Write(string text, int posX, int posY)
         {
-            (var left, var top) = Console.GetCursorPosition();
+            var (left, top) = Console.GetCursorPosition();
             Console.SetCursorPosition(posX, posY);
             Console.Write(text);
             Console.SetCursorPosition(left, top);
@@ -28,7 +30,10 @@ namespace MgcPrxyDrftr.lib
         public static void CheckDirectory(string path)
         {
             DirectoryInfo dir = new(path);
-            if (!dir.Exists) { dir.Create(); }
+            if (!dir.Exists)
+            {
+                dir.Create();
+            }
         }
 
         public static DeckRoot ReadSingleDeck(string file)
@@ -53,7 +58,8 @@ namespace MgcPrxyDrftr.lib
         /// <param name="validationFileUri"></param>
         /// <param name="targetDirectory"></param>
         /// <returns></returns>
-        public static async Task<bool> DownloadAndValidateFile(string downloadFileUri, string validationFileUri, string targetDirectory)
+        public static async Task<bool> DownloadAndValidateFile(string downloadFileUri, string validationFileUri,
+            string targetDirectory)
         {
             HttpClient httpClient = new();
             Uri downloadUri = new(downloadFileUri);
@@ -62,7 +68,8 @@ namespace MgcPrxyDrftr.lib
             await DownloadFile(httpClient, downloadFileUri, @$"{targetDirectory}\{downloadUri.Segments[^1]}");
             await DownloadFile(httpClient, validationFileUri, @$"{targetDirectory}\{checksumUri.Segments[^1]}");
 
-            return ValidateFiles($@"{targetDirectory}\{downloadUri.Segments[^1]}", @$"{targetDirectory}\{checksumUri.Segments[^1]}");
+            return ValidateFiles($@"{targetDirectory}\{downloadUri.Segments[^1]}",
+                @$"{targetDirectory}\{checksumUri.Segments[^1]}");
         }
 
         private static async Task<bool> DownloadFile(HttpClient httpClient, string uri, string targetFile)
@@ -70,7 +77,7 @@ namespace MgcPrxyDrftr.lib
             await using var stream = await httpClient.GetStreamAsync(uri);
             await using var fileStream = new FileStream(targetFile, FileMode.CreateNew);
             await stream.CopyToAsync(fileStream);
-            
+
             return true;
         }
 
@@ -80,13 +87,16 @@ namespace MgcPrxyDrftr.lib
             var currentFileText = string.Empty;
 
             // download content file
-            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json").ConfigureAwait(false);
+            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json",
+                @$"{fullJsonPath}\{setCode.ToUpper()}.json").ConfigureAwait(false);
 
             // download checksum file
-            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json.sha256", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256").ConfigureAwait(false);
+            await DownloadFile(httpClient, $"https://mtgjson.com/api/v5/{setCode}.json.sha256",
+                @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256").ConfigureAwait(false);
 
             // validate checksum
-            var isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
+            var isValid = ValidateFiles(@$"{fullJsonPath}\{setCode.ToUpper()}.json",
+                @$"{fullJsonPath}\{setCode.ToUpper()}.json.sha256");
 
             if (!isValid) return;
             var downloadedFileText = await File.ReadAllTextAsync(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
@@ -96,22 +106,25 @@ namespace MgcPrxyDrftr.lib
             }
 
             // TODO: check for new eums
-                
+
             var downloadSet = JsonConvert.DeserializeObject<SetRoot>(downloadedFileText);
             var currentSet = JsonConvert.DeserializeObject<SetRoot>(currentFileText);
 
             if (currentSet == null)
             {
                 // move
-                File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
+                File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json",
+                    @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
             }
-            else if (downloadSet.Meta.Date > currentSet.Meta.Date && !downloadSet.Meta.Version.Equals(currentSet.Meta.Version))
+            else if (downloadSet.Meta.Date > currentSet.Meta.Date &&
+                     !downloadSet.Meta.Version.Equals(currentSet.Meta.Version))
             {
                 // delete
                 File.Delete(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
 
                 // then move
-                File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json", @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
+                File.Move(@$"{fullJsonPath}\{setCode.ToUpper()}.json",
+                    @$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json");
             }
 
             File.Delete(@$"{fullJsonPath}\{setCode.ToUpper()}.json");
@@ -127,7 +140,10 @@ namespace MgcPrxyDrftr.lib
             return (downloadedFileChecksum.Equals(serverChecksum));
         }
 
-        private static string ReadChecksum(string file) { return File.ReadAllText(file); }
+        private static string ReadChecksum(string file)
+        {
+            return File.ReadAllText(file);
+        }
 
         private static string CalculateChecksum(string file)
         {
@@ -135,7 +151,7 @@ namespace MgcPrxyDrftr.lib
             var finished = false;
             var checksum = string.Empty;
             FileInfo fileInfo = new(file);
-            
+
             using var sha256 = SHA256.Create();
 
             do
@@ -161,9 +177,64 @@ namespace MgcPrxyDrftr.lib
             return checksum.ToLower();
         }
 
-        public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder, bool printFoils = false)
+        public static bool CreatePdfDocumentQuest(string imageFolder, string targetFileName, string targetFolder)
         {
+            const double millimetreToInch = 0.03937008;
+            const float cardWidthPoints = (62 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+            const float cardHeightPoints = (87 * (float)millimetreToInch) * PageSizes.PointsPerInch;
 
+            const float marginLeftRight = (595 - cardWidthPoints * 3) / 2; 
+            const float marginTopBottom = (842 - cardHeightPoints * 3) / 2;
+
+            var cardStack = new Stack(Directory.GetFiles(@$"{imageFolder}\", "*.png"));
+
+            var document = Document.Create(container =>
+            {
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+
+                    page.MarginLeft(marginLeftRight);
+                    page.MarginRight(marginLeftRight);
+                    page.MarginTop(marginTopBottom);
+                    page.MarginBottom(marginTopBottom);
+
+                    page.Content().Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            foreach (var foo in Enumerable.Range(0, 3))
+                            {
+                                columns.RelativeColumn();
+                            }
+                        });
+
+                        foreach (var card in cardStack)
+                        {
+                            table
+                                .Cell()
+                                .PaddingHorizontal(0)
+                                .Border(0)
+                                .Padding(0)
+                                .Column(column =>
+                                {
+                                    column
+                                        .Item()
+                                        .Width(cardWidthPoints)
+                                        .Height(cardHeightPoints)
+                                        .Image(card.ToString() ?? string.Empty).WithRasterDpi(150);
+                                });
+                        }
+                    });
+                });
+            });
+
+            document.GeneratePdf(@$"{targetFolder}\{targetFileName}");
+            return true;
+        }
+
+        public static bool CreatePdfDocumentSpire(string imageFolder, string targetFileName, bool printFoils = false)
+        {
             // TODO: check folder
 
             var pdfDocument = new PdfDocument();
@@ -185,8 +256,12 @@ namespace MgcPrxyDrftr.lib
             // get card count
             //var maxCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png").Length;
 
-            var cards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\", "*.png");
-            var foilCards = Directory.GetFiles(@$"{imageFolder}\{boosterGuid}\foil\", "*.png");
+            var cards = Directory.GetFiles(@$"{imageFolder}\", "*.png");
+#pragma warning disable CA1825
+            var foilCards = new string[] {};
+#pragma warning restore CA1825
+
+            if(printFoils) foilCards = Directory.GetFiles(@$"{imageFolder}\foil\", "*.png");
 
             var allCards = cards.Concat(foilCards).ToArray();
 
@@ -194,12 +269,8 @@ namespace MgcPrxyDrftr.lib
             {
                 cardCounter++;
 
-#pragma warning disable CA1416
-                var image = Image.FromFile(file);
-#pragma warning restore CA1416
-
                 // put image on page
-                var pdfImage = PdfImage.FromImage(image);
+                var pdfImage = PdfImage.FromFile(file);
                 page.Canvas.DrawImage(pdfImage, x, y, cardWidth, cardHeight);
 
                 // if card is marked as foil also add this image to the same position for foil effect
@@ -209,19 +280,35 @@ namespace MgcPrxyDrftr.lib
                     page.Canvas.DrawImage(foilImage, x, y, cardWidth, cardHeight);
                 }
 
-                if (cardCounter % 3 > 0) { x += cardWidth; } else { x = 0; }
+                if (cardCounter % 3 > 0)
+                {
+                    x += cardWidth;
+                }
+                else
+                {
+                    x = 0;
+                }
 
-                if (cardCounter is 3 or 6 or 12 or 15) { y += cardHeight; }
+                if (cardCounter is 3 or 6 or 12 or 15)
+                {
+                    y += cardHeight;
+                }
 
                 // add new page if current page has nine cards
                 if (cardCounter % 9 != 0) continue;
                 page = pdfDocument.Pages.Add(PdfPageSize.A4, new PdfMargins(marginLeftRight, marginTopBottom));
-                x = 0; y = 0;
+                x = 0;
+                y = 0;
             }
 
-            pdfDocument.SaveToFile(@$"{imageFolder}\{boosterGuid}\{boosterGuid}.pdf");
+            pdfDocument.SaveToFile(@$"{imageFolder}\{targetFileName}");
 
             return true;
+        }
+
+        public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder, bool printFoils = false)
+        {
+            return CreatePdfDocumentSpire(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", printFoils);
         }
     }
 }
