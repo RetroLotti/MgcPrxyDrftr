@@ -46,9 +46,18 @@ jobs:
           fi
           # Delete output directory
           rm -r "$release_name"
-      - name: Publish
+      - name: Publish .net
         uses: softprops/action-gh-release@v2
         with:
           files: "MgcPrxyDrftr*"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish PHP Api
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./api/
+          server-dir: /var/www/html/
+          dry-run: false
