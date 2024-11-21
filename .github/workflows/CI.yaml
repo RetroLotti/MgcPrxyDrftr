@@ -60,4 +60,4 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./api/
           server-dir: /var/www/html/
-          dry-run: false
+          dry-run: true
