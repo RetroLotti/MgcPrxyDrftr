@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Reflection.Metadata.Ecma335;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -17,7 +16,6 @@ using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using QuestPDF.Infrastructure;
-using ScryfallApi.Client.Models;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using File = System.IO.File;
@@ -61,21 +59,15 @@ namespace MgcPrxyDrftr
         private static readonly ApiCaller Api = new();
         private static Settings Settings { get; set; }
 
-#pragma warning disable IDE0051 // Remove unused private members
-        private static string Language { get; set; } = "en";
-#pragma warning restore IDE0051 // Remove unused private members
-
         // decks
         private static DeckList DeckList { get; set; }
         // sets
         private static SetList SetList { get; set; }
-        // cards
-        private static SortedDictionary<Guid, Card> OmniCardList { get; set; } = new(); 
 
         private static async Task Main(string[] args)
         {
+            // TODO: commandlinemode would be great, too
             if (args.Length > 0) { IsCommandLineMode = true; }
-
             //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
 #pragma warning disable CA1416
@@ -94,17 +86,12 @@ namespace MgcPrxyDrftr
             Settings = new Settings();
             Settings.Load();
 
-            //Console.WriteLine(">> Reading setlist...");
-            //SetList = await LoadSetList();
-
-            //Console.WriteLine(">> Determine and init set dependencies...");
-            //await DetermineChildSets();
-
+            // TODO: das auch
             //Console.WriteLine(">> Reading Prices...");
             //await LoadTodaysPriceList().ConfigureAwait(false);
             //await LoadPriceList().ConfigureAwait(false);
 
-            //Settings.RunsForFirstTime = false;
+            // TODO: das will ich noch machen!
             //if (Settings.RunsForFirstTime)
             //{
             //    Console.WriteLine(">> It appears you are running MgcPrxyDrftr for the first time.");
@@ -135,16 +122,6 @@ namespace MgcPrxyDrftr
             //Console.WriteLine(">> Reading decks from disk...");
             //ReadAllDecks();
 
-            //if (IsWindows)
-            //{
-            //    Console.WriteLine(">> Looking for nanDeck...");
-            //    H.CheckNanDeck(NanDeckPath);
-            //}
-            //else
-            //{
-            //    Console.WriteLine(">> nanDeck disabled");
-            //}
-
             Console.WriteLine(">> Starting...");
             Thread.Sleep(100);
             Console.Clear();
@@ -156,31 +133,12 @@ namespace MgcPrxyDrftr
             // main loop
             _ = await EnterTheLoop();
             
-            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\misc\splitted\neow", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
-            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\ironclad\splitted", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
-            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\misc\splitted\neow", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
-            ////H.CreatePdfDocumentQuest(@"C:\Slay the Spire - sorted\cards\misc\splitted\neow", Guid.NewGuid() + ".pdf", @"C:\Users\19137590\OneDrive - bofrost Dienstleistungs GmbH & Co. KG\Desktop\slay_the_spire");
-
-            ////OmniCardList = ReadAllCards();
-
-            ////GenerateCubeDraftBooster();
-            ////GenerateCubeDraftMini();
-
             ////AnalyseAllSets();
-
             ////GenerateFixedBoosterSheetSqlUpdate();
-
-            ////ReadFilteredSets();
-
             ////ResetAndCleanEverything();
-
-            //// Magic: Online Arena
-            ////_ = await DraftToSql("ARN|60");
-            ////_ = await DraftToSql("LEB|36");
 
             //// convert all given sets to sql inserts for mtgoa
             ////SetToSql(new SortedList<string, SetRoot>(){ { "LEA", Sets["LEA"]}, { "3ED", Sets["3ED"] }, { "ARN", Sets["ARN"] } }, false);
-
             ////SetToSql(Sets, true);
 #else
             // start application loop

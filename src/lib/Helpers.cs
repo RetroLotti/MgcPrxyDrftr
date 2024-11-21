@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections;
 using System.Configuration;
-using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -11,7 +10,6 @@ using MgcPrxyDrftr.models;
 using Newtonsoft.Json;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
-using QuestPDF.Infrastructure;
 using Spire.Pdf;
 using Spire.Pdf.Graphics;
 
@@ -21,7 +19,7 @@ namespace MgcPrxyDrftr.lib
     {
         public static bool Write(string text, int posX, int posY)
         {
-            (var left, var top) = Console.GetCursorPosition();
+            var (left, top) = Console.GetCursorPosition();
             Console.SetCursorPosition(posX, posY);
             Console.Write(text);
             Console.SetCursorPosition(left, top);
