@@ -41,16 +41,6 @@ namespace MgcPrxyDrftr.lib
             return JsonConvert.DeserializeObject<DeckRoot>(File.ReadAllText(file));
         }
 
-        public static void CheckNanDeck(string fullPath)
-        {
-            FileInfo nandeck = new(fullPath);
-            if (nandeck.Exists) return;
-            Console.WriteLine("NanDECK not found. Please enter path to nandeck.exe manually!");
-            Console.Write("> ");
-            fullPath = Console.ReadLine();
-            ConfigurationManager.AppSettings["NanDeckFullPath"] = fullPath;
-        }
-
         /// <summary>
         /// Generic method to download the given file and validate sha256 hash
         /// </summary>

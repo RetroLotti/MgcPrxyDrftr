@@ -18,7 +18,7 @@ using Newtonsoft.Json.Linq;
 using QuestPDF.Infrastructure;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
-using File = System.IO.File;
+//using File = System.IO.File;
 using H = MgcPrxyDrftr.lib.Helpers;
 
 namespace MgcPrxyDrftr
@@ -34,27 +34,23 @@ namespace MgcPrxyDrftr
         private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"] ?? "booster";
         private static string CacheDirectory { get; set; } = ConfigurationManager.AppSettings["CacheDirectory"] ?? "cache";
         private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"] ?? "scryfall";
-        private static string ScriptDirectory { get; set; } = ConfigurationManager.AppSettings["ScriptDirectory"] ?? "scripts";
         private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
         private static string OutputDirectory { get; set; } = ConfigurationManager.AppSettings["OutputDirectory"] ?? "output";
         private static string FileDirectory { get; set; } = ConfigurationManager.AppSettings["FileDirectory"] ?? "files";
         private static string TemporaryDirectory { get; set; } = ConfigurationManager.AppSettings["TemporaryDirectory"] ?? "temporary";
         private static string ListDirectory { get; set; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
-        private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
-        private static string DefaultScriptNameNoGuid { get; set; } = ConfigurationManager.AppSettings["DefaultScriptNameNoGuid"];
-        private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"] ?? "true");
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static bool IsCommandLineMode { get; set; } = false;
 
-        private static readonly SortedList<string, string> ReleaseTimelineSets = new();
-        private static readonly SortedList<string, SetRoot> Sets = new();
-        private static SortedList<string, Deck> Decks { get; set; } = new();
-        private static readonly HashSet<string> SheetList = new();
-        private static HashSet<string> AddedSheets { get; set; } = new ();
-        private static readonly Dictionary<string, List<string>> SetDependencies = new();
+        private static readonly SortedList<string, string> ReleaseTimelineSets = [];
+        private static readonly SortedList<string, SetRoot> Sets = [];
+        private static SortedList<string, Deck> Decks { get; set; } = [];
+        private static readonly HashSet<string> SheetList = [];
+        private static HashSet<string> AddedSheets { get; set; } = [];
+        private static readonly Dictionary<string, List<string>> SetDependencies = [];
 
-        private static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
+        public static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
         [Obsolete("Obsolete")] private static readonly WebClient Client = new();
         private static readonly ApiCaller Api = new();
         private static Settings Settings { get; set; }
@@ -70,9 +66,7 @@ namespace MgcPrxyDrftr
             if (args.Length > 0) { IsCommandLineMode = true; }
             //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
 
-#pragma warning disable CA1416
             if (IsWindows) { Console.SetWindowSize(136, 40); }
-#pragma warning restore CA1416
 
             WriteHeader();
 
@@ -217,10 +211,12 @@ namespace MgcPrxyDrftr
         {
             var mtgjsonSetList = await LoadSetList().ConfigureAwait(false);
 
-            foreach (var set in mtgjsonSetList.Data.Where(s =>
-                         s.IsOnlineOnly == false && s.IsPartialPreview == false && s.Code.ToUpper() != "CON" && s.Type is SetType.Commander
-                             or SetType.Core or SetType.DraftInnovation or SetType.Commander or SetType.Expansion
-                             or SetType.Masterpiece or SetType.Masters).OrderBy(s => s.ReleaseDate))
+            foreach (var set in mtgjsonSetList.Data
+                         .Where(s => s.IsOnlineOnly == false && s.IsPartialPreview == false &&
+                                     !s.Code.Equals("CON", StringComparison.OrdinalIgnoreCase) &&
+                                     s.Type is SetType.Commander or SetType.Core or SetType.DraftInnovation
+                                         or SetType.Expansion or SetType.Masterpiece or SetType.Masters)
+                         .OrderBy(s => s.ReleaseDate))
             {
                 // ignore if no parent is found
                 if (string.IsNullOrEmpty(set.ParentCode)) continue;
@@ -229,7 +225,7 @@ namespace MgcPrxyDrftr
                 _ = ReadSingleSetWithUpdateCheck(set.ParentCode);
 
                 // add dependency
-                SetDependencies.TryAdd(set.ParentCode.ToUpper(), new List<string>());
+                SetDependencies.TryAdd(set.ParentCode.ToUpper(), []);
                 if (SetDependencies.TryGetValue(set.ParentCode, out var dependencyList)) { dependencyList.Add(set.Code); }
 
                 // load child into list
@@ -241,7 +237,7 @@ namespace MgcPrxyDrftr
         {
             // TODO: implement fix for filename CON as it is a reserved keyword in windows
             foreach (var set in SetList.Data.Where(s =>
-                         s.IsOnlineOnly == false && s.IsPartialPreview == false && s.Code.ToUpper() != "CON" && s.Type is SetType.Commander
+                         s.IsOnlineOnly == false && s.IsPartialPreview == false && !s.Code.Equals("CON", StringComparison.OrdinalIgnoreCase) && s.Type is SetType.Commander
                              or SetType.Core or SetType.DraftInnovation or SetType.Commander or SetType.Expansion
                              or SetType.Masterpiece or SetType.Masters).OrderBy(s => s.ReleaseDate))
             {
@@ -283,7 +279,7 @@ namespace MgcPrxyDrftr
             var dir = new DirectoryInfo(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\");
             foreach (var item in dir.GetFiles("*.json"))
             {
-                var set = ReadSingleSet(item.Name[..item.Name.IndexOf(".", StringComparison.Ordinal)]);
+                var set = ReadSingleSet(item.Name[..item.Name.IndexOf('.')]);
                 foreach(var card in set.Data.Cards)
                 {
                     list.Add(card.Uuid, card);
@@ -460,7 +456,7 @@ namespace MgcPrxyDrftr
                 var boosterList = set.Value.Data.Booster.GetType().GetProperties()
                     .Where(b => b.GetValue(set.Value.Data.Booster) != null);
 
-                addedSheets = new List<string>();
+                addedSheets = [];
                 foreach (var boosterInfo in boosterList)
                 {
                     var boosterInfoObject = (DefaultBooster)boosterInfo.GetValue(set.Value.Data.Booster, null);
@@ -590,7 +586,7 @@ namespace MgcPrxyDrftr
                     Console.WriteLine($"{i + 1}/36000 [{k+1}]");
 
                     var dict = GenerateBoosterPlain("NEO");
-                    writer.WriteLine($"{(dict.ContainsKey("C Red") ? dict["C Red"] : "0")}|{(dict.ContainsKey("C Green") ? dict["C Green"] : "0")}|{(dict.ContainsKey("C Black") ? dict["C Black"] : "0")}|{(dict.ContainsKey("C White") ? dict["C White"] : "0")}|{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "0")}|{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "0")}|{(dict.ContainsKey("U Red") ? dict["U Red"] : "0")}|{(dict.ContainsKey("U Green") ? dict["U Green"] : "0")}|{(dict.ContainsKey("U Black") ? dict["U Black"] : "0")}|{(dict.ContainsKey("U White") ? dict["U White"] : "0")}|{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "0")}|{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "0")}|{(dict.ContainsKey("R/M") ? dict["R/M"] : "0")}|{(dict.ContainsKey("C/U") ? dict["C/U"] : "0")}");
+                    writer.WriteLine($"{(dict.TryGetValue("C Red", out var value) ? value : "0")}|{(dict.TryGetValue("C Green", out var value1) ? value1 : "0")}|{(dict.TryGetValue("C Black", out var value2) ? value2 : "0")}|{(dict.TryGetValue("C White", out var value3) ? value3 : "0")}|{(dict.TryGetValue("C Blue", out var value4) ? value4 : "0")}|{(dict.TryGetValue("C .Else", out var value5) ? value5 : "0")}|{(dict.TryGetValue("U Red", out var value6) ? value6 : "0")}|{(dict.TryGetValue("U Green", out var value7) ? value7 : "0")}|{(dict.TryGetValue("U Black", out var value8) ? value8 : "0")}|{(dict.TryGetValue("U White", out var value9) ? value9 : "0")}|{(dict.TryGetValue("U Blue", out var value10) ? value10 : "0")}|{(dict.TryGetValue("U .Else", out var value11) ? value11 : "0")}|{(dict.TryGetValue("R/M", out var value12) ? value12 : "0")}|{(dict.TryGetValue("C/U", out var value13) ? value13 : "0")}");
 
                     Thread.Sleep(50);
                 }
@@ -619,13 +615,13 @@ namespace MgcPrxyDrftr
                 StringBuilder build = new();
                 build.AppendLine("   R    G    B    W    U    E ");
                 build.AppendLine("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗");
-                build.AppendLine($"C ║{(dict.ContainsKey("C Red") ? dict["C Red"] : "-")}║  ║{(dict.ContainsKey("C Green") ? dict["C Green"] : "-")}║  ║{(dict.ContainsKey("C Black") ? dict["C Black"] : "-")}║  ║{(dict.ContainsKey("C White") ? dict["C White"] : "-")}║  ║{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "-")}║  ║{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "-")}║");
+                build.AppendLine($"C ║{(dict.TryGetValue("C Red", out var value) ? value : "-")}║  ║{(dict.TryGetValue("C Green", out var value1) ? value1 : "-")}║  ║{(dict.TryGetValue("C Black", out var value2) ? value2 : "-")}║  ║{(dict.TryGetValue("C White", out var value3) ? value3 : "-")}║  ║{(dict.TryGetValue("C Blue", out var value4) ? value4 : "-")}║  ║{(dict.TryGetValue("C .Else", out var value5) ? value5 : "-")}║");
                 build.AppendLine("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝");
                 build.AppendLine("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗");
-                build.AppendLine($"U ║{(dict.ContainsKey("U Red") ? dict["U Red"] : "-")}║  ║{(dict.ContainsKey("U Green") ? dict["U Green"] : "-")}║  ║{(dict.ContainsKey("U Black") ? dict["U Black"] : "-")}║  ║{(dict.ContainsKey("U White") ? dict["U White"] : "-")}║  ║{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "-")}║  ║{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "-")}║");
+                build.AppendLine($"U ║{(dict.TryGetValue("U Red", out var value6) ? value6 : "-")}║  ║{(dict.TryGetValue("U Green", out var value7) ? value7 : "-")}║  ║{(dict.TryGetValue("U Black", out var value8) ? value8 : "-")}║  ║{(dict.TryGetValue("U White", out var value9) ? value9 : "-")}║  ║{(dict.TryGetValue("U Blue", out var value10) ? value10 : "-")}║  ║{(dict.TryGetValue("U .Else", out var value11) ? value11 : "-")}║");
                 build.AppendLine("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝");
                 build.AppendLine("R ╔═╗                         ");
-                build.AppendLine($"/ ║{(dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ");
+                build.AppendLine($"/ ║{(dict.TryGetValue("R/M", out var value12) ? value12 : "-")}║                         ");
                 build.AppendLine("M ╚═╝                         ");
 
                 Console.Clear();
@@ -655,27 +651,27 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("C ", ConsoleColor.Black, ConsoleColor.Gray);
                 Write("║", ConsoleColor.Black, ConsoleColor.Red);
-                Write(dict.ContainsKey("C Red") ? dict["C Red"].ToString() : "-", ConsoleColor.Red);
+                Write(dict.TryGetValue("C Red", out var value13) ? value13.ToString() : "-", ConsoleColor.Red);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Red);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkGreen);
-                Write(dict.ContainsKey("C Green") ? dict["C Green"].ToString() : "-", ConsoleColor.DarkGreen);
+                Write(dict.TryGetValue("C Green", out var value14) ? value14.ToString() : "-", ConsoleColor.DarkGreen);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkMagenta);
-                Write(dict.ContainsKey("C Black") ? dict["C Black"].ToString() : "-", ConsoleColor.DarkMagenta);
+                Write(dict.TryGetValue("C Black", out var value15) ? value15.ToString() : "-", ConsoleColor.DarkMagenta);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
 
                 Write("║");
-                Write(dict.ContainsKey("C White") ? dict["C White"].ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
+                Write(dict.TryGetValue("C White", out var value16) ? value16.ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
                 Write("║  ");
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Blue);
-                Write(dict.ContainsKey("C Blue") ? dict["C Blue"].ToString() : "-", ConsoleColor.Blue);
+                Write(dict.TryGetValue("C Blue", out var value17) ? value17.ToString() : "-", ConsoleColor.Blue);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Blue);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Yellow);
-                Write(dict.ContainsKey("C .Else") ? dict["C .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
+                Write(dict.TryGetValue("C .Else", out var value18) ? value18.ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
                 WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
@@ -697,27 +693,27 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("U ");
                 Write("║", ConsoleColor.Black, ConsoleColor.Red);
-                Write(dict.ContainsKey("U Red") ? dict["U Red"].ToString() : "-", ConsoleColor.Red);
+                Write(dict.TryGetValue("U Red", out var value19) ? value19.ToString() : "-", ConsoleColor.Red);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Red);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkGreen);
-                Write(dict.ContainsKey("U Green") ? dict["U Green"].ToString() : "-", ConsoleColor.DarkGreen);
+                Write(dict.TryGetValue("U Green", out var value20) ? value20.ToString() : "-", ConsoleColor.DarkGreen);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkMagenta);
-                Write(dict.ContainsKey("U Black") ? dict["U Black"].ToString() : "-", ConsoleColor.DarkMagenta);
+                Write(dict.TryGetValue("U Black", out var value21) ? value21.ToString() : "-", ConsoleColor.DarkMagenta);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
 
                 Write("║");
-                Write(dict.ContainsKey("U White") ? dict["U White"].ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
+                Write(dict.TryGetValue("U White", out var value22) ? value22.ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
                 Write("║  ");
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Blue);
-                Write(dict.ContainsKey("U Blue") ? dict["U Blue"].ToString() : "-", ConsoleColor.Blue);
+                Write(dict.TryGetValue("U Blue", out var value23) ? value23.ToString() : "-", ConsoleColor.Blue);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Blue);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Yellow);
-                Write(dict.ContainsKey("U .Else") ? dict["U .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
+                Write(dict.TryGetValue("U .Else", out var value24) ? value24.ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
                 WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
@@ -731,7 +727,7 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 WriteLine("R ╔═╗                         ", ConsoleColor.Black, ConsoleColor.Yellow);
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
-                WriteLine($"/ ║{ (dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
+                WriteLine($"/ ║{ (dict.TryGetValue("R/M", out var value25) ? value25 : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("M", ConsoleColor.Black, ConsoleColor.DarkRed);
                 WriteLine(" ╚═╝                         ", ConsoleColor.Black, ConsoleColor.Yellow);
@@ -925,8 +921,9 @@ namespace MgcPrxyDrftr
                     switch (StateMachine.CurrentState)
                     {
                         case LoopState.DeckCreator:
-                            _ = await PrintDeck(command);
-                            break;
+                            throw new NotImplementedException("deck printing is not implemented");
+                            //_ = await PrintDeck(command);
+                            //break;
                         case LoopState.BoosterDraft:
 
                             var targetDirectory =
@@ -940,8 +937,9 @@ namespace MgcPrxyDrftr
                             }
                             break;
                         case LoopState.RawListManager:
-                            _ = await PrintRawList(command);
-                            break;
+                            throw new NotImplementedException("raw list printing is not implemented");
+                            //_ = await PrintRawList(command);
+                            //break;
                         case LoopState.FolderPrint:
                             _ = PrintDirectory(command);
                             break;
@@ -1283,19 +1281,19 @@ namespace MgcPrxyDrftr
         {
             _ = ReadSingleSet(setCode);
 
-            List<Guid> boosterCards = new();
-            List<CardIdentifiers> boosterCardIdentifier = new();
+            List<Guid> boosterCards = [];
+            List<CardIdentifiers> boosterCardIdentifier = [];
             var set = Sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
-            SortedDictionary<Guid, Card> cards = new();
+            SortedDictionary<Guid, Card> cards = [];
             foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && item.Side is null or Side.A) cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
             if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) return null;
 
             // determine booster blueprint
-            Dictionary<Contents, float> blueprint = new();
+            Dictionary<Contents, float> blueprint = [];
             foreach (var item in set.Data.Booster.Default.Boosters) { blueprint.Add(item.Contents, item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight); }
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
@@ -1309,7 +1307,7 @@ namespace MgcPrxyDrftr
                 var sheetName = sheet.Name;
 
                 // temporary sheet
-                Dictionary<Guid, float> temporarySheet = new();
+                Dictionary<Guid, float> temporarySheet = [];
 
                 // get the actual sheet
                 var actualSheetReflection = set.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
@@ -1337,8 +1335,8 @@ namespace MgcPrxyDrftr
 
             // just for some fun
             var s = string.Empty;
-            List<string> generalCards = new();
-            SortedDictionary<string, int> generalCardDictionary = new();
+            List<string> generalCards = [];
+            SortedDictionary<string, int> generalCardDictionary = [];
             for (var i = 0; i < boosterCards.Count; i++)
             {
                 var colorIdent = string.Empty;
@@ -1412,12 +1410,12 @@ namespace MgcPrxyDrftr
 
         private static List<Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, BoosterType boosterType = BoosterType.Play)
         {
-            List<Guid> boosterCards = new();
-            List<CardIdentifiers> boosterCardIdentifier = new();
+            List<Guid> boosterCards = [];
+            List<CardIdentifiers> boosterCardIdentifier = [];
             var set = Sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
-            SortedDictionary<Guid, Card> cards = new();
+            SortedDictionary<Guid, Card> cards = [];
             foreach (var item in set.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or Side.A)) { cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
@@ -1505,149 +1503,148 @@ namespace MgcPrxyDrftr
             return boosterCards.Select(t => cards[t]).ToList();
         }
 
-        private static async Task<object> PrintDeck(string deckName)
-        {
-            // individual deck guid
-            var guid = Guid.NewGuid();
+        //private static async Task<object> PrintDeck(string deckName)
+        //{
+        //    // individual deck guid
+        //    var guid = Guid.NewGuid();
             
-            // create folder
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
-            directory.Create();
+        //    // create folder
+        //    DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
+        //    directory.Create();
 
-            // try to get deck from the list of already downloaded decks
-            var deck = Decks.FirstOrDefault(x => x.Key.Contains(deckName)).Value;
+        //    // try to get deck from the list of already downloaded decks
+        //    var deck = Decks.FirstOrDefault(x => x.Key.Contains(deckName)).Value;
 
-            // deck not found
-            if (deck == null)
-            {
-                // check if it is a legitimate deck
-                var deckFromList = DeckList.Data.Find(x => x.Name.ToLowerInvariant().Contains(deckName.ToLowerInvariant()) || x.FileName.ToLowerInvariant().Contains(deckName.ToLowerInvariant()));
+        //    // deck not found
+        //    if (deck == null)
+        //    {
+        //        // check if it is a legitimate deck
+        //        var deckFromList = DeckList.Data.Find(x => x.Name.ToLowerInvariant().Contains(deckName.ToLowerInvariant()) || x.FileName.ToLowerInvariant().Contains(deckName.ToLowerInvariant()));
 
-                if(deckFromList != null)
-                {
-                    // download and validate deck and checksum files
-                    var isValid = await H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
+        //        if(deckFromList != null)
+        //        {
+        //            // download and validate deck and checksum files
+        //            var isValid = await H.DownloadAndValidateFile($"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json", $"https://mtgjson.com/api/v5/decks/{deckFromList.FileName}.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
 
-                    // when file is valid
-                    if(isValid)
-                    {
-                        // read json 
-                        var localDeck = JsonConvert.DeserializeObject<DeckRoot>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\{deckFromList.FileName}.json").ConfigureAwait(false));
-                        deck = localDeck.Data;
+        //            // when file is valid
+        //            if(isValid)
+        //            {
+        //                // read json 
+        //                var localDeck = JsonConvert.DeserializeObject<DeckRoot>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\{deckFromList.FileName}.json").ConfigureAwait(false));
+        //                deck = localDeck.Data;
                         
-                        // add it to the list of local decks
-                        Decks.Add($"{deckFromList.FileName.ToLowerInvariant()}_{deck.Name.ToLowerInvariant()}", deck);
-                    }
-                }
-                else
-                {
-                    return false;
-                }
-            }
+        //                // add it to the list of local decks
+        //                Decks.Add($"{deckFromList.FileName.ToLowerInvariant()}_{deck.Name.ToLowerInvariant()}", deck);
+        //            }
+        //        }
+        //        else
+        //        {
+        //            return false;
+        //        }
+        //    }
 
-            // download all cards from mainboard and sideboard
-            foreach (var card in deck!.MainBoard) 
-            {
-                //// check for language card
-                //if(!Language.Equals("en"))
-                //{
-                //    var d = await api.GetCardByNameAndLanguageAsync(card.Name, Language, card.SetCode);
-                //}
+        //    // download all cards from mainboard and sideboard
+        //    foreach (var card in deck!.MainBoard) 
+        //    {
+        //        //// check for language card
+        //        //if(!Language.Equals("en"))
+        //        //{
+        //        //    var d = await api.GetCardByNameAndLanguageAsync(card.Name, Language, card.SetCode);
+        //        //}
 
-                for (var i = 0; i < card.Count; i++)
-                {
-                    // TODO check basix lands download setting
-                    //if ((Settings.DownloadBasicLands && card.Types.Contains(models.Type.Land) && card.Supertypes.Contains(models.Supertype.Basic)))
-                    //{
-                    //    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
-                    //}
-                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
-                }
-            }
-            foreach (var card in deck.SideBoard)
-            {
-                for (var i = 0; i < card.Count; i++)
-                {
-                    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
-                }
-            }
+        //        for (var i = 0; i < card.Count; i++)
+        //        {
+        //            // TODO check basix lands download setting
+        //            //if ((Settings.DownloadBasicLands && card.Types.Contains(models.Type.Land) && card.Supertypes.Contains(models.Supertype.Basic)))
+        //            //{
+        //            //    _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{guid}\");
+        //            //}
+        //            _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
+        //        }
+        //    }
+        //    foreach (var card in deck.SideBoard)
+        //    {
+        //        for (var i = 0; i < card.Count; i++)
+        //        {
+        //            _ = await GetImage(card.Identifiers, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
+        //        }
+        //    }
 
-            // create pdf
-            var proc = CreatePdf(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
-            if (proc.ExitCode != 0) return true;
-            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-            if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
+        //    // create pdf
+        //    var proc = CreatePdf(guid, @$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\", Settings.AutomaticPrinting);
+        //    if (proc.ExitCode != 0) return true;
+        //    FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+        //    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{DeckDirectory}\{deck.Name.Replace(' ', '_').ToLowerInvariant()}_{guid}.pdf"); }
 
-            return true;
-        }
+        //    return true;
+        //}
 
-        /// <summary>
-        /// prints all cards from the file
-        /// Format has to be one card per line
-        /// 1 Wasteland|MPR
-        /// {count} {Name}|{SetCode}
-        /// Large lists (>90 cards) are split up into multiple files
-        /// </summary>
-        /// <param name="listFileName">Filename that should be used</param>
-        /// <returns></returns>
-        private static async Task<object> PrintRawList(string listFileName)
-        {
-            // get new list id
-            var guid = Guid.NewGuid();
-            var subGuid = Guid.NewGuid();
+        ///// <summary>
+        ///// prints all cards from the file
+        ///// Format has to be one card per line
+        ///// 1 Wasteland|MPR
+        ///// {count} {Name}|{SetCode}
+        ///// Large lists (>90 cards) are split up into multiple files
+        ///// </summary>
+        ///// <param name="listFileName">Filename that should be used</param>
+        ///// <returns></returns>
+        //private static async Task<object> PrintRawList(string listFileName)
+        //{
+        //    // get new list id
+        //    var guid = Guid.NewGuid();
+        //    var subGuid = Guid.NewGuid();
 
-            // create directory
-            DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
-            directory.Create();
+        //    // create directory
+        //    DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
+        //    directory.Create();
 
-            // read all lines
-            var lines = File.ReadAllLines(@$"{BaseDirectory}\{FileDirectory}\{listFileName}");
-            var isLargeList = lines.Length > 90;
-            var lineCounter = 0;
+        //    // read all lines
+        //    var lines = await File.ReadAllLinesAsync(@$"{BaseDirectory}\{FileDirectory}\{listFileName}");
+        //    var isLargeList = lines.Length > 90;
+        //    var lineCounter = 0;
 
-            directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
-            directory.Create();
+        //    directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
+        //    directory.Create();
 
-            foreach (var line in lines)
-            {
-                // 1 Azorius Signet|VOC
-                _ = int.TryParse(line[..1], out var cardCount);
-                var cardName = line[2..].Split('|')[0];
-                var cardSet = line[2..].Split('|')[1];
+        //    foreach (var line in lines)
+        //    {
+        //        // 1 Azorius Signet|VOC
+        //        _ = int.TryParse(line[..1], out var cardCount);
+        //        var cardName = line[2..].Split('|')[0];
+        //        var cardSet = line[2..].Split('|')[1];
 
-                var card = await Api.GetCardByNameAsync(cardName, cardSet);
-                if (card != null)
-                {
-                    lineCounter++;
-                    if (lineCounter == 91)
-                    {
-                        subGuid = Guid.NewGuid();
-                        directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
-                        directory.Create();
-                        lineCounter = 1;
-                    }
+        //        var card = await Api.GetCardByNameAsync(cardName, cardSet);
+        //        if (card == null) continue;
+
+        //        lineCounter++;
+        //        if (lineCounter == 91)
+        //        {
+        //            subGuid = Guid.NewGuid();
+        //            directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
+        //            directory.Create();
+        //            lineCounter = 1;
+        //        }
                     
-                    _ = await GetImage(card, directory.FullName);
-                }
-            }
+        //        _ = await GetImage(card, directory.FullName);
+        //    }
 
-            DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
-            var count = 1;
+        //    DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
+        //    var count = 1;
 
-            foreach (var dir in directoryInfo.GetDirectories())
-            {
-                // create pdf
-                var proc = CreatePdf(@$"{dir.FullName}", Settings.AutomaticPrinting);
-                if (proc.ExitCode == 0)
-                {
-                    FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                    if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
-                }
-                count++;
-            }
+        //    foreach (var dir in directoryInfo.GetDirectories())
+        //    {
+        //        // create pdf
+        //        var proc = CreatePdf(@$"{dir.FullName}", Settings.AutomaticPrinting);
+        //        if (proc.ExitCode == 0)
+        //        {
+        //            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+        //            if (file.Exists) { file.MoveTo($@"{BaseDirectory}\{OutputDirectory}\{ListDirectory}\{listFileName.Replace(' ', '_').ToLowerInvariant()}_{guid}_{count}.pdf"); }
+        //        }
+        //        count++;
+        //    }
 
-            return true;
-        }
+        //    return true;
+        //}
 
         /// <summary>
         /// Create pdf from all cards in the given directory
@@ -1991,185 +1988,133 @@ namespace MgcPrxyDrftr
             return true;
         }
 
-        private static async Task<object> Draft()
-        {
-            var setService = ServiceProvider.GetSetService();
-            ISet set = null;
-            do
-            {
-                Console.Clear();
-                Console.WriteLine("╔══════ RetroLottis Magic The Gathering Proxy Generator ═══════╗");
-                Console.WriteLine("╠═════╦════════════╦═══════════════════════════════════════════╣");
-                Console.WriteLine("╠═════╬════════════╬═══════════════════════════════════════════╣");
-                foreach (var item in ReleaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key[..10]):dd.MM.yyyy} ║ {Sets[item.Value].Data.Name,-41} ║"); }
-                Console.WriteLine("╚═════╩════════════╩═══════════════════════════════════════════╝");
-                var noValidSetFound = true;
-                do
-                {
-                    Console.WriteLine("");
-                    Console.Write($"Which set shall be used? [{Settings.LastGeneratedSet}]> ");
-                    var setCode = Console.ReadLine().ToUpper();
-                    if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(Settings.LastGeneratedSet))
-                    {
-                        Console.WriteLine($"Using last used set {Settings.LastGeneratedSet}.");
-                        setCode = Settings.LastGeneratedSet;
-                    }
-                    set = (await setService.FindAsync(setCode)).Value;
+        //private static async Task<object> Draft()
+        //{
+        //    var setService = ServiceProvider.GetSetService();
+        //    ISet set = null;
+        //    do
+        //    {
+        //        Console.Clear();
+        //        Console.WriteLine("╔══════ RetroLottis Magic The Gathering Proxy Generator ═══════╗");
+        //        Console.WriteLine("╠═════╦════════════╦═══════════════════════════════════════════╣");
+        //        Console.WriteLine("╠═════╬════════════╬═══════════════════════════════════════════╣");
+        //        foreach (var item in ReleaseTimelineSets) { Console.WriteLine($"║ {item.Value} ║ {DateTime.Parse(item.Key[..10]):dd.MM.yyyy} ║ {Sets[item.Value].Data.Name,-41} ║"); }
+        //        Console.WriteLine("╚═════╩════════════╩═══════════════════════════════════════════╝");
+        //        var noValidSetFound = true;
+        //        do
+        //        {
+        //            Console.WriteLine("");
+        //            Console.Write($"Which set shall be used? [{Settings.LastGeneratedSet}]> ");
+        //            var setCode = Console.ReadLine().ToUpper();
+        //            if(string.IsNullOrEmpty(setCode) && !string.IsNullOrEmpty(Settings.LastGeneratedSet))
+        //            {
+        //                Console.WriteLine($"Using last used set {Settings.LastGeneratedSet}.");
+        //                setCode = Settings.LastGeneratedSet;
+        //            }
+        //            set = (await setService.FindAsync(setCode)).Value;
 
-                    // save last used set
-                    Settings.LastGeneratedSet = setCode;
-                    Settings.Save();
+        //            // save last used set
+        //            Settings.LastGeneratedSet = setCode;
+        //            Settings.Save();
                     
-                    Console.WriteLine("");
-                    if (set == null)
-                    {
-                        Console.WriteLine($"The given input [{setCode}] is no valid set code.");
-                        Console.Write("Press any key to continue.");
-                    }
-                    else
-                    {
-                        noValidSetFound = false;
-                    }
-                } while (noValidSetFound);
+        //            Console.WriteLine("");
+        //            if (set == null)
+        //            {
+        //                Console.WriteLine($"The given input [{setCode}] is no valid set code.");
+        //                Console.Write("Press any key to continue.");
+        //            }
+        //            else
+        //            {
+        //                noValidSetFound = false;
+        //            }
+        //        } while (noValidSetFound);
 
-                Console.WriteLine($"Chosen set: {set.Name}");
-                Console.WriteLine("Reading set file...");
-                ReadSingleSetWithUpdateCheck(set.Code);
+        //        Console.WriteLine($"Chosen set: {set.Name}");
+        //        Console.WriteLine("Reading set file...");
+        //        ReadSingleSetWithUpdateCheck(set.Code);
                 
-                Settings.AddSet(set.Code);
-                Settings.Save();
+        //        Settings.AddSet(set.Code);
+        //        Settings.Save();
 
-                Console.WriteLine("");
-                Console.Write("How many boosters shall be created? [1] > ");
-                var count = Console.ReadLine();
-                int boosterCount = int.TryParse(count, out boosterCount) ? boosterCount : 1;
-                Console.WriteLine("");
-                Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
-                Console.CursorVisible = false;
-                Console.Write("Press any key to start generating.");
-                Console.ReadKey();
+        //        Console.WriteLine("");
+        //        Console.Write("How many boosters shall be created? [1] > ");
+        //        var count = Console.ReadLine();
+        //        int boosterCount = int.TryParse(count, out boosterCount) ? boosterCount : 1;
+        //        Console.WriteLine("");
+        //        Console.WriteLine($"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set.Name}\".");
+        //        Console.CursorVisible = false;
+        //        Console.Write("Press any key to start generating.");
+        //        Console.ReadKey();
 
-                Console.Clear();
+        //        Console.Clear();
 
-                // create new draft folder
-                DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
-                if(!draftDirectory.Exists) { draftDirectory.Create(); }
+        //        // create new draft folder
+        //        DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
+        //        if(!draftDirectory.Exists) { draftDirectory.Create(); }
 
-                for (var i = 1; i <= boosterCount; i++)
-                {
-                    Console.WriteLine($"Generating booster {i}/{boosterCount}...");
+        //        for (var i = 1; i <= boosterCount; i++)
+        //        {
+        //            Console.WriteLine($"Generating booster {i}/{boosterCount}...");
 
-                    // get a booster
-                    var booster = GenerateBooster(set.Code);
+        //            // get a booster
+        //            var booster = GenerateBooster(set.Code);
 
-                    // new booster guid 
-                    var boosterGuid = Guid.NewGuid();
+        //            // new booster guid 
+        //            var boosterGuid = Guid.NewGuid();
 
-                    // create directory
-                    DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
-                    if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
+        //            // create directory
+        //            DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
+        //            if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
 
-                    Console.WriteLine("Downloading images...");
-                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+        //            Console.WriteLine("Downloading images...");
+        //            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
 
-                    // load images
-                    foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
+        //            // load images
+        //            foreach (var card in booster) { await GetImage(card.Identifiers, boosterDirectory.FullName); }
 
-                    if (IsWindows)
-                    {
-                        var proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\\{OutputDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
+        //            if (IsWindows)
+        //            {
+        //                var proc = CreatePdf(boosterGuid,  @$"{BaseDirectory}\\\{OutputDirectory}\\{BoosterDirectory}", Settings.AutomaticPrinting);
 
-                        if (proc.ExitCode == 0)
-                        {
-                            FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
-                            if (file.Exists)
-                            {
-                                file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
-                            }
-                            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                            Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
-                            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                        }
-                        else
-                        {
-                            Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                            Console.WriteLine("Booster creation failed...");
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine("Skipping PDF-file generation...");
-                    }
+        //                if (proc.ExitCode == 0)
+        //                {
+        //                    FileInfo file = new(@$"{BaseDirectory}\{ScriptDirectory}\{DefaultScriptName}.pdf");
+        //                    if (file.Exists)
+        //                    {
+        //                        file.MoveTo($@"{draftDirectory}\{set.Code.ToLower()}_{boosterGuid}.pdf");
+        //                    }
+        //                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+        //                    Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
+        //                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+        //                }
+        //                else
+        //                {
+        //                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+        //                    Console.WriteLine("Booster creation failed...");
+        //                }
+        //            }
+        //            else
+        //            {
+        //                Console.WriteLine("Skipping PDF-file generation...");
+        //            }
 
-                    // update booster count just for fun
-                    Settings.UpdateBoosterCount(1);
+        //            // update booster count just for fun
+        //            Settings.UpdateBoosterCount(1);
 
-                    // cleanup
-                    if (IsWindows) { boosterDirectory.Delete(true); }
-                    Console.Clear();
-                }
+        //            // cleanup
+        //            if (IsWindows) { boosterDirectory.Delete(true); }
+        //            Console.Clear();
+        //        }
 
-                Console.WriteLine("");
-                Console.WriteLine("All boosters created.");
-                Console.WriteLine("Press any key to generate more boosters.");
-                Console.Write("To exit the application press [x].");
+        //        Console.WriteLine("");
+        //        Console.WriteLine("All boosters created.");
+        //        Console.WriteLine("Press any key to generate more boosters.");
+        //        Console.Write("To exit the application press [x].");
 
-            } while (Console.ReadKey().Key != ConsoleKey.X);
+        //    } while (Console.ReadKey().Key != ConsoleKey.X);
             
-            return true;
-        }
-
-        private static Process CreatePdf(string folder, bool print)
-        {
-            Console.WriteLine("Creating PDF-file via nanDECK...");
-            
-            // prepare pdf with nandeck
-            Process proc = new();
-            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.StartInfo.CreateNoWindow = true;
-            proc.StartInfo.FileName = "cmd.exe";
-            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptNameNoGuid}.nde\" /[cardfolder]={folder} /createpdf";
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.RedirectStandardError = true;
-            proc.StartInfo.UseShellExecute = false;
-
-            // pdf gets printed right away when desired
-            if (print) { proc.StartInfo.Arguments += " /print"; }
-
-            proc.EnableRaisingEvents = true;
-            proc.Start();
-            proc.WaitForExit();
-
-            return proc;
-        }
-
-        /// <summary>
-        /// Create PDF using nanDeck
-        /// </summary>
-        /// <param name="guid"></param>
-        /// <param name="folder"></param>
-        /// <param name="print"></param>
-        /// <returns></returns>
-        private static Process CreatePdf(Guid guid, string folder, bool print)
-        {
-            Console.WriteLine("Creating PDF-file via nanDECK...");
-
-            // prepare pdf with nandeck
-            Process proc = new();
-            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.StartInfo.CreateNoWindow = true;
-            proc.StartInfo.FileName = "cmd.exe";
-            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={guid} /[boosterfolder]={folder} /createpdf";
-
-            // pdf gets printed right away when desired
-            if (print) { proc.StartInfo.Arguments += " /print"; }
-
-            proc.EnableRaisingEvents = true;
-            proc.Start();
-            proc.WaitForExit();
-
-            return proc;
-        }
+        //    return true;
+        //}
 
         private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory, string face = "front")
         {
