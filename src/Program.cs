@@ -18,7 +18,7 @@ using Newtonsoft.Json.Linq;
 using QuestPDF.Infrastructure;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
-using File = System.IO.File;
+//using File = System.IO.File;
 using H = MgcPrxyDrftr.lib.Helpers;
 
 namespace MgcPrxyDrftr
@@ -40,21 +40,18 @@ namespace MgcPrxyDrftr
         private static string FileDirectory { get; set; } = ConfigurationManager.AppSettings["FileDirectory"] ?? "files";
         private static string TemporaryDirectory { get; set; } = ConfigurationManager.AppSettings["TemporaryDirectory"] ?? "temporary";
         private static string ListDirectory { get; set; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
-        private static string DefaultScriptName { get; set; } = ConfigurationManager.AppSettings["DefaultScriptName"];
-        private static string DefaultScriptNameNoGuid { get; set; } = ConfigurationManager.AppSettings["DefaultScriptNameNoGuid"];
-        private static string NanDeckPath { get; set; } = ConfigurationManager.AppSettings["NanDeckPath"];
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"] ?? "true");
         private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static bool IsCommandLineMode { get; set; } = false;
 
-        private static readonly SortedList<string, string> ReleaseTimelineSets = new();
-        private static readonly SortedList<string, SetRoot> Sets = new();
-        private static SortedList<string, Deck> Decks { get; set; } = new();
-        private static readonly HashSet<string> SheetList = new();
-        private static HashSet<string> AddedSheets { get; set; } = new ();
-        private static readonly Dictionary<string, List<string>> SetDependencies = new();
+        private static readonly SortedList<string, string> ReleaseTimelineSets = [];
+        private static readonly SortedList<string, SetRoot> Sets = [];
+        private static SortedList<string, Deck> Decks { get; set; } = [];
+        private static readonly HashSet<string> SheetList = [];
+        private static HashSet<string> AddedSheets { get; set; } = [];
+        private static readonly Dictionary<string, List<string>> SetDependencies = [];
 
-        private static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
+        public static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
         [Obsolete("Obsolete")] private static readonly WebClient Client = new();
         private static readonly ApiCaller Api = new();
         private static Settings Settings { get; set; }
@@ -229,7 +226,7 @@ namespace MgcPrxyDrftr
                 _ = ReadSingleSetWithUpdateCheck(set.ParentCode);
 
                 // add dependency
-                SetDependencies.TryAdd(set.ParentCode.ToUpper(), new List<string>());
+                SetDependencies.TryAdd(set.ParentCode.ToUpper(), []);
                 if (SetDependencies.TryGetValue(set.ParentCode, out var dependencyList)) { dependencyList.Add(set.Code); }
 
                 // load child into list
@@ -460,7 +457,7 @@ namespace MgcPrxyDrftr
                 var boosterList = set.Value.Data.Booster.GetType().GetProperties()
                     .Where(b => b.GetValue(set.Value.Data.Booster) != null);
 
-                addedSheets = new List<string>();
+                addedSheets = [];
                 foreach (var boosterInfo in boosterList)
                 {
                     var boosterInfoObject = (DefaultBooster)boosterInfo.GetValue(set.Value.Data.Booster, null);
@@ -590,7 +587,7 @@ namespace MgcPrxyDrftr
                     Console.WriteLine($"{i + 1}/36000 [{k+1}]");
 
                     var dict = GenerateBoosterPlain("NEO");
-                    writer.WriteLine($"{(dict.ContainsKey("C Red") ? dict["C Red"] : "0")}|{(dict.ContainsKey("C Green") ? dict["C Green"] : "0")}|{(dict.ContainsKey("C Black") ? dict["C Black"] : "0")}|{(dict.ContainsKey("C White") ? dict["C White"] : "0")}|{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "0")}|{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "0")}|{(dict.ContainsKey("U Red") ? dict["U Red"] : "0")}|{(dict.ContainsKey("U Green") ? dict["U Green"] : "0")}|{(dict.ContainsKey("U Black") ? dict["U Black"] : "0")}|{(dict.ContainsKey("U White") ? dict["U White"] : "0")}|{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "0")}|{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "0")}|{(dict.ContainsKey("R/M") ? dict["R/M"] : "0")}|{(dict.ContainsKey("C/U") ? dict["C/U"] : "0")}");
+                    writer.WriteLine($"{(dict.TryGetValue("C Red", out var value) ? value : "0")}|{(dict.TryGetValue("C Green", out var value1) ? value1 : "0")}|{(dict.TryGetValue("C Black", out var value2) ? value2 : "0")}|{(dict.TryGetValue("C White", out var value3) ? value3 : "0")}|{(dict.TryGetValue("C Blue", out var value4) ? value4 : "0")}|{(dict.TryGetValue("C .Else", out var value5) ? value5 : "0")}|{(dict.TryGetValue("U Red", out var value6) ? value6 : "0")}|{(dict.TryGetValue("U Green", out var value7) ? value7 : "0")}|{(dict.TryGetValue("U Black", out var value8) ? value8 : "0")}|{(dict.TryGetValue("U White", out var value9) ? value9 : "0")}|{(dict.TryGetValue("U Blue", out var value10) ? value10 : "0")}|{(dict.TryGetValue("U .Else", out var value11) ? value11 : "0")}|{(dict.TryGetValue("R/M", out var value12) ? value12 : "0")}|{(dict.TryGetValue("C/U", out var value13) ? value13 : "0")}");
 
                     Thread.Sleep(50);
                 }
@@ -619,13 +616,13 @@ namespace MgcPrxyDrftr
                 StringBuilder build = new();
                 build.AppendLine("   R    G    B    W    U    E ");
                 build.AppendLine("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗");
-                build.AppendLine($"C ║{(dict.ContainsKey("C Red") ? dict["C Red"] : "-")}║  ║{(dict.ContainsKey("C Green") ? dict["C Green"] : "-")}║  ║{(dict.ContainsKey("C Black") ? dict["C Black"] : "-")}║  ║{(dict.ContainsKey("C White") ? dict["C White"] : "-")}║  ║{(dict.ContainsKey("C Blue") ? dict["C Blue"] : "-")}║  ║{(dict.ContainsKey("C .Else") ? dict["C .Else"] : "-")}║");
+                build.AppendLine($"C ║{(dict.TryGetValue("C Red", out var value) ? value : "-")}║  ║{(dict.TryGetValue("C Green", out var value1) ? value1 : "-")}║  ║{(dict.TryGetValue("C Black", out var value2) ? value2 : "-")}║  ║{(dict.TryGetValue("C White", out var value3) ? value3 : "-")}║  ║{(dict.TryGetValue("C Blue", out var value4) ? value4 : "-")}║  ║{(dict.TryGetValue("C .Else", out var value5) ? value5 : "-")}║");
                 build.AppendLine("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝");
                 build.AppendLine("  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗  ╔═╗");
-                build.AppendLine($"U ║{(dict.ContainsKey("U Red") ? dict["U Red"] : "-")}║  ║{(dict.ContainsKey("U Green") ? dict["U Green"] : "-")}║  ║{(dict.ContainsKey("U Black") ? dict["U Black"] : "-")}║  ║{(dict.ContainsKey("U White") ? dict["U White"] : "-")}║  ║{(dict.ContainsKey("U Blue") ? dict["U Blue"] : "-")}║  ║{(dict.ContainsKey("U .Else") ? dict["U .Else"] : "-")}║");
+                build.AppendLine($"U ║{(dict.TryGetValue("U Red", out var value6) ? value6 : "-")}║  ║{(dict.TryGetValue("U Green", out var value7) ? value7 : "-")}║  ║{(dict.TryGetValue("U Black", out var value8) ? value8 : "-")}║  ║{(dict.TryGetValue("U White", out var value9) ? value9 : "-")}║  ║{(dict.TryGetValue("U Blue", out var value10) ? value10 : "-")}║  ║{(dict.TryGetValue("U .Else", out var value11) ? value11 : "-")}║");
                 build.AppendLine("  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝  ╚═╝");
                 build.AppendLine("R ╔═╗                         ");
-                build.AppendLine($"/ ║{(dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ");
+                build.AppendLine($"/ ║{(dict.TryGetValue("R/M", out var value12) ? value12 : "-")}║                         ");
                 build.AppendLine("M ╚═╝                         ");
 
                 Console.Clear();
@@ -655,27 +652,27 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("C ", ConsoleColor.Black, ConsoleColor.Gray);
                 Write("║", ConsoleColor.Black, ConsoleColor.Red);
-                Write(dict.ContainsKey("C Red") ? dict["C Red"].ToString() : "-", ConsoleColor.Red);
+                Write(dict.TryGetValue("C Red", out var value13) ? value13.ToString() : "-", ConsoleColor.Red);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Red);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkGreen);
-                Write(dict.ContainsKey("C Green") ? dict["C Green"].ToString() : "-", ConsoleColor.DarkGreen);
+                Write(dict.TryGetValue("C Green", out var value14) ? value14.ToString() : "-", ConsoleColor.DarkGreen);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkMagenta);
-                Write(dict.ContainsKey("C Black") ? dict["C Black"].ToString() : "-", ConsoleColor.DarkMagenta);
+                Write(dict.TryGetValue("C Black", out var value15) ? value15.ToString() : "-", ConsoleColor.DarkMagenta);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
 
                 Write("║");
-                Write(dict.ContainsKey("C White") ? dict["C White"].ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
+                Write(dict.TryGetValue("C White", out var value16) ? value16.ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
                 Write("║  ");
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Blue);
-                Write(dict.ContainsKey("C Blue") ? dict["C Blue"].ToString() : "-", ConsoleColor.Blue);
+                Write(dict.TryGetValue("C Blue", out var value17) ? value17.ToString() : "-", ConsoleColor.Blue);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Blue);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Yellow);
-                Write(dict.ContainsKey("C .Else") ? dict["C .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
+                Write(dict.TryGetValue("C .Else", out var value18) ? value18.ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
                 WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
@@ -697,27 +694,27 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("U ");
                 Write("║", ConsoleColor.Black, ConsoleColor.Red);
-                Write(dict.ContainsKey("U Red") ? dict["U Red"].ToString() : "-", ConsoleColor.Red);
+                Write(dict.TryGetValue("U Red", out var value19) ? value19.ToString() : "-", ConsoleColor.Red);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Red);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkGreen);
-                Write(dict.ContainsKey("U Green") ? dict["U Green"].ToString() : "-", ConsoleColor.DarkGreen);
+                Write(dict.TryGetValue("U Green", out var value20) ? value20.ToString() : "-", ConsoleColor.DarkGreen);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkGreen);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.DarkMagenta);
-                Write(dict.ContainsKey("U Black") ? dict["U Black"].ToString() : "-", ConsoleColor.DarkMagenta);
+                Write(dict.TryGetValue("U Black", out var value21) ? value21.ToString() : "-", ConsoleColor.DarkMagenta);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.DarkMagenta);
 
                 Write("║");
-                Write(dict.ContainsKey("U White") ? dict["U White"].ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
+                Write(dict.TryGetValue("U White", out var value22) ? value22.ToString() : "-", ConsoleColor.White, ConsoleColor.Black);
                 Write("║  ");
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Blue);
-                Write(dict.ContainsKey("U Blue") ? dict["U Blue"].ToString() : "-", ConsoleColor.Blue);
+                Write(dict.TryGetValue("U Blue", out var value23) ? value23.ToString() : "-", ConsoleColor.Blue);
                 Write("║  ", ConsoleColor.Black, ConsoleColor.Blue);
 
                 Write("║", ConsoleColor.Black, ConsoleColor.Yellow);
-                Write(dict.ContainsKey("U .Else") ? dict["U .Else"].ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
+                Write(dict.TryGetValue("U .Else", out var value24) ? value24.ToString() : "-", ConsoleColor.Black, ConsoleColor.Yellow);
                 WriteLine("║  ", ConsoleColor.Black, ConsoleColor.Yellow);
 
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
@@ -731,7 +728,7 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 WriteLine("R ╔═╗                         ", ConsoleColor.Black, ConsoleColor.Yellow);
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
-                WriteLine($"/ ║{ (dict.ContainsKey("R/M") ? dict["R/M"] : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
+                WriteLine($"/ ║{ (dict.TryGetValue("R/M", out var value25) ? value25 : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("M", ConsoleColor.Black, ConsoleColor.DarkRed);
                 WriteLine(" ╚═╝                         ", ConsoleColor.Black, ConsoleColor.Yellow);
@@ -1283,19 +1280,19 @@ namespace MgcPrxyDrftr
         {
             _ = ReadSingleSet(setCode);
 
-            List<Guid> boosterCards = new();
-            List<CardIdentifiers> boosterCardIdentifier = new();
+            List<Guid> boosterCards = [];
+            List<CardIdentifiers> boosterCardIdentifier = [];
             var set = Sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
-            SortedDictionary<Guid, Card> cards = new();
+            SortedDictionary<Guid, Card> cards = [];
             foreach (var item in set.Data.Cards) { if (!cards.ContainsKey(item.Uuid) && item.Side is null or Side.A) cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
             if (set.Data.Booster == null || set.Data.Booster.Default.Boosters.Count == 0) return null;
 
             // determine booster blueprint
-            Dictionary<Contents, float> blueprint = new();
+            Dictionary<Contents, float> blueprint = [];
             foreach (var item in set.Data.Booster.Default.Boosters) { blueprint.Add(item.Contents, item.Weight / (float)set.Data.Booster.Default.BoostersTotalWeight); }
             var booster = blueprint.RandomElementByWeight(e => e.Value);
 
@@ -1309,7 +1306,7 @@ namespace MgcPrxyDrftr
                 var sheetName = sheet.Name;
 
                 // temporary sheet
-                Dictionary<Guid, float> temporarySheet = new();
+                Dictionary<Guid, float> temporarySheet = [];
 
                 // get the actual sheet
                 var actualSheetReflection = set.Data.Booster.Default.Sheets.GetType().GetProperties().First(s => s.GetValue(set.Data.Booster.Default.Sheets, null) != null && s.Name.ToLower().Equals(sheetName.ToLower()));
@@ -1337,8 +1334,8 @@ namespace MgcPrxyDrftr
 
             // just for some fun
             var s = string.Empty;
-            List<string> generalCards = new();
-            SortedDictionary<string, int> generalCardDictionary = new();
+            List<string> generalCards = [];
+            SortedDictionary<string, int> generalCardDictionary = [];
             for (var i = 0; i < boosterCards.Count; i++)
             {
                 var colorIdent = string.Empty;
@@ -1412,12 +1409,12 @@ namespace MgcPrxyDrftr
 
         private static List<Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, BoosterType boosterType = BoosterType.Play)
         {
-            List<Guid> boosterCards = new();
-            List<CardIdentifiers> boosterCardIdentifier = new();
+            List<Guid> boosterCards = [];
+            List<CardIdentifiers> boosterCardIdentifier = [];
             var set = Sets[setCode.ToUpper()];
 
             // create Hashtable for cards identified by scryfall id
-            SortedDictionary<Guid, Card> cards = new();
+            SortedDictionary<Guid, Card> cards = [];
             foreach (var item in set.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or Side.A)) { cards.Add(item.Uuid, item); }
 
             // check for available booster blueprints
@@ -1601,11 +1598,11 @@ namespace MgcPrxyDrftr
             directory.Create();
 
             // read all lines
-            var lines = File.ReadAllLines(@$"{BaseDirectory}\{FileDirectory}\{listFileName}");
+            var lines = await File.ReadAllLinesAsync(@$"{BaseDirectory}\{FileDirectory}\{listFileName}");
             var isLargeList = lines.Length > 90;
             var lineCounter = 0;
 
-            directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
+            directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
             directory.Create();
 
             foreach (var line in lines)
@@ -1616,19 +1613,18 @@ namespace MgcPrxyDrftr
                 var cardSet = line[2..].Split('|')[1];
 
                 var card = await Api.GetCardByNameAsync(cardName, cardSet);
-                if (card != null)
+                if (card == null) continue;
+
+                lineCounter++;
+                if (lineCounter == 91)
                 {
-                    lineCounter++;
-                    if (lineCounter == 91)
-                    {
-                        subGuid = Guid.NewGuid();
-                        directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
-                        directory.Create();
-                        lineCounter = 1;
-                    }
-                    
-                    _ = await GetImage(card, directory.FullName);
+                    subGuid = Guid.NewGuid();
+                    directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\{subGuid}\");
+                    directory.Create();
+                    lineCounter = 1;
                 }
+                    
+                _ = await GetImage(card, directory.FullName);
             }
 
             DirectoryInfo directoryInfo = new(@$"{BaseDirectory}\{TemporaryDirectory}\{ListDirectory}\{guid}\");
@@ -2117,58 +2113,6 @@ namespace MgcPrxyDrftr
             } while (Console.ReadKey().Key != ConsoleKey.X);
             
             return true;
-        }
-
-        private static Process CreatePdf(string folder, bool print)
-        {
-            Console.WriteLine("Creating PDF-file via nanDECK...");
-            
-            // prepare pdf with nandeck
-            Process proc = new();
-            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.StartInfo.CreateNoWindow = true;
-            proc.StartInfo.FileName = "cmd.exe";
-            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptNameNoGuid}.nde\" /[cardfolder]={folder} /createpdf";
-            proc.StartInfo.RedirectStandardOutput = true;
-            proc.StartInfo.RedirectStandardError = true;
-            proc.StartInfo.UseShellExecute = false;
-
-            // pdf gets printed right away when desired
-            if (print) { proc.StartInfo.Arguments += " /print"; }
-
-            proc.EnableRaisingEvents = true;
-            proc.Start();
-            proc.WaitForExit();
-
-            return proc;
-        }
-
-        /// <summary>
-        /// Create PDF using nanDeck
-        /// </summary>
-        /// <param name="guid"></param>
-        /// <param name="folder"></param>
-        /// <param name="print"></param>
-        /// <returns></returns>
-        private static Process CreatePdf(Guid guid, string folder, bool print)
-        {
-            Console.WriteLine("Creating PDF-file via nanDECK...");
-
-            // prepare pdf with nandeck
-            Process proc = new();
-            proc.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
-            proc.StartInfo.CreateNoWindow = true;
-            proc.StartInfo.FileName = "cmd.exe";
-            proc.StartInfo.Arguments = $"/c {NanDeckPath} \"{BaseDirectory}\\{ScriptDirectory}\\{DefaultScriptName}.nde\" /[guid]={guid} /[boosterfolder]={folder} /createpdf";
-
-            // pdf gets printed right away when desired
-            if (print) { proc.StartInfo.Arguments += " /print"; }
-
-            proc.EnableRaisingEvents = true;
-            proc.Start();
-            proc.WaitForExit();
-
-            return proc;
         }
 
         private static async Task<bool> GetImage(string absoluteDownloadUri, string imageName, string imageExtension, string cacheDirectory, string targetBoosterDirectory, string face = "front")

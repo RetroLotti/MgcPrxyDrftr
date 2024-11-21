@@ -18,10 +18,10 @@ namespace MgcPrxyDrftr.models
         public bool PrintFoils { get; set; }
         public string LastGeneratedSet { get; set; }
         public DateTime LastPriceDownload { get; set; } = DateTime.Today.AddDays(-1);
-        public Dictionary<string, DateTime> LastUpdatesList { get; set; } = new();
-        private Dictionary<string, string> Statistics { get; set; } = new();
-        public List<string> SetsToLoad { get; set; } = new();
-        public List<string> SupportSetsToLoad { get; set; } = new();
+        public Dictionary<string, DateTime> LastUpdatesList { get; set; } = [];
+        private Dictionary<string, string> Statistics { get; set; } = [];
+        public List<string> SetsToLoad { get; set; } = [];
+        public List<string> SupportSetsToLoad { get; set; } = [];
 
         private void AddSetGeneric(string setCode, ICollection<string> list)
         {

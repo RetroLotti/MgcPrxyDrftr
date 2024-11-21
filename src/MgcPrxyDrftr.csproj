@@ -28,10 +28,6 @@
     <None Remove="output\draft\2022-04-11T08-32-14\**" />
     <None Remove="output\list\**" />
   </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="ext\nanDeck\nandeck.ini" />
-  </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="FreeSpire.PDF" Version="10.2.0" />
@@ -44,9 +40,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Update="ext\nanDeck\nanDECK.exe">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
     <None Update="icon.ico">
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
