@@ -1,15 +1,19 @@
-﻿<?php
-    header('Content-Type: application/json');
-
+<?php
+	require "./fpdf.php";
     require "helper.php";
     $config = require "/var/config.php";
 
     if (!class_exists('Redis')) {
-        die(json_encode(['error' => 'Die Redis-Klasse ist nicht verfuegbar. Bitte installiere und aktiviere die Redis PHP-Erweiterung.']));
+        die(json_encode(['error' => 'Die Redis-Klasse ist nicht verf���gbar. Bitte installiere und aktiviere die Redis PHP-Erweiterung.']));
     }
     if (!function_exists('msgpack_pack')) {
-        die(json_encode(['error' => 'Die MessagePack-Erweiterung ist nicht verfuegbar. Bitte installiere und aktiviere die MessagePack PHP-Erweiterung.']));
+        die(json_encode(['error' => 'Die MessagePack-Erweiterung ist nicht verf���gbar. Bitte installiere und aktiviere die MessagePack PHP-Erweiterung.']));
     }
+
+	const CARD_WIDTH = 63.5;
+	const CARD_HEIGHT = 88.9;
+	const INITIAL_X = 10;
+	const INITIAL_Y = 10;
 
     try {
 
@@ -30,8 +34,6 @@
         $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'LEB';
         $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'default';
         $amount = isset($_GET['a']) ? intval($_GET['a']) : 1;
-    
-    	checkParameter($setCode, $boosterName, $amount);
 
         $data = [
             "set" => $setCode,
@@ -105,23 +107,47 @@
 
             $data["booster"][] = $newBooster;
         }
+    
+    	// here we start the pdf generation
+    	$pdf = new FPDF();
+    	
+    	$cardCounter = 0;
+    	$columnCounter = 0;
+    	$rowCounter = 0;
+    
+    	foreach ($data["booster"] as $booster) 
+        {
+    		foreach ($booster["cards"] as $card) 
+            {
+        		// add new page if page is full or there is no page
+        		if ($cardCounter % 3 == 0) { $rowCounter++; }	
+        		if ($cardCounter % 9 == 0) { $pdf->AddPage(); $rowCounter = 0; }
+        
+        		// build image string
+        		$id = $card["scryfallid"];
+        		$url = "https://cards.scryfall.io/png/front/".substr($id, 0, 1)."/".substr($id, 1, 1)."/".$id.".png";
 
-        if (substr_count($_SERVER['HTTP_ACCEPT_ENCODING'], 'gzip')) {
-            ob_start("ob_gzhandler");
-        } else {
-            ob_start();
+        		// add image to page
+        		$pdf->Image($url, INITIAL_X + CARD_WIDTH * $columnCounter, INITIAL_Y + CARD_HEIGHT * $rowCounter, CARD_WIDTH, CARD_HEIGHT);
+			
+        		// check column counter 
+        		if ($columnCounter == 2) { $columnCounter = 0; } else { $columnCounter++; }
+        	
+        		$cardCounter++;
+        	}
+        	
+        	$cardCounter = 0;
+        	$columnCounter = 0;
+        	$rowCounter = 0;
         }
-
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        ob_end_flush();
+    
+    	$guid = $helper->getGUID();
+    
+    	$pdf->Output('D', $guid.'.pdf');
 
     } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage()]);
-    }
-
-	function checkParameter($setCode, $boosterName, $amount) {
-    	// TODO: 
     }
 
     function addCardToBooster(&$cardList, $cardInfo, $setCode, $helper, $config, &$redis, &$pdo, $isFoil = false) {

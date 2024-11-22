@@ -1,9 +1,7 @@
 name: Publish
-
 on:
   release:
     types: [published]
-
 jobs:
   release:
     name: Release
@@ -53,7 +51,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Publish PHP Api
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        # switched back from 4.3.5 as the username was not recognized
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.3
         with:
           server: ${{ secrets.FTP_HOST }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -61,3 +60,13 @@ jobs:
           local-dir: ./api/
           server-dir: /var/www/html/
           dry-run: false
+      - name: Publish PHP files for nasty people
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.3
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./api/fool/
+          server-dir: /var/www/html/
+          dry-run: false
+  

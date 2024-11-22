@@ -11,14 +11,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using MgcPrxyDrftr.lib;
 using MgcPrxyDrftr.models;
-using MtgApiManager.Lib.Model;
 using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using QuestPDF.Infrastructure;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
-//using File = System.IO.File;
 using H = MgcPrxyDrftr.lib.Helpers;
 
 namespace MgcPrxyDrftr
@@ -27,25 +25,25 @@ namespace MgcPrxyDrftr
     {
         private static StateMachine StateMachine { get; set; }
 
-        private static string BaseDirectory { get; set; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
-        private static string JsonDirectory { get; set; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
-        private static string SetDirectory { get; set; } = ConfigurationManager.AppSettings["SetDirectory"] ?? "sets";
-        private static string DeckDirectory { get; set; } = ConfigurationManager.AppSettings["DeckDirectory"] ?? "decks";
-        private static string BoosterDirectory { get; set; } = ConfigurationManager.AppSettings["BoosterDirectory"] ?? "booster";
-        private static string CacheDirectory { get; set; } = ConfigurationManager.AppSettings["CacheDirectory"] ?? "cache";
-        private static string ScryfallCacheDirectory { get; set; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"] ?? "scryfall";
-        private static string DraftDirectory { get; set; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
-        private static string OutputDirectory { get; set; } = ConfigurationManager.AppSettings["OutputDirectory"] ?? "output";
-        private static string FileDirectory { get; set; } = ConfigurationManager.AppSettings["FileDirectory"] ?? "files";
-        private static string TemporaryDirectory { get; set; } = ConfigurationManager.AppSettings["TemporaryDirectory"] ?? "temporary";
-        private static string ListDirectory { get; set; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
+        private static string BaseDirectory { get; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
+        private static string JsonDirectory { get; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
+        private static string SetDirectory { get; } = ConfigurationManager.AppSettings["SetDirectory"] ?? "sets";
+        private static string DeckDirectory { get; } = ConfigurationManager.AppSettings["DeckDirectory"] ?? "decks";
+        private static string BoosterDirectory { get; } = ConfigurationManager.AppSettings["BoosterDirectory"] ?? "booster";
+        private static string CacheDirectory { get; } = ConfigurationManager.AppSettings["CacheDirectory"] ?? "cache";
+        private static string ScryfallCacheDirectory { get; } = ConfigurationManager.AppSettings["ScryfallCacheDirectory"] ?? "scryfall";
+        private static string DraftDirectory { get; } = ConfigurationManager.AppSettings["DraftDirectory"] ?? "draft";
+        private static string OutputDirectory { get; } = ConfigurationManager.AppSettings["OutputDirectory"] ?? "output";
+        private static string FileDirectory { get; } = ConfigurationManager.AppSettings["FileDirectory"] ?? "files";
+        private static string TemporaryDirectory { get; } = ConfigurationManager.AppSettings["TemporaryDirectory"] ?? "temporary";
+        private static string ListDirectory { get; } = ConfigurationManager.AppSettings["ListDirectory"] ?? "lists";
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"] ?? "true");
-        private static bool IsWindows { get; set; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
-        private static bool IsCommandLineMode { get; set; } = false;
+        private static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+        private static bool IsCommandLineMode { get; set; }
 
         private static readonly SortedList<string, string> ReleaseTimelineSets = [];
         private static readonly SortedList<string, SetRoot> Sets = [];
-        private static SortedList<string, Deck> Decks { get; set; } = [];
+        private static SortedList<string, Deck> Decks { get; } = [];
         private static readonly HashSet<string> SheetList = [];
         private static HashSet<string> AddedSheets { get; set; } = [];
         private static readonly Dictionary<string, List<string>> SetDependencies = [];
@@ -58,13 +56,15 @@ namespace MgcPrxyDrftr
         // decks
         private static DeckList DeckList { get; set; }
         // sets
-        private static SetList SetList { get; set; }
+        private static SetList SetList { get; } = new();
 
         private static async Task Main(string[] args)
         {
-            // TODO: commandlinemode would be great, too
+            // set quest pdf license
+            QuestPDF.Settings.License = LicenseType.Community;
+
             if (args.Length > 0) { IsCommandLineMode = true; }
-            //if (IsCommandLineMode) { await PrepareCommandLineMode(args).ConfigureAwait(false); return; }
+            if (IsCommandLineMode) { await PrepareCommandLineModeAsync(args); return; }
 
             if (IsWindows) { Console.SetWindowSize(136, 40); }
 
@@ -120,9 +120,6 @@ namespace MgcPrxyDrftr
             Thread.Sleep(100);
             Console.Clear();
 
-            // set quest pdf license
-            QuestPDF.Settings.License = LicenseType.Community;
-
 #if DEBUG
             // main loop
             _ = await EnterTheLoop();
@@ -176,34 +173,23 @@ namespace MgcPrxyDrftr
         /// This is a method thats sole purpose is to handle cli calls of the program
         /// </summary>
         /// <param name="args"></param>
-        private static async Task PrepareCommandLineMode(IReadOnlyList<string> args)
+        private static async Task PrepareCommandLineModeAsync(string[] args)
         {
-            if (args.Count != 3) { return; }
+            if (args.Length == 0) { return; }
 
-            var setCode = (args[0] ?? "LEA").ToUpper();
-            var numberOfBoosters = int.TryParse(args[1], out var boosteResult) ? boosteResult : 1;
-            var boosterType = MapBoosterType(args[2].ToCharArray()[0]);
+            WriteHeader();
+            CleanFolders();
+            CheckAllDirectories(); // TODO: not all of them are necessary I think
 
-            Settings = new Settings();
-            Settings.Load();
+            var targetDirectory =
+                new DirectoryInfo(
+                    @$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}\");
 
-            CheckAllDirectories();
-
-            await DetermineChildSets();
-
-            await Settings.CheckSetFile(setCode, @$"{BaseDirectory}\{JsonDirectory}\", @$"{SetDirectory}").ConfigureAwait(false);
-            Sets[setCode] = ReadSingleSet(setCode);
-
-            if (SetDependencies.TryGetValue(setCode, out var dependency))
+            // if there is a comma separated list of commands this step is called multiple times
+            foreach (var command in args[0].Split(',').ToList())
             {
-                foreach (var supportSet in dependency)
-                {
-                    await Settings.CheckSetFile(supportSet, @$"{BaseDirectory}\{JsonDirectory}\", @$"{SetDirectory}").ConfigureAwait(false);
-                    Sets[supportSet] = ReadSingleSet(supportSet);
-                }
+                _ = await DraftApi(command, targetDirectory.FullName);
             }
-
-            await SimpleDraft(setCode, numberOfBoosters, boosterType, dependency);
         }
 
         // TODO: read set list to determine child sets
@@ -1766,15 +1752,15 @@ namespace MgcPrxyDrftr
         {
             return boosterName switch
             {
-                not null when boosterName.ToUpper().Contains("ARENA") => BoosterType.Arena,
-                not null when boosterName.ToUpper().Contains("BOX TOPPER") => BoosterType.BoxTopper,
-                not null when boosterName.ToUpper().Contains("COLLECTOR SAMPLE") => BoosterType.CollectorSample,
-                not null when boosterName.ToUpper().Contains("COLLECTOR") => BoosterType.Collector,
-                not null when boosterName.ToUpper().Contains("DRAFT") => BoosterType.Draft,
-                not null when boosterName.ToUpper().Contains("JUMPSTART") => BoosterType.Jumpstart,
-                not null when boosterName.ToUpper().Contains("PLAY") => BoosterType.Play,
-                not null when boosterName.ToUpper().Contains("SET") => BoosterType.Set,
-                not null when boosterName.ToUpper().Contains("TOURNAMENT") => BoosterType.Tournament,
+                not null when boosterName.Contains("arena", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Arena,
+                not null when boosterName.Contains("box topper", StringComparison.InvariantCultureIgnoreCase) => BoosterType.BoxTopper,
+                not null when boosterName.Contains("collector sample", StringComparison.InvariantCultureIgnoreCase) => BoosterType.CollectorSample,
+                not null when boosterName.Contains("collector", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Collector,
+                not null when boosterName.Contains("draft", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Draft,
+                not null when boosterName.Contains("jumpstart", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Jumpstart,
+                not null when boosterName.Contains("play", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Play,
+                not null when boosterName.Contains("set", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Set,
+                not null when boosterName.Contains("tournament", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Tournament,
                 _ => BoosterType.Draft,
             };
         }
@@ -2257,10 +2243,8 @@ namespace MgcPrxyDrftr
         {
             DeleteFilesInDirectory(directory, filePattern);
 
-            if (directory.Exists) 
-            { 
-                foreach (var subDirectory in directory.GetDirectories()) { DeleteDirectories(subDirectory, filePattern); }
-            }
+            if (!directory.Exists) return;
+            foreach (var subDirectory in directory.GetDirectories()) { DeleteDirectories(subDirectory, filePattern); }
         }
 
         private static void DeleteFilesInDirectory(DirectoryInfo directory, string filePattern)
