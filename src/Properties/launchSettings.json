@@ -2,7 +2,7 @@
   "profiles": {
     "MgcPrxyDrftr": {
       "commandName": "Project",
-      "commandLineArgs": "fdn 1 p"
+      "commandLineArgs": "--silent --booster fdn|1|p,dsk|1|p"
     }
   }
 }

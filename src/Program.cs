@@ -9,6 +9,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using CommandLine;
 using MgcPrxyDrftr.lib;
 using MgcPrxyDrftr.models;
 using MtgApiManager.Lib.Service;
@@ -40,6 +41,7 @@ namespace MgcPrxyDrftr
         private static bool UseSetList { get; set; } = bool.Parse(ConfigurationManager.AppSettings["UseSetList"] ?? "true");
         private static bool IsWindows { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
         private static bool IsCommandLineMode { get; set; }
+        private static CommandLineOptions Options { get; set; }
 
         private static readonly SortedList<string, string> ReleaseTimelineSets = [];
         private static readonly SortedList<string, SetRoot> Sets = [];
@@ -63,10 +65,29 @@ namespace MgcPrxyDrftr
             // set quest pdf license
             QuestPDF.Settings.License = LicenseType.Community;
 
+            Options = Parser.Default.ParseArguments<CommandLineOptions>(args).Value;
             if (args.Length > 0) { IsCommandLineMode = true; }
             if (IsCommandLineMode) { await PrepareCommandLineModeAsync(args); return; }
 
+            //.WithParsed(o =>
+            //{
+            //    if (o.Silent)
+            //    {
+            //        Console.WriteLine($"Verbose output enabled. Current Arguments: -v {o.Verbose}");
+            //        Console.WriteLine("Quick Start Example! App is in Verbose mode!");
+            //    }
+            //    else
+            //    {
+            //        Console.WriteLine($"Current Arguments: -v {o.Verbose}");
+            //        Console.WriteLine("Quick Start Example!");
+            //    }
+            //});
+
+
+
+#pragma warning disable CA1416
             if (IsWindows) { Console.SetWindowSize(136, 40); }
+#pragma warning restore CA1416
 
             WriteHeader();
 
@@ -177,19 +198,30 @@ namespace MgcPrxyDrftr
         {
             if (args.Length == 0) { return; }
 
-            WriteHeader();
-            CleanFolders();
-            CheckAllDirectories(); // TODO: not all of them are necessary I think
+            if (!Options.Silent)
+            {
+                Console.WriteLine("Welcome to MgcPrxyDrftr!");
+                Console.WriteLine("After some cleanup and preparation I'll be glad to start generating!");
+                Console.WriteLine("");
+            }
 
+            CleanFolders();
             var targetDirectory =
-                new DirectoryInfo(
+                H.CheckDirectory(
                     @$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}\");
 
             // if there is a comma separated list of commands this step is called multiple times
-            foreach (var command in args[0].Split(',').ToList())
+            foreach (var boosterDraftDefinition in Options.Booster.Split(','))
             {
-                _ = await DraftApi(command, targetDirectory.FullName);
+                _ = await DraftApi(boosterDraftDefinition, targetDirectory.FullName);
             }
+
+            Process process = new();
+            process.StartInfo.WorkingDirectory = $@"{targetDirectory.FullName}";
+            process.StartInfo.UseShellExecute = false;
+            process.StartInfo.FileName = "explorer.exe";
+            process.StartInfo.Arguments = $@"{targetDirectory.FullName}";
+            process.Start();
         }
 
         // TODO: read set list to determine child sets
@@ -1819,7 +1851,7 @@ namespace MgcPrxyDrftr
                 Settings.AddSet(set?.Code ?? setCode.ToUpper());
                 Settings.Save();
 
-                if (Settings.PromptForDraftConfirmation)
+                if (Settings.PromptForDraftConfirmation && !Options.Silent)
                 {
                     Console.WriteLine(
                         $"Generating {boosterCount} {(boosterCount == 1 ? "booster" : "boosters")} of this set \"{set?.Name}\".");
@@ -1846,31 +1878,42 @@ namespace MgcPrxyDrftr
                 DirectoryInfo boosterDirectory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\");
                 if (!boosterDirectory.Exists) { boosterDirectory.Create(); }
 
-                Console.WriteLine("Downloading images...");
-                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                if (!Options.Silent)
+                {
+                    Console.WriteLine("\nDownloading images...");
+                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                }
 
                 // load images
                 foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
 
                 // create pdf
-                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings!.PrintFoils);
+                if (!Options.Silent)
+                {
+                    Console.WriteLine("\nCreating pdf file...");
+                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                }
+                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings is not null && Settings.PrintFoils);
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
 
-                if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{Enum.GetName(boosterType)}_{boosterGuid}.pdf"); }
+                if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{Enum.GetName(boosterType)?.ToLowerInvariant()}_{boosterGuid}.pdf"); }
 
-                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
-                Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                if (!Options.Silent)
+                {
+                    Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created");
+                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                }
+
+                if (IsCommandLineMode) continue;
 
                 // update booster count just for fun
                 Settings?.UpdateBoosterCount(1);
-
                 Console.Clear();
             }
 
             // open draft directory
-            if (!IsWindows) return true;
+            if (!IsWindows || Options.Silent) return true;
 
             Process process = new();
             process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
@@ -2147,7 +2190,7 @@ namespace MgcPrxyDrftr
 
             // set font color according to rarity
             Console.ForegroundColor = GetColorByRarity(card.Rarity);
-            Console.WriteLine($"Downloading {card.Name} ...");
+            if (!Options.Silent) Console.WriteLine($"Downloading {card.Name} ...");
 
             if (card.Foil)
             {
