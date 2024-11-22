@@ -27,13 +27,15 @@ namespace MgcPrxyDrftr.lib
             return true;
         }
 
-        public static void CheckDirectory(string path)
+        public static DirectoryInfo CheckDirectory(string path)
         {
             DirectoryInfo dir = new(path);
             if (!dir.Exists)
             {
                 dir.Create();
             }
+
+            return dir;
         }
 
         public static DeckRoot ReadSingleDeck(string file)
