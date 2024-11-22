@@ -19,7 +19,7 @@ jobs:
     - name: Build code
       run: dotnet build "./src" --configuration Release --no-restore
     - name: Publish application
-      run: dotnet publish "./src" -c Release --runtime win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained
+      run: dotnet publish "./src" -c Release -o MgcPrxyDrftr --runtime win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained
     - name: Upload Artifacts
       uses: actions/upload-artifact@v4
       with:
