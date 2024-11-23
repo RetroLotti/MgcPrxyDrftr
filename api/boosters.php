@@ -36,6 +36,33 @@
             "product" => $boosterName,
             "booster" => []
         ];
+       
+    	$cacheKey = "boosteroptions";
+    	$boosterOptions = $redis->exists($cacheKey) ? $helper->unpackFromRedis($redis, $cacheKey) : fetachAndCacheBoosterOptions($pdo, $config, $helper, $redis, $cacheKey);
+    
+    	// TODO: check given api token (X-API-KEY) file or database?!?
+    	//
+		
+    	// check if given set is valid
+    	if ( !isset($boosterOptions['sets'][$setCode])) { 
+        	http_response_code(404);
+        	echo json_encode(['error' => 'Set not found.']);
+        	exit;
+        }
+    
+    	// check if given product is available for this set
+    	if ( !in_array($boosterName, $boosterOptions['sets'][$setCode])) { 
+        	http_response_code(404);
+        	echo json_encode(['error' => 'Product not found for specified set.']);
+        	exit;
+        }	
+    
+    	// check if amount is too damn high
+    	if ($amount > 666) { 
+        	http_response_code(400);
+        	echo json_encode(['error' => 'Too many boosters requested at the same time.']);
+        	exit;
+        }
 
         $cacheKey = "sumBoosterWeight:$setCode:$boosterName";
         $totalBoosterWeight = $redis->exists($cacheKey) ? $helper->unpackFromRedis($redis, $cacheKey) : fetchAndCacheTotalBoosterWeight($pdo, $config, $helper, $redis, $cacheKey, $setCode, $boosterName);
@@ -145,6 +172,28 @@
         }
 
         $cardList[] = $newCard;
+    }
+
+	function fetachAndCacheBoosterOptions($pdo, $config, $helper, $redis, $cacheKey) {
+    	$stmt = $pdo->prepare("select distinct s.code, sbc.boosterName from sets s, setBoosterContents sbc where sbc.setCode = s.code order by 1, 2");
+    	$stmt->execute();
+    	$sets = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    	$stmt = $pdo->prepare("select distinct sbc.boosterName, s.code from sets s, setBoosterContents sbc where sbc.setCode = s.code order by 1, 2");
+    	$stmt->execute();
+    	$products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    	
+    	foreach($sets as $setValue) {
+    		$boosterOptions["sets"][$setValue["code"]][] = $setValue["boosterName"];
+	    }
+    
+    	foreach($products as $productValue) {
+    	  	$boosterOptions["products"][$productValue["boosterName"]][] = $productValue["code"];
+	    }
+        
+        $helper->packToRedis($redis, $cacheKey, $boosterOptions, $config['redistimetolive']);
+    
+        return $boosterOptions;
     }
 
     function fetchAndCacheTotalBoosterWeight($pdo, $config, $helper, $redis, $cacheKey, $setCode, $boosterName) {
