@@ -73,4 +73,3 @@ jobs:
           local-dir: ./api/fool/
           server-dir: /var/www/html/
           dry-run: false
-  
