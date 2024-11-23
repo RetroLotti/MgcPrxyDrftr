@@ -1,5 +1,5 @@
-on: workflow_dispatch
 name: Publish API
+on: workflow_dispatch
 jobs:
   ftp_api_publish:
     name: APi publish
@@ -15,15 +15,15 @@ jobs:
         username: ${{ secrets.FTP_USER }}
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./api/
-          server-dir: /var/www/html/
-          dry-run: true
-      - name: Publish PHP files for nasty people
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./api/fool/
-          server-dir: /var/www/html/
-          dry-run: false
+        server-dir: /var/www/html/
+        dry-run: true
+    - name: Publish PHP files for nasty people
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./api/fool/
+        server-dir: /var/www/html/
+        dry-run: false
   
