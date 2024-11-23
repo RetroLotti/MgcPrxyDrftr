@@ -1,7 +1,8 @@
 {
   "profiles": {
     "MgcPrxyDrftr": {
-      "commandLineArgs": "--silent --booster fdn|36|play",
+      //"commandLineArgs": "--silent --booster fdn|36|play",
+      "commandLineArgs": "--booster fdn|36|play",
       "commandName": "Project"
     }
   }
