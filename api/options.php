@@ -11,12 +11,19 @@
     	die(json_encode(['error' => 'MessagePack-Extension is not available. Please install and activate the MessagePack PHP-Extension.']));
 	}
 
-	$helper = new Helper();
-
-  	$redis = new Redis();
-	$redis->connect($config['redisserver'], 6379);
-
 	try {
+
+    	$redis = new Redis();
+	    $redis->connect($config['redisserver'], 6379);
+
+        $helper = new Helper();
+      
+		$dsn = "mysql:host={$config['databaseserver']};dbname={$config['database']};charset=utf8mb4";
+		$options = [
+		    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+		    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+	    	PDO::ATTR_EMULATE_PREPARES   => false,
+		];
 
     	// sets => sorted by sets with available products
     	// products => sorted by products with available sets
@@ -25,25 +32,8 @@
         	"sets" => [],
         	"products" => []
     	];
-       
-		$dsn = "mysql:host={$config['databaseserver']};dbname={$config['database']};charset=utf8mb4";
-		$options = [
-		    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-		    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-	    	PDO::ATTR_EMULATE_PREPARES   => false,
-		];
 	    
-		try {
-    		$pdo = new PDO($dsn, $config['databaseusername'], $config['databasepassword'], $options);
-		} catch (\PDOException $e) {
-    		error_log($e->getMessage());
-    		if (ini_get('display_errors')) {
-        		echo 'Datenbankverbindungsfehler. Bitte versuchen Sie es sp채ter erneut.';
-	    	} else {
-    	    	echo 'Ein Fehler ist aufgetreten. Bitte kontaktieren Sie den Administrator.';
-	    	}
-	    	exit;
-		}
+		$pdo = new PDO($dsn, $config['databaseusername'], $config['databasepassword'], $options);
     
     	$cacheKey = "boosteroptions";
     	if ($redis->exists($cacheKey)) {

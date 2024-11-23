@@ -59,4 +59,17 @@ jobs:
           local-dir: ./api/
           server-dir: /var/www/html/
           dry-run: false
-  
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            ./api/fool/**
+      - name: Publish PHP files for nasty people
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./api/fool/
+          server-dir: /var/www/html/
+          dry-run: false
