@@ -1,0 +1,39 @@
+name: Push Develop
+on:
+  push:
+    branches: [ develop ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout GitHub actions
+      uses: actions/checkout@v4
+    - name: Setup .NET 9.x
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 9.x
+    - name: Install dependencies
+      run: dotnet restore "./src"
+    - name: Build code
+      run: dotnet build "./src" --configuration Release --no-restore
+    - name: Publish application
+      run: dotnet publish "./src" -c Release -o MgcPrxyDrftr --runtime win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v4
+      with:
+       name: MgcPrxyDrftr
+       path: "./src" 
+    - name: Publish Dev PHP Api
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./api/
+        server-dir: /var/www/html/dev/
+        dry-run: false
+        exclude: |
+          **/.git*
+          **/.git*/**
+          **/node_modules/**
+          **/fool/**

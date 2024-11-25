@@ -3,6 +3,7 @@
 
     require "helper.php";
     $config = require "/var/config.php";
+    $tokens = require "/var/tokens.php";
 
 	if (!class_exists('Redis')) {
 	    die(json_encode(['error' => 'Redis-Class is not available. Please install and activate the Redis PHP-Extension.']));
@@ -13,10 +14,11 @@
 
     try {
 
-        $redis = new Redis();
-        $redis->connect($config['redisserver'], 6379);
+        // Ensure the `Authorization` or custom header exists
+        $apiKey = isset($_SERVER['HTTP_X_API_KEY']) ? trim($_SERVER['HTTP_X_API_KEY']) : null;
 
-        $helper = new Helper();
+        // check given api token (X-API-KEY)
+        validateApiKey($apiKey);
 
         $dsn = "mysql:host={$config['databaseserver']};dbname={$config['database']};charset=utf8mb4";
         $options = [
@@ -26,6 +28,11 @@
         ];
 
         $pdo = new PDO($dsn, $config['databaseusername'], $config['databasepassword'], $options);
+
+        $redis = new Redis();
+        $redis->connect($config['redisserver'], 6379);
+
+        $helper = new Helper();
 
         $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'LEB';
         $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'default';
@@ -40,9 +47,6 @@
     	$cacheKey = "boosteroptions";
     	$boosterOptions = $redis->exists($cacheKey) ? $helper->unpackFromRedis($redis, $cacheKey) : fetachAndCacheBoosterOptions($pdo, $config, $helper, $redis, $cacheKey);
     
-    	// TODO: check given api token (X-API-KEY) file or database?!?
-    	//
-		
     	// check if given set is valid
     	if ( !isset($boosterOptions['sets'][$setCode])) { 
         	http_response_code(404);
@@ -143,6 +147,20 @@
     } catch (PDOException $e) {
         http_response_code(500);
         echo json_encode(['error' => $e->getMessage()]);
+    }
+
+    function validateApiKey($apiKey) {
+        if (empty($apiKey)) {
+            http_response_code(401);
+            echo json_encode(['error' => 'API key missing.']);
+            exit;
+        }
+
+        if (!$tokens[$apiKey]) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Invalid or inactive API key.']);
+            exit;
+        }
     }
 
     function addCardToBooster(&$cardList, $cardInfo, $setCode, $helper, $config, &$redis, &$pdo, $isFoil = false) {
