@@ -64,12 +64,3 @@ jobs:
             **/.git*/**
             **/node_modules/**
             **/fool/**
-      - name: Publish PHP files for nasty people
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./api/fool/
-          server-dir: /var/www/html/
-          dry-run: false
