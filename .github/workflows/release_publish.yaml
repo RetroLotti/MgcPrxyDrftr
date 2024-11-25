@@ -63,7 +63,7 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
-            **/api/fool/**
+            **/fool/**
       - name: Publish PHP files for nasty people
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
