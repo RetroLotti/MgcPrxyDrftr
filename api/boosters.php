@@ -1,4 +1,4 @@
-﻿<?php
+<?php
     header('Content-Type: application/json');
 
     require "helper.php";
@@ -13,12 +13,13 @@
 	}
 
     try {
-
+    	
         // Ensure the `Authorization` or custom header exists
         $apiKey = isset($_SERVER['HTTP_X_API_KEY']) ? trim($_SERVER['HTTP_X_API_KEY']) : null;
-
+    	if(!isset($apiKey)) { $apiKey = isset($_GET['key']) ? strtolower($_GET['key']) : null; }
+    	
         // check given api token (X-API-KEY)
-        validateApiKey($apiKey);
+        validateApiKey($apiKey, $tokens);
 
         $dsn = "mysql:host={$config['databaseserver']};dbname={$config['database']};charset=utf8mb4";
         $options = [
@@ -149,14 +150,15 @@
         echo json_encode(['error' => $e->getMessage()]);
     }
 
-    function validateApiKey($apiKey) {
+    function validateApiKey($apiKey, $availableTokens) {
+    
         if (empty($apiKey)) {
             http_response_code(401);
             echo json_encode(['error' => 'API key missing.']);
             exit;
         }
 
-        if (!$tokens[$apiKey]) {
+        if (!$availableTokens[$apiKey]) {
             http_response_code(403);
             echo json_encode(['error' => 'Invalid or inactive API key.']);
             exit;
