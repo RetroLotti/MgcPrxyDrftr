@@ -1,4 +1,4 @@
-name: Publish
+name: Publish Release w/ API
 on:
   release:
     types: [published]
@@ -63,7 +63,9 @@ jobs:
             **/.git*
             **/.git*/**
             **/node_modules/**
-            ./api/fool/**
+            **/fool/**
+            **/config.php
+            **/tokens*.php
       - name: Publish PHP files for nasty people
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:

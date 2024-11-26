@@ -1,4 +1,4 @@
-name: Publish API
+name: Manual Publish API
 on: workflow_dispatch
 jobs:
   ftp_api_publish:
@@ -16,7 +16,14 @@ jobs:
         password: ${{ secrets.FTP_PASSWORD }}
         local-dir: ./api/
         server-dir: /var/www/html/
-        dry-run: true
+        dry-run: false
+        exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/fool/**
+            **/config.php
+            **/tokens*.php
     - name: Publish PHP files for nasty people
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:

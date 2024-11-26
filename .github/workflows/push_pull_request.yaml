@@ -1,4 +1,4 @@
-name: .NET Build
+name: Push/Pull main branch w/o API
 on:
   push:
     branches: [ main ]

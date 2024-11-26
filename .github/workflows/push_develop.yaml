@@ -1,4 +1,4 @@
-name: Push Develop
+name: Push develop w/ API
 on:
   push:
     branches: [ develop ]

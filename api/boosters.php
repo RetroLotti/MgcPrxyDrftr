@@ -1,9 +1,12 @@
 <?php
     header('Content-Type: application/json');
 
+    $isDevMode = str_contains($_SERVER['SCRIPT_NAME'], '.dev.');
+
     require "helper.php";
     $config = require "/var/config.php";
-    $tokens = require "/var/tokens.php";
+    
+    if ($isDevMode) { $tokens = require "/var/tokens.dev.php"; } else { $tokens = require "/var/tokens.php"; }
 
 	if (!class_exists('Redis')) {
 	    die(json_encode(['error' => 'Redis-Class is not available. Please install and activate the Redis PHP-Extension.']));
@@ -35,9 +38,9 @@
 
         $helper = new Helper();
 
-        $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'LEB';
-        $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'default';
-        $amount = isset($_GET['a']) ? intval($_GET['a']) : 1;
+        $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'FDN';
+        $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'play';
+        $amount = isset($_GET['a']) ? intval($_GET['a']) : 3;
 
         $data = [
             "set" => $setCode,
