@@ -1,0 +1,25 @@
+name: Publish API
+on: workflow_dispatch
+jobs:
+  ftp_api_publish:
+    name: APi publish
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Publish PHP Api
+      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      with:
+        server: ${{ secrets.FTP_HOST }}
+        username: ${{ secrets.FTP_USER }}
+        password: ${{ secrets.FTP_PASSWORD }}
+        local-dir: ./api/
+        server-dir: /var/www/html/
+        dry-run: false
+        exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/fool/**
+  
