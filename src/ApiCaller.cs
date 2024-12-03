@@ -8,6 +8,7 @@ using Card = ScryfallApi.Client.Models.Card;
 using Set = ScryfallApi.Client.Models.Set;
 using Newtonsoft.Json;
 using System.Net;
+using System.Security.Authentication;
 
 namespace MgcPrxyDrftr
 {
@@ -17,7 +18,16 @@ namespace MgcPrxyDrftr
         private readonly HttpClient _client;
         private readonly HttpClient _openBoostersClient;
 
-        //https://scryfall.com/docs/api
+#if DEBUG
+        private const string ApiKey = "00000000-0000-0000-0000-000000000000";
+        //private const string AdditionalRequestUri = "dev/";
+        private const string AdditionalRequestUri = "";
+#else
+        private const string ApiKey = "418fed9c-1aa0-4628-87d0-45ec41af03f5";
+        private const string AdditionalRequestUri = "";
+#endif
+
+        // https://scryfall.com/docs/api
 
         public ApiCaller()
         {
@@ -27,16 +37,16 @@ namespace MgcPrxyDrftr
                 new MediaTypeWithQualityHeaderValue("application/json"));
 
             _openBoostersClient = new HttpClient(new HttpClientHandler() { AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate });
-            _openBoostersClient.BaseAddress = new Uri("http://82.165.127.227/");
+            _openBoostersClient.BaseAddress = new Uri($"https://lotterstedt.de/{AdditionalRequestUri}");
             _openBoostersClient.Timeout = TimeSpan.FromSeconds(Timeout);
-            _openBoostersClient.DefaultRequestHeaders.Accept.Clear();
+            _openBoostersClient.DefaultRequestHeaders.Add("X-API-KEY", ApiKey);
             _openBoostersClient.DefaultRequestHeaders.Accept.Add(
                 new MediaTypeWithQualityHeaderValue("application/json"));
         }
 
         public async Task<OpenBoosterBox> GenerateBooster(string setCode, BoosterType boosterType, int amount)
         {
-            var response = await _openBoostersClient.GetAsync($"boosters.php?s={setCode}&b={Enum.GetName(boosterType)!.ToLower()}&a={amount}");
+            var response = await _openBoostersClient.GetAsync($"{setCode}/{Enum.GetName(boosterType)!.ToLower()}/{amount}");
             if (!response.IsSuccessStatusCode) return null;
 
             var json = await response.Content.ReadAsStringAsync();

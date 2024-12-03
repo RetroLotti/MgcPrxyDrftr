@@ -1,9 +1,12 @@
-﻿<?php
+<?php
     header('Content-Type: application/json');
+
+    $isDevMode = str_contains($_SERVER['SCRIPT_NAME'], '.dev.');
 
     require "helper.php";
     $config = require "/var/config.php";
-    $tokens = require "/var/tokens.php";
+    
+    if ($isDevMode) { $tokens = require "/var/tokens.dev.php"; } else { $tokens = require "/var/tokens.php"; }
 
 	if (!class_exists('Redis')) {
 	    die(json_encode(['error' => 'Redis-Class is not available. Please install and activate the Redis PHP-Extension.']));
@@ -13,12 +16,13 @@
 	}
 
     try {
-
+    	
         // Ensure the `Authorization` or custom header exists
         $apiKey = isset($_SERVER['HTTP_X_API_KEY']) ? trim($_SERVER['HTTP_X_API_KEY']) : null;
-
+    	if(!isset($apiKey)) { $apiKey = isset($_GET['key']) ? strtolower($_GET['key']) : null; }
+    	
         // check given api token (X-API-KEY)
-        validateApiKey($apiKey);
+        validateApiKey($apiKey, $tokens);
 
         $dsn = "mysql:host={$config['databaseserver']};dbname={$config['database']};charset=utf8mb4";
         $options = [
@@ -34,9 +38,9 @@
 
         $helper = new Helper();
 
-        $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'LEB';
-        $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'default';
-        $amount = isset($_GET['a']) ? intval($_GET['a']) : 1;
+        $setCode = isset($_GET['s']) ? strtoupper($_GET['s']) : 'FDN';
+        $boosterName = isset($_GET['b']) ? strtolower($_GET['b']) : 'play';
+        $amount = isset($_GET['a']) ? intval($_GET['a']) : 3;
 
         $data = [
             "set" => $setCode,
@@ -149,14 +153,15 @@
         echo json_encode(['error' => $e->getMessage()]);
     }
 
-    function validateApiKey($apiKey) {
+    function validateApiKey($apiKey, $availableTokens) {
+    
         if (empty($apiKey)) {
             http_response_code(401);
             echo json_encode(['error' => 'API key missing.']);
             exit;
         }
 
-        if (!$tokens[$apiKey]) {
+        if (!$availableTokens[$apiKey]) {
             http_response_code(403);
             echo json_encode(['error' => 'Invalid or inactive API key.']);
             exit;
