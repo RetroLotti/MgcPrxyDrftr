@@ -172,13 +172,26 @@ namespace MgcPrxyDrftr.lib
         public static bool CreatePdfDocumentQuest(string imageFolder, string targetFileName, string targetFolder)
         {
             const double millimetreToInch = 0.03937008;
-            const float cardWidthPoints = (62 * (float)millimetreToInch) * PageSizes.PointsPerInch;
-            const float cardHeightPoints = (87 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+            const float cardWidthPoints = (63 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+            const float cardHeightPoints = (88 * (float)millimetreToInch) * PageSizes.PointsPerInch;
 
             const float marginLeftRight = (595 - cardWidthPoints * 3) / 2; 
             const float marginTopBottom = (842 - cardHeightPoints * 3) / 2;
 
             var cardStack = new Stack(Directory.GetFiles(@$"{imageFolder}\", "*.png"));
+            if (Directory.Exists(@$"{imageFolder}\foil\"))
+            {
+                foreach (var file in Directory.GetFiles(@$"{imageFolder}\foil\", "*.png"))
+                {
+                    cardStack.Push(file);
+                }
+            }
+
+            //if (file.Contains(@"\foil\") && printFoils)
+            //{
+            //    var foilImage = PdfImage.FromFile(@$"C:\Users\19137590\Source\Repos\MgcPrxyDrftr\src\foil.png");
+            //    page.Canvas.DrawImage(foilImage, x, y, cardWidth, cardHeight);
+            //}
 
             var document = Document.Create(container =>
             {
@@ -300,7 +313,7 @@ namespace MgcPrxyDrftr.lib
 
         public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder, bool printFoils = false)
         {
-            return CreatePdfDocumentSpire(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", printFoils);
+            return CreatePdfDocumentQuest(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", @$"{imageFolder}");
         }
     }
 }

@@ -1,8 +1,7 @@
 {
   "profiles": {
     "MgcPrxyDrftr": {
-      //"commandLineArgs": "--silent --booster fdn|36|play",
-      "commandLineArgs": "--booster fdn|36|play",
+      "commandLineArgs": "--mode=Photo --booster fdn|36|play", //photo || pdf
       "commandName": "Project"
     }
   }

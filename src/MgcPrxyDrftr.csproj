@@ -18,27 +18,23 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="output\draft\2022-03-11T08-07-46\**" />
-    <Compile Remove="output\draft\2022-04-11T08-32-14\**" />
-    <Compile Remove="output\list\**" />
-    <EmbeddedResource Remove="output\draft\2022-03-11T08-07-46\**" />
-    <EmbeddedResource Remove="output\draft\2022-04-11T08-32-14\**" />
-    <EmbeddedResource Remove="output\list\**" />
-    <None Remove="output\draft\2022-03-11T08-07-46\**" />
-    <None Remove="output\draft\2022-04-11T08-32-14\**" />
-    <None Remove="output\list\**" />
+    <Compile Remove="json\decks\**" />
+    <EmbeddedResource Remove="json\decks\**" />
+    <None Remove="json\decks\**" />
   </ItemGroup>
   
   <ItemGroup>
     <PackageReference Include="CommandLineParser" Version="2.9.1" />
     <PackageReference Include="FreeSpire.PDF" Version="10.2.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.1" />
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="QuestPDF" Version="2024.10.4" />
+    <PackageReference Include="OpenBoostersAPI" Version="0.1.8" />
+    <PackageReference Include="QuestPDF" Version="2024.12.2" />
     <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
-    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.1" />
+    <PackageReference Include="System.Text.Json" Version="9.0.1" />
     <PackageReference Include="TextCopy" Version="6.2.1" />
   </ItemGroup>
 
@@ -68,16 +64,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="cache\scryfall\back\" />
-    <Folder Include="json\decks\" />
+    <Folder Include="cache\" />
     <Folder Include="models\upgrades\" />
-    <Folder Include="output\decks\" />
-    <Folder Include="output\draft\" />
-    <Folder Include="output\lists\" />
-    <Folder Include="temporary\booster\" />
-    <Folder Include="temporary\decks\" />
-    <Folder Include="temporary\draft\" />
-    <Folder Include="temporary\lists\" />
   </ItemGroup>
 
   <ItemGroup>
