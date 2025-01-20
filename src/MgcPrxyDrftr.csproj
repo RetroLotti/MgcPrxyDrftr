@@ -66,6 +66,7 @@
   <ItemGroup>
     <Folder Include="cache\" />
     <Folder Include="models\upgrades\" />
+    <Folder Include="temporary\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -24,6 +24,7 @@ using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using H = MgcPrxyDrftr.lib.Helpers;
 using Image = SixLabors.ImageSharp.Image;
+using System.Collections;
 
 namespace MgcPrxyDrftr
 {
@@ -1880,7 +1881,7 @@ namespace MgcPrxyDrftr
                 // load images
                 foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
 
-                if (Options.Mode == RunModes.Pdf)
+                if (Options.Mode == RunModes.Pdf && Options.Single == false)
                 {
                     // create pdf
                     if (!Options.Silent)
@@ -1906,6 +1907,22 @@ namespace MgcPrxyDrftr
                 // update booster count just for fun
                 Settings?.UpdateBoosterCount(1);
                 Console.Clear();
+            }
+
+            if (Options.Mode == RunModes.Pdf && Options.Single)
+            {
+                var directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                var cards = new List<string>();
+
+                // gather all files for one large file
+                foreach (var imageDirectory in directory.GetDirectories("*", SearchOption.TopDirectoryOnly))
+                {
+                    cards.AddRange(imageDirectory.GetFiles("*.png").Select(imageFile => imageFile.FullName));
+                    cards.AddRange(Directory.GetFiles(@$"{imageDirectory.FullName}\foil\", "*.png"));
+                }
+                
+                // create pdf
+                _ = H.CreatePdfDocumentQuest(cards, $@"{setCode.ToLower()}_{Enum.GetName(boosterType)?.ToLowerInvariant()}_{Guid.NewGuid()}.pdf", draftDirectory.FullName);
             }
 
             // resort images for images generation for photo printing
