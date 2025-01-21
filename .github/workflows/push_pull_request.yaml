@@ -1,4 +1,4 @@
-name: Push/Pull main branch w/o API
+name: Push/Pull main branch 
 on:
   push:
     branches: [ main ]
@@ -13,7 +13,7 @@ jobs:
     - name: Setup .NET 
       uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: 9.0.x
+        dotnet-version: 9.x
     - name: Install dependencies
       run: dotnet restore "./src"
     - name: Build code

@@ -1,4 +1,4 @@
-name: Push develop w/ API
+name: Push develop
 on:
   push:
     branches: [ develop ]
@@ -23,19 +23,3 @@ jobs:
       with:
        name: MgcPrxyDrftr
        path: "./src" 
-    - name: Publish Dev PHP Api
-      uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-      with:
-        server: ${{ secrets.FTP_HOST }}
-        username: ${{ secrets.FTP_USER }}
-        password: ${{ secrets.FTP_PASSWORD }}
-        local-dir: ./api/
-        server-dir: /var/www/html/dev/
-        dry-run: false
-        exclude: |
-          **/.git*
-          **/.git*/**
-          **/node_modules/**
-          **/fool/**
-          **/config.php
-          **/tokens*.php
