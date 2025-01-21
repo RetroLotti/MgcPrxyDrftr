@@ -13,6 +13,18 @@ namespace MgcPrxyDrftr.lib
         public string Booster { get; set; }
 
         [Option('s', "silent", Required = false, HelpText = "Set output to silent.")]
-        public bool Silent { get; set; }
+        public bool Silent { get; set; } = false;
+
+        [Option('m', "mode", Required = false, HelpText = "Mode to be used.")]
+        public RunModes Mode { get; set; } = RunModes.Pdf;
+
+        [Option('l', "single", Required = false, HelpText = "Whether to create a single pdf or not.")]
+        public bool Single { get; set; } = false;
+    }
+
+    public enum RunModes
+    {
+        Pdf,
+        Photo
     }
 }

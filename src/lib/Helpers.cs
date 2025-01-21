@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Configuration;
 using System.IO;
 using System.Linq;
@@ -10,6 +11,7 @@ using MgcPrxyDrftr.models;
 using Newtonsoft.Json;
 using QuestPDF.Fluent;
 using QuestPDF.Helpers;
+using Spire.Additions.Xps.Schema;
 using Spire.Pdf;
 using Spire.Pdf.Graphics;
 
@@ -169,16 +171,20 @@ namespace MgcPrxyDrftr.lib
             return checksum.ToLower();
         }
 
-        public static bool CreatePdfDocumentQuest(string imageFolder, string targetFileName, string targetFolder)
+        public static bool CreatePdfDocumentQuest(List<string> cards, string targetFileName, string targetFolder)
         {
             const double millimetreToInch = 0.03937008;
-            const float cardWidthPoints = (62 * (float)millimetreToInch) * PageSizes.PointsPerInch;
-            const float cardHeightPoints = (87 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+            const float cardWidthPoints = (63 * (float)millimetreToInch) * PageSizes.PointsPerInch;
+            const float cardHeightPoints = (88 * (float)millimetreToInch) * PageSizes.PointsPerInch;
 
-            const float marginLeftRight = (595 - cardWidthPoints * 3) / 2; 
+            const float marginLeftRight = (595 - cardWidthPoints * 3) / 2;
             const float marginTopBottom = (842 - cardHeightPoints * 3) / 2;
 
-            var cardStack = new Stack(Directory.GetFiles(@$"{imageFolder}\", "*.png"));
+            //if (file.Contains(@"\foil\") && printFoils)
+            //{
+            //    var foilImage = PdfImage.FromFile(@$"C:\Users\19137590\Source\Repos\MgcPrxyDrftr\src\foil.png");
+            //    page.Canvas.DrawImage(foilImage, x, y, cardWidth, cardHeight);
+            //}
 
             var document = Document.Create(container =>
             {
@@ -201,7 +207,7 @@ namespace MgcPrxyDrftr.lib
                             }
                         });
 
-                        foreach (var card in cardStack)
+                        foreach (var card in cards)
                         {
                             table
                                 .Cell()
@@ -214,7 +220,7 @@ namespace MgcPrxyDrftr.lib
                                         .Item()
                                         .Width(cardWidthPoints)
                                         .Height(cardHeightPoints)
-                                        .Image(card.ToString() ?? string.Empty).WithRasterDpi(150);
+                                        .Image(card).WithRasterDpi(150);
                                 });
                         }
                     });
@@ -223,6 +229,20 @@ namespace MgcPrxyDrftr.lib
 
             document.GeneratePdf(@$"{targetFolder}\{targetFileName}");
             return true;
+        }
+
+        public static bool CreatePdfDocumentQuest(string imageFolder, string targetFileName, string targetFolder)
+        {
+            var cards = Directory.GetFiles(@$"{imageFolder}\", "*.png").ToList();
+            if (!Directory.Exists(@$"{imageFolder}\foil\"))
+                return CreatePdfDocumentQuest(cards, targetFileName, targetFolder);
+
+            foreach (var file in Directory.GetFiles(@$"{imageFolder}\foil\", "*.png"))
+            {
+                cards.Add(file);
+            }
+
+            return CreatePdfDocumentQuest(cards, targetFileName, targetFolder);
         }
 
         public static bool CreatePdfDocumentSpire(string imageFolder, string targetFileName, bool printFoils = false)
@@ -300,7 +320,7 @@ namespace MgcPrxyDrftr.lib
 
         public static bool CreatePdfDocument(Guid boosterGuid, string imageFolder, bool printFoils = false)
         {
-            return CreatePdfDocumentSpire(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", printFoils);
+            return CreatePdfDocumentQuest(@$"{imageFolder}\{boosterGuid}", $"{boosterGuid}.pdf", @$"{imageFolder}");
         }
     }
 }

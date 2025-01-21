@@ -15,10 +15,16 @@ using MgcPrxyDrftr.models;
 using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using OpenBoostersAPI;
 using QuestPDF.Infrastructure;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Processing;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using H = MgcPrxyDrftr.lib.Helpers;
+using Image = SixLabors.ImageSharp.Image;
+using System.Collections;
 
 namespace MgcPrxyDrftr
 {
@@ -68,22 +74,6 @@ namespace MgcPrxyDrftr
             Options = Parser.Default.ParseArguments<CommandLineOptions>(args).Value;
             if (args.Length > 0) { IsCommandLineMode = true; }
             if (IsCommandLineMode) { await PrepareCommandLineModeAsync(args); return; }
-
-            //.WithParsed(o =>
-            //{
-            //    if (o.Silent)
-            //    {
-            //        Console.WriteLine($"Verbose output enabled. Current Arguments: -v {o.Verbose}");
-            //        Console.WriteLine("Quick Start Example! App is in Verbose mode!");
-            //    }
-            //    else
-            //    {
-            //        Console.WriteLine($"Current Arguments: -v {o.Verbose}");
-            //        Console.WriteLine("Quick Start Example!");
-            //    }
-            //});
-
-
 
 #pragma warning disable CA1416
             if (IsWindows) { Console.SetWindowSize(136, 40); }
@@ -191,7 +181,7 @@ namespace MgcPrxyDrftr
         }
 
         /// <summary>
-        /// This is a method thats sole purpose is to handle cli calls of the program
+        /// This is a method whose sole purpose is to handle cli calls of the program
         /// </summary>
         /// <param name="args"></param>
         private static async Task PrepareCommandLineModeAsync(string[] args)
@@ -215,6 +205,9 @@ namespace MgcPrxyDrftr
             {
                 _ = await DraftApi(boosterDraftDefinition, targetDirectory.FullName);
             }
+
+            // open draft directory
+            if (!IsWindows || Options.Silent) return;
 
             Process process = new();
             process.StartInfo.WorkingDirectory = $@"{targetDirectory.FullName}";
@@ -1426,7 +1419,7 @@ namespace MgcPrxyDrftr
             return generalCardDictionary;
         }
 
-        private static List<Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, BoosterType boosterType = BoosterType.Play)
+        private static List<Card> GenerateBooster(string setCode, IReadOnlyCollection<string> additionalSetCodes = null, Enumerators.BoosterType boosterType = Enumerators.BoosterType.Play)
         {
             List<Guid> boosterCards = [];
             List<CardIdentifiers> boosterCardIdentifier = [];
@@ -1765,39 +1758,39 @@ namespace MgcPrxyDrftr
             return true;
         }
 
-        private static BoosterType MapBoosterType(char boosterType)
+        private static Enumerators.BoosterType MapBoosterType(char boosterType)
         {
             return boosterType switch
             {
-                'a' => BoosterType.Arena,
-                'c' => BoosterType.Collector,
-                'd' => BoosterType.Draft,
-                'j' => BoosterType.Jumpstart,
-                'p' => BoosterType.Play,
-                's' => BoosterType.Set,
-                't' => BoosterType.Tournament,
-                _ => BoosterType.Play
+                'a' => Enumerators.BoosterType.Arena,
+                'c' => Enumerators.BoosterType.Collector,
+                'd' => Enumerators.BoosterType.Draft,
+                'j' => Enumerators.BoosterType.Jumpstart,
+                'p' => Enumerators.BoosterType.Play,
+                's' => Enumerators.BoosterType.Set,
+                't' => Enumerators.BoosterType.Tournament,
+                _ => Enumerators.BoosterType.Play
             };
         }
 
-        private static BoosterType MapBoosterType(string boosterName)
+        private static Enumerators.BoosterType MapBoosterType(string boosterName)
         {
             return boosterName switch
             {
-                not null when boosterName.Contains("arena", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Arena,
-                not null when boosterName.Contains("box topper", StringComparison.InvariantCultureIgnoreCase) => BoosterType.BoxTopper,
-                not null when boosterName.Contains("collector sample", StringComparison.InvariantCultureIgnoreCase) => BoosterType.CollectorSample,
-                not null when boosterName.Contains("collector", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Collector,
-                not null when boosterName.Contains("draft", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Draft,
-                not null when boosterName.Contains("jumpstart", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Jumpstart,
-                not null when boosterName.Contains("play", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Play,
-                not null when boosterName.Contains("set", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Set,
-                not null when boosterName.Contains("tournament", StringComparison.InvariantCultureIgnoreCase) => BoosterType.Tournament,
-                _ => BoosterType.Draft,
+                not null when boosterName.Contains("arena", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Arena,
+                not null when boosterName.Contains("box topper", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.BoxTopper,
+                not null when boosterName.Contains("collector sample", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.CollectorSample,
+                not null when boosterName.Contains("collector", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Collector,
+                not null when boosterName.Contains("draft", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Draft,
+                not null when boosterName.Contains("jumpstart", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Jumpstart,
+                not null when boosterName.Contains("play", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Play,
+                not null when boosterName.Contains("set", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Set,
+                not null when boosterName.Contains("tournament", StringComparison.InvariantCultureIgnoreCase) => Enumerators.BoosterType.Tournament,
+                _ => Enumerators.BoosterType.Draft,
             };
         }
 
-        private static async Task SimpleDraft(string setCode, int numberOfBoosters, BoosterType boosterType, IReadOnlyCollection<string> additionalSetCollection)
+        private static async Task SimpleDraft(string setCode, int numberOfBoosters, Enumerators.BoosterType boosterType, IReadOnlyCollection<string> additionalSetCollection)
         {
             DirectoryInfo draftDirectory = new(@$"{BaseDirectory}\{OutputDirectory}\{DraftDirectory}\{DateTime.Now:yyyy-MM-ddTHH-mm-ss}");
             draftDirectory.Create();
@@ -1840,7 +1833,7 @@ namespace MgcPrxyDrftr
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
             var boosterType = draftString.Split('|').Length == 2
-                ? BoosterType.Play
+                ? Enumerators.BoosterType.Play
                 : MapBoosterType(draftString.Split('|')[2].ToCharArray()[0]);
             var set = (await setService.FindAsync(setCode)).Value;
             int boosterCount = int.TryParse(boosterCountParam, out boosterCount) ? boosterCount : 1;
@@ -1866,10 +1859,11 @@ namespace MgcPrxyDrftr
             if (!draftDirectory.Exists) { draftDirectory.Create(); }
 
             // create all boosters at once and iterate them afterwards
-            var boosterBox = await Api.GenerateBooster(set?.Code ?? setCode.ToUpper(), boosterType, boosterCount);
+            using var client = new Client("418fed9c-1aa0-4628-87d0-45ec41af03f5");
+            var boosterResult = await client.GenerateBoosterAsync(set?.Code ?? setCode.ToUpper(), boosterType, boosterCount);
 
             // create all pdfs
-            foreach (var booster in boosterBox.Booster)
+            foreach (var booster in boosterResult.BoosterBox?.Booster!)
             {
                 // new booster guid 
                 var boosterGuid = Guid.NewGuid();
@@ -1887,22 +1881,25 @@ namespace MgcPrxyDrftr
                 // load images
                 foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
 
-                // create pdf
-                if (!Options.Silent)
+                if (Options.Mode == RunModes.Pdf && Options.Single == false)
                 {
-                    Console.WriteLine("\nCreating pdf file...");
-                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
-                }
-                _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings is not null && Settings.PrintFoils);
+                    // create pdf
+                    if (!Options.Silent)
+                    {
+                        Console.WriteLine("\nCreating pdf file...");
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                    }
+                    _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}", Settings is not null && Settings.PrintFoils);
 
-                FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
+                    FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}.pdf");
 
-                if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{Enum.GetName(boosterType)?.ToLowerInvariant()}_{boosterGuid}.pdf"); }
+                    if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{Enum.GetName(boosterType)?.ToLowerInvariant()}_{boosterGuid}.pdf"); }
 
-                if (!Options.Silent)
-                {
-                    Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created");
-                    Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                    if (!Options.Silent)
+                    {
+                        Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created");
+                        Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
+                    }
                 }
 
                 if (IsCommandLineMode) continue;
@@ -1912,17 +1909,120 @@ namespace MgcPrxyDrftr
                 Console.Clear();
             }
 
-            // open draft directory
-            if (!IsWindows || Options.Silent) return true;
+            if (Options.Mode == RunModes.Pdf && Options.Single)
+            {
+                var directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+                var cards = new List<string>();
 
-            Process process = new();
-            process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
-            process.StartInfo.UseShellExecute = false;
-            process.StartInfo.FileName = "explorer.exe";
-            process.StartInfo.Arguments = $@"{draftDirectory}";
-            process.Start();
+                // gather all files for one large file
+                foreach (var imageDirectory in directory.GetDirectories("*", SearchOption.TopDirectoryOnly))
+                {
+                    cards.AddRange(imageDirectory.GetFiles("*.png").Select(imageFile => imageFile.FullName));
+                    cards.AddRange(Directory.GetFiles(@$"{imageDirectory.FullName}\foil\", "*.png"));
+                }
+                
+                // create pdf
+                _ = H.CreatePdfDocumentQuest(cards, $@"{setCode.ToLower()}_{Enum.GetName(boosterType)?.ToLowerInvariant()}_{Guid.NewGuid()}.pdf", draftDirectory.FullName);
+            }
+
+            // resort images for images generation for photo printing
+            if (Options.Mode == RunModes.Photo)
+            {
+                List<Image> images = [];
+                var photoFileCounter = 1;
+                var directory = new DirectoryInfo(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
+
+                foreach (var imageDirectory in directory.GetDirectories("*", SearchOption.AllDirectories))
+                {
+                    foreach (var imageFile in imageDirectory.GetFiles())
+                    {
+                        if(images.Count < 4)
+                        {
+                            try
+                            {
+                                images.Add(await Image.LoadAsync(imageFile.FullName));
+                            }
+                            catch (Exception e)
+                            {
+                                Console.WriteLine($"Error: {imageFile.FullName}");
+                            }
+
+                            if (images.Count < 4) continue;
+                        }
+
+                        // save image
+                        CreateGridImage(images, photoFileCounter, draftDirectory);
+                        photoFileCounter++;
+                    }
+                }
+
+                if (images.Count is > 0)
+                {
+                    // save last image
+                    CreateGridImage(images, photoFileCounter, draftDirectory);
+                }
+            }
+
+            //// open draft directory
+            //if (!IsWindows || Options.Silent) return true;
+
+            //Process process = new();
+            //process.StartInfo.WorkingDirectory = $@"{draftDirectory}";
+            //process.StartInfo.UseShellExecute = false;
+            //process.StartInfo.FileName = "explorer.exe";
+            //process.StartInfo.Arguments = $@"{draftDirectory}";
+            //process.Start();
 
             return true;
+        }
+
+        public static void CreateGridImage(List<Image> images, int imageIndex, DirectoryInfo targetOutputDirectory)
+        {
+            if (images == null || images.Count == 0)
+            {
+                throw new ArgumentException("The list of images must contain at least one image.", nameof(images));
+            }
+
+            const int margin = 12;
+            const int pixelPerCentimeter = 60;
+
+            const int photoWidthInCentimeter = 13;
+            const int photoHeightInCentimeter = 18;
+
+            const int cardWidth = (photoWidthInCentimeter * pixelPerCentimeter - margin * 2);
+            const int cardHeight = (photoHeightInCentimeter * pixelPerCentimeter - margin * 2);
+
+            // Load the four images from PNG files
+            var image1 = images[0];
+            var image2 = images.Count >= 2 ? images[1] : null;
+            var image3 = images.Count >= 3 ? images[2] : null;
+            var image4 = images.Count == 4 ? images[3] : null;
+
+            // Create a new image with double the width and height to fit a 2x2 grid
+            // 60 ppcm == 152 dpi
+            using var gridImage = new Image<Rgba32>(photoWidthInCentimeter * pixelPerCentimeter * 2, photoHeightInCentimeter * pixelPerCentimeter * 2, SixLabors.ImageSharp.Color.Magenta);
+
+            // Draw the images onto the grid image
+            gridImage.Mutate(ctx =>
+            {
+                image1.Mutate(x => x.Resize(cardWidth, cardHeight));
+                image2?.Mutate(x => x.Resize(cardWidth, cardHeight));
+                image3?.Mutate(x => x.Resize(cardWidth, cardHeight));
+                image4?.Mutate(x => x.Resize(cardWidth, cardHeight));
+
+                ctx.DrawImage(image1, new Point(margin * 2, margin * 2), 1);
+                if (image2 != null) ctx.DrawImage(image2, new Point(cardWidth + margin * 2, margin * 2), 1);
+                if (image3 != null) ctx.DrawImage(image3, new Point(margin * 2, cardHeight + margin * 2), 1);
+                if (image4 != null) ctx.DrawImage(image4, new Point(cardWidth + margin * 2, cardHeight + margin * 2), 1);
+
+                //ctx.Resize(new Size(photoWidthInCentimeter * pixelPerCentimeter, photoHeightInCentimeter * pixelPerCentimeter));
+            });
+
+            // Save the resulting image as a PNG file
+            gridImage.Save($@"{targetOutputDirectory}{imageIndex.ToString().PadLeft(8, '0')}.png");
+
+            // TODO: check if images are disposed correctly
+            images.Clear();
         }
 
         /// <summary>
@@ -1936,7 +2036,7 @@ namespace MgcPrxyDrftr
             var setCode = draftString.Split('|')[0];
             var boosterCountParam = draftString.Split('|')[1];
             var boosterType = draftString.Split('|').Length == 2
-                ? BoosterType.Default
+                ? Enumerators.BoosterType.Default
                 : MapBoosterType(draftString.Split('|')[2].ToCharArray()[0]);
 
             var set = (await setService.FindAsync(setCode).ConfigureAwait(false)).Value;
@@ -2288,6 +2388,8 @@ namespace MgcPrxyDrftr
 
             if (!directory.Exists) return;
             foreach (var subDirectory in directory.GetDirectories()) { DeleteDirectories(subDirectory, filePattern); }
+
+            if (directory.GetFiles().Length == 0) directory.Delete();
         }
 
         private static void DeleteFilesInDirectory(DirectoryInfo directory, string filePattern)
