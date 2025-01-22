@@ -15,6 +15,9 @@
     <DelaySign>false</DelaySign>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageIcon>icon.ico</PackageIcon>
+    <RestoreAdditionalProjectSources>
+	  https://nuget.pkg.github.com/RetroLotti/index.json
+    </RestoreAdditionalProjectSources>
   </PropertyGroup>
 
   <ItemGroup>
