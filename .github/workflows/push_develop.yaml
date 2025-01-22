@@ -16,6 +16,8 @@ jobs:
       run: dotnet restore "./src"
     - name: Build code
       run: dotnet build "./src" --configuration Release --no-restore
+      env:
+        NuGetPackageSourceCredentials_github: Username=${{ github.actor }};Password=${{ secrets.GITHUB_TOKEN }}
     - name: Publish application
       run: dotnet publish "./src" -c Release -o MgcPrxyDrftr --runtime win-x64 -p:PublishSingleFile=true -p:PublishTrimmed=true --self-contained
     - name: Upload Artifacts
