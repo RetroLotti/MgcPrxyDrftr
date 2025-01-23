@@ -15,7 +15,6 @@ using MgcPrxyDrftr.models;
 using MtgApiManager.Lib.Service;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using OpenBoostersAPI;
 using QuestPDF.Infrastructure;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp;
@@ -24,7 +23,7 @@ using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using H = MgcPrxyDrftr.lib.Helpers;
 using Image = SixLabors.ImageSharp.Image;
-using System.Collections;
+using OpenBoosters.Api;
 
 namespace MgcPrxyDrftr
 {

@@ -8,7 +8,7 @@ using Card = ScryfallApi.Client.Models.Card;
 using Set = ScryfallApi.Client.Models.Set;
 using Newtonsoft.Json;
 using System.Net;
-using OpenBoostersAPI;
+using OpenBoosters.Api;
 
 namespace MgcPrxyDrftr
 {

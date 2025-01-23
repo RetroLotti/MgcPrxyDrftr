@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.1" />
     <PackageReference Include="MtgApiManager.Lib" Version="2.3.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="OpenBoostersAPI" Version="0.1.8" />
+    <PackageReference Include="OpenBoosters.Api" Version="0.1.9" />
     <PackageReference Include="QuestPDF" Version="2024.12.2" />
     <PackageReference Include="ScryfallAPI.Client" Version="3.1.0" />
     <PackageReference Include="SixLabors.ImageSharp" Version="3.1.6" />
