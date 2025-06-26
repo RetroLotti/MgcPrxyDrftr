@@ -19,11 +19,18 @@ using QuestPDF.Infrastructure;
 using SixLabors.ImageSharp.PixelFormats;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.Processing;
+using HeyRed.ImageSharp.Heif.Formats.Heif;
+using HeyRed.ImageSharp.Heif.Formats.Avif;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using H = MgcPrxyDrftr.lib.Helpers;
 using Image = SixLabors.ImageSharp.Image;
 using OpenBoosters.Api;
+using System.Net.Http;
+using SixLabors.ImageSharp.Formats.Png;
+using HeyRed.ImageSharp.Heif.Formats.Avif;
+using HeyRed.ImageSharp.Heif.Formats.Heif;
+using SixLabors.ImageSharp.Formats;
 
 namespace MgcPrxyDrftr
 {
@@ -57,6 +64,7 @@ namespace MgcPrxyDrftr
 
         public static readonly IMtgServiceProvider ServiceProvider = new MtgServiceProvider();
         [Obsolete("Obsolete")] private static readonly WebClient Client = new();
+        private static readonly HttpClient HttpClient = new();
         private static readonly ApiCaller Api = new();
         private static Settings Settings { get; set; }
 
@@ -64,6 +72,8 @@ namespace MgcPrxyDrftr
         private static DeckList DeckList { get; set; }
         // sets
         private static SetList SetList { get; } = new();
+
+        internal static readonly string[] Extensions = [".png", ".jpg"];
 
         private static async Task Main(string[] args)
         {
@@ -1859,7 +1869,7 @@ namespace MgcPrxyDrftr
 
             // create all boosters at once and iterate them afterwards
             using var client = new Client("418fed9c-1aa0-4628-87d0-45ec41af03f5");
-            var boosterResult = await client.GenerateBoosterAsync(set?.Code ?? setCode.ToUpper(), boosterType, boosterCount);
+            var boosterResult = await client.GenerateBoosterAsync(set?.Code ?? setCode.ToUpper(), boosterType, boosterCount, Options.Game);
 
             // create all pdfs
             foreach (var booster in boosterResult.BoosterBox?.Booster!)
@@ -1878,7 +1888,14 @@ namespace MgcPrxyDrftr
                 }
 
                 // load images
-                foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
+                if (boosterResult.BoosterBox.Game == Enumerators.Game.Lorcana)
+                {
+                    foreach (var card in booster.Cards) { await GetImageLorcana(card, boosterDirectory.FullName); }
+                } 
+                else if (boosterResult.BoosterBox.Game == Enumerators.Game.Magic)
+                {
+                    foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
+                }
 
                 if (Options.Mode == RunModes.Pdf && Options.Single == false)
                 {
@@ -1916,8 +1933,11 @@ namespace MgcPrxyDrftr
                 // gather all files for one large file
                 foreach (var imageDirectory in directory.GetDirectories("*", SearchOption.TopDirectoryOnly))
                 {
-                    cards.AddRange(imageDirectory.GetFiles("*.png").Select(imageFile => imageFile.FullName));
-                    cards.AddRange(Directory.GetFiles(@$"{imageDirectory.FullName}\foil\", "*.png"));
+                    cards.AddRange(imageDirectory.GetFiles("*").Where(imageFile => Extensions.Contains(imageFile.Extension.ToLowerInvariant())).Select(imageFile => imageFile.FullName));
+                    if (imageDirectory.GetDirectories("foil", SearchOption.TopDirectoryOnly).Length > 0)
+                    {
+                        cards.AddRange(Directory.GetFiles(@$"{imageDirectory.FullName}\foil\", "*"));
+                    }
                 }
                 
                 // create pdf
@@ -2260,9 +2280,7 @@ namespace MgcPrxyDrftr
             try
             {
                 // download if not present
-#pragma warning disable CS0618 // Type or member is obsolete
                 await Client.DownloadFileTaskAsync(absoluteDownloadUri, @$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
-#pragma warning restore CS0618 // Type or member is obsolete
             }
             catch (WebException webException)
             {
@@ -2273,6 +2291,46 @@ namespace MgcPrxyDrftr
             FileInfo newFile = new(@$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\{imageName}.{imageExtension}");
             if (!newFile.Exists) return false;
             _ = newFile.CopyTo($"{targetBoosterDirectory}{fileName}"); return true;
+        }
+
+        private static async Task GetImageLorcana(OpenBoosterCard card, string targetDirectory)
+        {
+            var imageUrl = card.ImageUrl;
+            var currentColor = Console.ForegroundColor;
+
+            // set font color according to rarity
+            Console.ForegroundColor = GetColorByRarity(card.Rarity);
+            if (!Options.Silent) Console.WriteLine($"Downloading {card.Name} ...");
+
+            // TODO: foil
+
+            // TODO: cache
+
+            try
+            {
+                // Download the image data as a stream
+                await using var responseStream = await HttpClient.GetStreamAsync(imageUrl);
+
+                // define decoder option for imagesharp to be able to handle avif and heif images
+                var decoderOptions = new DecoderOptions()
+                {
+                    Configuration = new SixLabors.ImageSharp.Configuration(new AvifConfigurationModule(),
+                        new HeifConfigurationModule())
+                };
+
+                // Save the (avif) stream to a (png) file
+                using var image = await Image.LoadAsync(decoderOptions, responseStream);
+                await image.SaveAsync($"{targetDirectory}{Guid.NewGuid()}.png", new PngEncoder());
+
+                Console.WriteLine($"Image downloaded successfully to {targetDirectory}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred while downloading the image: {ex.Message}");
+            }
+
+            // reset original font color
+            Console.ForegroundColor = currentColor;
         }
 
         private static async Task GetImage(OpenBoosterCard card, string targetDirectory)
@@ -2359,12 +2417,15 @@ namespace MgcPrxyDrftr
 
         private static ConsoleColor GetColorByRarity(string rarity)
         {
-            return rarity switch
+            return rarity?.ToLower() switch
             {
                 "common" => ConsoleColor.Gray,
                 "uncommon" => ConsoleColor.White,
                 "rare" => ConsoleColor.Yellow,
+                "super_rare" => ConsoleColor.DarkYellow,
                 "mythic" => ConsoleColor.Red,
+                "legendary" => ConsoleColor.DarkRed,
+                "enchanted" => ConsoleColor.Cyan,
                 "land" => ConsoleColor.DarkYellow,
                 "special" => ConsoleColor.Magenta,
                 "bonus" => ConsoleColor.Magenta,

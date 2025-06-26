@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using OpenBoosters.Api;
 
 namespace MgcPrxyDrftr.lib
 {
@@ -11,6 +12,9 @@ namespace MgcPrxyDrftr.lib
     {
         [Option('b', "booster", Required = true, HelpText = "Boosters to be generated.")]
         public string Booster { get; set; }
+
+        [Option('g', "game", Required = false, HelpText = "Game that this boosters is from.")]
+        public Enumerators.Game Game { get; set; }
 
         [Option('s', "silent", Required = false, HelpText = "Set output to silent.")]
         public bool Silent { get; set; } = false;
