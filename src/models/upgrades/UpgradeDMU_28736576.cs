@@ -1,71 +1,76 @@
-namespace MgcPrxyDrftr.models { public partial class Contents { 
-public long? FoilLegendsRetold { get; set; }
-public long? FoilAltBorderRareMythic { get; set; }
-public long? RetoldUncommon { get; set; }
-public long? ShowcaseRareMythic { get; set; }
-public long? TexturedFoil { get; set; }
-public long? EtchedRetoldUncommon { get; set; }
-public long? EtchedRetoldRareMythic { get; set; }
-public long? LostLegends { get; set; }
-public long? ArcaneMischief { get; set; }
-public long? ArcaneMischiefFoils { get; set; }
-public long? RareMythicBlue { get; set; }
-public long? BeastTerritory { get; set; }
-public long? BeastTerritoryFoils { get; set; }
-public long? RareMythicGreen { get; set; }
-public long? CoalitionCorps { get; set; }
-public long? CoalitionCorpsFoils { get; set; }
-public long? RareMythicWhite { get; set; }
-public long? CoalitionLegion { get; set; }
-public long? CoalitionLegionFoils { get; set; }
-public long? MonsterTerritory { get; set; }
-public long? MonsterTerritoryFoils { get; set; }
-public long? MysticMischief { get; set; }
-public long? MysticMischiefFoils { get; set; }
-public long? RareMythicRed { get; set; }
-public long? ReadyToAttack { get; set; }
-public long? ReadyToAttackFoils { get; set; }
-public long? ReadyToCharge { get; set; }
-public long? ReadyToChargeFoils { get; set; }
-public long? RareMythicBlack { get; set; }
-public long? TotallyMerciless { get; set; }
-public long? TotallyMercilessFoils { get; set; }
-public long? TotallyRuthless { get; set; }
-public long? TotallyRuthlessFoils { get; set; }
- } 
-public partial class Sheets { 
-public Sheet FoilLegendsRetold { get; set; }
-public Sheet FoilAltBorderRareMythic { get; set; }
-public Sheet RetoldUncommon { get; set; }
-public Sheet ShowcaseRareMythic { get; set; }
-public Sheet TexturedFoil { get; set; }
-public Sheet EtchedRetoldUncommon { get; set; }
-public Sheet EtchedRetoldRareMythic { get; set; }
-public Sheet LostLegends { get; set; }
-public Sheet ArcaneMischief { get; set; }
-public Sheet ArcaneMischiefFoils { get; set; }
-public Sheet RareMythicBlue { get; set; }
-public Sheet BeastTerritory { get; set; }
-public Sheet BeastTerritoryFoils { get; set; }
-public Sheet RareMythicGreen { get; set; }
-public Sheet CoalitionCorps { get; set; }
-public Sheet CoalitionCorpsFoils { get; set; }
-public Sheet RareMythicWhite { get; set; }
-public Sheet CoalitionLegion { get; set; }
-public Sheet CoalitionLegionFoils { get; set; }
-public Sheet MonsterTerritory { get; set; }
-public Sheet MonsterTerritoryFoils { get; set; }
-public Sheet MysticMischief { get; set; }
-public Sheet MysticMischiefFoils { get; set; }
-public Sheet RareMythicRed { get; set; }
-public Sheet ReadyToAttack { get; set; }
-public Sheet ReadyToAttackFoils { get; set; }
-public Sheet ReadyToCharge { get; set; }
-public Sheet ReadyToChargeFoils { get; set; }
-public Sheet RareMythicBlack { get; set; }
-public Sheet TotallyMerciless { get; set; }
-public Sheet TotallyMercilessFoils { get; set; }
-public Sheet TotallyRuthless { get; set; }
-public Sheet TotallyRuthlessFoils { get; set; }
- } }
+namespace MgcPrxyDrftr.models
+{
+    public partial class Contents
+    {
+        public long? FoilLegendsRetold { get; set; }
+        public long? FoilAltBorderRareMythic { get; set; }
+        public long? RetoldUncommon { get; set; }
+        public long? ShowcaseRareMythic { get; set; }
+        public long? TexturedFoil { get; set; }
+        public long? EtchedRetoldUncommon { get; set; }
+        public long? EtchedRetoldRareMythic { get; set; }
+        public long? LostLegends { get; set; }
+        public long? ArcaneMischief { get; set; }
+        public long? ArcaneMischiefFoils { get; set; }
+        public long? RareMythicBlue { get; set; }
+        public long? BeastTerritory { get; set; }
+        public long? BeastTerritoryFoils { get; set; }
+        public long? RareMythicGreen { get; set; }
+        public long? CoalitionCorps { get; set; }
+        public long? CoalitionCorpsFoils { get; set; }
+        public long? RareMythicWhite { get; set; }
+        public long? CoalitionLegion { get; set; }
+        public long? CoalitionLegionFoils { get; set; }
+        public long? MonsterTerritory { get; set; }
+        public long? MonsterTerritoryFoils { get; set; }
+        public long? MysticMischief { get; set; }
+        public long? MysticMischiefFoils { get; set; }
+        public long? RareMythicRed { get; set; }
+        public long? ReadyToAttack { get; set; }
+        public long? ReadyToAttackFoils { get; set; }
+        public long? ReadyToCharge { get; set; }
+        public long? ReadyToChargeFoils { get; set; }
+        public long? RareMythicBlack { get; set; }
+        public long? TotallyMerciless { get; set; }
+        public long? TotallyMercilessFoils { get; set; }
+        public long? TotallyRuthless { get; set; }
+        public long? TotallyRuthlessFoils { get; set; }
+    }
+    public partial class Sheets
+    {
+        public Sheet FoilLegendsRetold { get; set; }
+        public Sheet FoilAltBorderRareMythic { get; set; }
+        public Sheet RetoldUncommon { get; set; }
+        public Sheet ShowcaseRareMythic { get; set; }
+        public Sheet TexturedFoil { get; set; }
+        public Sheet EtchedRetoldUncommon { get; set; }
+        public Sheet EtchedRetoldRareMythic { get; set; }
+        public Sheet LostLegends { get; set; }
+        public Sheet ArcaneMischief { get; set; }
+        public Sheet ArcaneMischiefFoils { get; set; }
+        public Sheet RareMythicBlue { get; set; }
+        public Sheet BeastTerritory { get; set; }
+        public Sheet BeastTerritoryFoils { get; set; }
+        public Sheet RareMythicGreen { get; set; }
+        public Sheet CoalitionCorps { get; set; }
+        public Sheet CoalitionCorpsFoils { get; set; }
+        public Sheet RareMythicWhite { get; set; }
+        public Sheet CoalitionLegion { get; set; }
+        public Sheet CoalitionLegionFoils { get; set; }
+        public Sheet MonsterTerritory { get; set; }
+        public Sheet MonsterTerritoryFoils { get; set; }
+        public Sheet MysticMischief { get; set; }
+        public Sheet MysticMischiefFoils { get; set; }
+        public Sheet RareMythicRed { get; set; }
+        public Sheet ReadyToAttack { get; set; }
+        public Sheet ReadyToAttackFoils { get; set; }
+        public Sheet ReadyToCharge { get; set; }
+        public Sheet ReadyToChargeFoils { get; set; }
+        public Sheet RareMythicBlack { get; set; }
+        public Sheet TotallyMerciless { get; set; }
+        public Sheet TotallyMercilessFoils { get; set; }
+        public Sheet TotallyRuthless { get; set; }
+        public Sheet TotallyRuthlessFoils { get; set; }
+    }
+}
 

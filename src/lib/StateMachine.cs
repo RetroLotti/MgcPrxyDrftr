@@ -83,7 +83,7 @@ namespace MgcPrxyDrftr.lib
                 { new StateTransition(LoopState.SetManager, "b"), LoopState.Main },
 
                 { new StateTransition(LoopState.PriceChecker, "b"), LoopState.Main },
-                
+
                 { new StateTransition(LoopState.RawListManager, "b"), LoopState.Main },
             };
         }

@@ -1,36 +1,34 @@
-﻿using System;
+﻿using CommandLine;
+using HeyRed.ImageSharp.Heif.Formats.Avif;
+using HeyRed.ImageSharp.Heif.Formats.Heif;
+using MgcPrxyDrftr.lib;
+using MgcPrxyDrftr.models;
+using MtgApiManager.Lib.Service;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using OpenBoosters.Api;
+using QuestPDF.Infrastructure;
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Png;
+using SixLabors.ImageSharp.PixelFormats;
+using SixLabors.ImageSharp.Processing;
+using System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using CommandLine;
-using MgcPrxyDrftr.lib;
-using MgcPrxyDrftr.models;
-using MtgApiManager.Lib.Service;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using QuestPDF.Infrastructure;
-using SixLabors.ImageSharp.PixelFormats;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.Processing;
-using HeyRed.ImageSharp.Heif.Formats.Heif;
-using HeyRed.ImageSharp.Heif.Formats.Avif;
 using TextCopy;
 using Card = MgcPrxyDrftr.models.Card;
 using H = MgcPrxyDrftr.lib.Helpers;
 using Image = SixLabors.ImageSharp.Image;
-using OpenBoosters.Api;
-using System.Net.Http;
-using SixLabors.ImageSharp.Formats.Png;
-using HeyRed.ImageSharp.Heif.Formats.Avif;
-using HeyRed.ImageSharp.Heif.Formats.Heif;
-using SixLabors.ImageSharp.Formats;
 
 namespace MgcPrxyDrftr
 {
@@ -38,7 +36,7 @@ namespace MgcPrxyDrftr
     {
         private static StateMachine StateMachine { get; set; }
 
-        private static string BaseDirectory { get; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;    
+        private static string BaseDirectory { get; } = ConfigurationManager.AppSettings["BaseDirectory"] ?? Environment.CurrentDirectory;
         private static string JsonDirectory { get; } = ConfigurationManager.AppSettings["JsonDirectory"] ?? "json";
         private static string SetDirectory { get; } = ConfigurationManager.AppSettings["SetDirectory"] ?? "sets";
         private static string DeckDirectory { get; } = ConfigurationManager.AppSettings["DeckDirectory"] ?? "decks";
@@ -143,7 +141,7 @@ namespace MgcPrxyDrftr
 #if DEBUG
             // main loop
             _ = await EnterTheLoop();
-            
+
             ////AnalyseAllSets();
             ////GenerateFixedBoosterSheetSqlUpdate();
             ////ResetAndCleanEverything();
@@ -300,7 +298,7 @@ namespace MgcPrxyDrftr
             foreach (var item in dir.GetFiles("*.json"))
             {
                 var set = ReadSingleSet(item.Name[..item.Name.IndexOf('.')]);
-                foreach(var card in set.Data.Cards)
+                foreach (var card in set.Data.Cards)
                 {
                     list.Add(card.Uuid, card);
                 }
@@ -340,7 +338,7 @@ namespace MgcPrxyDrftr
 
         private static void GetFixedBoosterSheets(string setCode)
         {
-            var setFileContent= File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
+            var setFileContent = File.ReadAllText(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{setCode.ToUpper()}.json");
             var setJsonObject = JObject.Parse(setFileContent);
             var boosterDataToken = setJsonObject.SelectToken("data")?.SelectToken("booster");
             var sqlUpdateString = new StringBuilder();
@@ -357,10 +355,10 @@ namespace MgcPrxyDrftr
                 var boosterName = ((JProperty)jToken).Name;
 
                 foreach (var sheetName in from sheetToken in jToken.ToList()[0].SelectToken("sheets")!.ToList()
-                         let isFixed = (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>()
-                         let sheetName = ((JProperty)sheetToken).Name
-                         where isFixed
-                         select sheetName)
+                                          let isFixed = (sheetToken.ToList()[0].SelectToken("fixed") ?? false).Value<bool>()
+                                          let sheetName = ((JProperty)sheetToken).Name
+                                          where isFixed
+                                          select sheetName)
                 {
                     sqlUpdateString.AppendLine($"update setBoosterSheets set sheetIsFixed = 1 where setCode = '{setCode}' and boosterName = '{boosterName}' and sheetName = '{sheetName}';");
                 }
@@ -539,7 +537,7 @@ namespace MgcPrxyDrftr
                         foreach (var sheet in booster.Contents.GetType().GetProperties().Where(s => s.GetValue(booster.Contents, null) != null))
                         {
                             var cardCount = (long)sheet.GetValue(booster.Contents, null)!;
-                            
+
                             sb.AppendLine($"insert into rs_boosterblueprintsheets (boosterblueprintid, sheetid, cardcount) values ({boosterBlueprintCounter}, (select id from rs_sheet where sheetname = '{sheet.Name}' and setid = {setCounter}), {cardCount});");
                         }
                         sb.AppendLine("commit;");
@@ -603,7 +601,7 @@ namespace MgcPrxyDrftr
 
                 for (var i = 0; i < 36000; i++)
                 {
-                    Console.WriteLine($"{i + 1}/36000 [{k+1}]");
+                    Console.WriteLine($"{i + 1}/36000 [{k + 1}]");
 
                     var dict = GenerateBoosterPlain("NEO");
                     writer.WriteLine($"{(dict.TryGetValue("C Red", out var value) ? value : "0")}|{(dict.TryGetValue("C Green", out var value1) ? value1 : "0")}|{(dict.TryGetValue("C Black", out var value2) ? value2 : "0")}|{(dict.TryGetValue("C White", out var value3) ? value3 : "0")}|{(dict.TryGetValue("C Blue", out var value4) ? value4 : "0")}|{(dict.TryGetValue("C .Else", out var value5) ? value5 : "0")}|{(dict.TryGetValue("U Red", out var value6) ? value6 : "0")}|{(dict.TryGetValue("U Green", out var value7) ? value7 : "0")}|{(dict.TryGetValue("U Black", out var value8) ? value8 : "0")}|{(dict.TryGetValue("U White", out var value9) ? value9 : "0")}|{(dict.TryGetValue("U Blue", out var value10) ? value10 : "0")}|{(dict.TryGetValue("U .Else", out var value11) ? value11 : "0")}|{(dict.TryGetValue("R/M", out var value12) ? value12 : "0")}|{(dict.TryGetValue("C/U", out var value13) ? value13 : "0")}");
@@ -747,7 +745,7 @@ namespace MgcPrxyDrftr
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 WriteLine("R ╔═╗                         ", ConsoleColor.Black, ConsoleColor.Yellow);
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
-                WriteLine($"/ ║{ (dict.TryGetValue("R/M", out var value25) ? value25 : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
+                WriteLine($"/ ║{(dict.TryGetValue("R/M", out var value25) ? value25 : "-")}║                         ", ConsoleColor.Black, ConsoleColor.Yellow);
                 Console.SetCursorPosition(startPositionLeft, Console.CursorTop);
                 Write("M", ConsoleColor.Black, ConsoleColor.DarkRed);
                 WriteLine(" ╚═╝                         ", ConsoleColor.Black, ConsoleColor.Yellow);
@@ -774,9 +772,9 @@ namespace MgcPrxyDrftr
             H.Write("/**        /** //********  //******       /**      /**   //** **   //**   /**         /*******  /**   //**/**          /**    /**   //**", 0, 7);
             H.Write("//         //   ////////    //////        //       //     // //     //    //          ///////   //     // //           //     //     // ", 0, 8);
 
-            if(setCursor) { Console.SetCursorPosition(0, 10); }
+            if (setCursor) { Console.SetCursorPosition(0, 10); }
         }
-        
+
         // #############################################################
         // START
         // #############################################################
@@ -803,12 +801,12 @@ namespace MgcPrxyDrftr
                 var command = Console.ReadLine();
                 var isCommand = command is { Length: 1 };
 
-                if(isCommand)
+                if (isCommand)
                 {
                     // move to next state
                     _ = StateMachine.MoveNext(command);
 
-                    switch(command.ToLower())
+                    switch (command.ToLower())
                     {
                         case "c":
                             _ = ReadClipboardAndDownload();
@@ -817,21 +815,21 @@ namespace MgcPrxyDrftr
                             switch (StateMachine.CurrentState)
                             {
                                 case LoopState.DeckCreator:
-                                {
-                                    foreach(var deck in DeckList.Data)
                                     {
-                                        Console.WriteLine(deck.Name);
+                                        foreach (var deck in DeckList.Data)
+                                        {
+                                            Console.WriteLine(deck.Name);
+                                        }
+                                        Console.Write("Press any key to continue...");
+                                        _ = Console.ReadKey();
+                                        break;
                                     }
-                                    Console.Write("Press any key to continue...");
-                                    _ = Console.ReadKey();
-                                    break;
-                                }
                                 case LoopState.Options:
-                                {
-                                    Settings.NewDraftMenu = !Settings.NewDraftMenu;
-                                    Settings.Save();
-                                    break;
-                                }
+                                    {
+                                        Settings.NewDraftMenu = !Settings.NewDraftMenu;
+                                        Settings.Save();
+                                        break;
+                                    }
                                 case LoopState.Main:
                                 case LoopState.BoosterDraft:
                                 case LoopState.DeckManager:
@@ -848,36 +846,36 @@ namespace MgcPrxyDrftr
                             switch (StateMachine.CurrentState)
                             {
                                 case LoopState.DeckCreator:
-                                {
-                                    foreach (var deck in Decks)
                                     {
-                                        Console.WriteLine(deck.Value.Name);
+                                        foreach (var deck in Decks)
+                                        {
+                                            Console.WriteLine(deck.Value.Name);
+                                        }
+                                        Console.Write("Press any key to continue...");
+                                        _ = Console.ReadKey();
+                                        break;
                                     }
-                                    Console.Write("Press any key to continue...");
-                                    _ = Console.ReadKey();
-                                    break;
-                                }
                                 case LoopState.SetManager:
-                                {
-                                    foreach (var set in Sets)
                                     {
-                                        Console.WriteLine($"[{set.Value.Data.Code}]\t{set.Value.Data.Name}");
+                                        foreach (var set in Sets)
+                                        {
+                                            Console.WriteLine($"[{set.Value.Data.Code}]\t{set.Value.Data.Name}");
+                                        }
+                                        Console.Write("Press any key to continue...");
+                                        _ = Console.ReadKey();
+                                        break;
                                     }
-                                    Console.Write("Press any key to continue...");
-                                    _ = Console.ReadKey();
-                                    break;
-                                }
                                 case LoopState.BoosterDraft:
-                                {
-                                    // get only sets that actually have boosters
-                                    foreach (var set in Sets.Values.Where(s => s.Data.Booster is not null).ToList())
                                     {
-                                        Console.WriteLine($"[{set.Data.Code}]\t{set.Data.Name}");
+                                        // get only sets that actually have boosters
+                                        foreach (var set in Sets.Values.Where(s => s.Data.Booster is not null).ToList())
+                                        {
+                                            Console.WriteLine($"[{set.Data.Code}]\t{set.Data.Name}");
+                                        }
+                                        Console.Write("Press any key to continue...");
+                                        _ = Console.ReadKey();
+                                        break;
                                     }
-                                    Console.Write("Press any key to continue...");
-                                    _ = Console.ReadKey();
-                                    break;
-                                }
                                 case LoopState.Main:
                                     break;
                                 case LoopState.Options:
@@ -942,8 +940,8 @@ namespace MgcPrxyDrftr
                     {
                         case LoopState.DeckCreator:
                             throw new NotImplementedException("deck printing is not implemented");
-                            //_ = await PrintDeck(command);
-                            //break;
+                        //_ = await PrintDeck(command);
+                        //break;
                         case LoopState.BoosterDraft:
 
                             var targetDirectory =
@@ -958,8 +956,8 @@ namespace MgcPrxyDrftr
                             break;
                         case LoopState.RawListManager:
                             throw new NotImplementedException("raw list printing is not implemented");
-                            //_ = await PrintRawList(command);
-                            //break;
+                        //_ = await PrintRawList(command);
+                        //break;
                         case LoopState.FolderPrint:
                             _ = PrintDirectory(command);
                             break;
@@ -1086,8 +1084,8 @@ namespace MgcPrxyDrftr
                 {
                     // 1 [VOC] Azorius Signet
                     _ = int.TryParse(card[..1], out var cardCount);
-                    var cardSet = card.Substring(card.IndexOf('[')+1, card.IndexOf(']') - card.IndexOf('[')-1);
-                    var cardName = card[(card.IndexOf(']')+1)..].Trim();
+                    var cardSet = card.Substring(card.IndexOf('[') + 1, card.IndexOf(']') - card.IndexOf('[') - 1);
+                    var cardName = card[(card.IndexOf(']') + 1)..].Trim();
 
                     var scryfallCard = await Api.GetCardByNameAsync(cardName, cardSet).ConfigureAwait(false);
 
@@ -1115,10 +1113,10 @@ namespace MgcPrxyDrftr
             // TODO: check for new version of deck list
 
             FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\DeckList.json");
-            if(!file.Exists)
+            if (!file.Exists)
             {
                 var valid = await H.DownloadAndValidateFile("https://mtgjson.com/api/v5/DeckList.json", "https://mtgjson.com/api/v5/DeckList.json.sha256", @$"{BaseDirectory}\{JsonDirectory}\").ConfigureAwait(false);
-                if(!valid)
+                if (!valid)
                 {
                     throw new Exception("Filechecksum is invalid!");
                 }
@@ -1132,7 +1130,7 @@ namespace MgcPrxyDrftr
 
             // remove file if force download is used
             if (file.Exists && forceDownload) { file.Delete(); }
-            
+
             // download file if it is missing or force download is used
             if (!file.Exists || forceDownload)
             {
@@ -1163,14 +1161,14 @@ namespace MgcPrxyDrftr
                 }
             }
 
-            
+
             var completePriceList = await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\{fileName}").ConfigureAwait(false);
             var list = JsonConvert.DeserializeObject<OverallPriceList>(completePriceList);
 
             return list;
         }
 
-        private static void ReadAllDecks() 
+        private static void ReadAllDecks()
         {
             DirectoryInfo deckDirectory = new(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\");
             if (!deckDirectory.Exists) return;
@@ -1217,7 +1215,7 @@ namespace MgcPrxyDrftr
                 Console.WriteLine($"Reading {file.Name} ...");
                 _ = ReadSingleSet(file);
             }
-            if(files.Length <= 0)
+            if (files.Length <= 0)
             {
                 Console.WriteLine("No Set-Files found!");
             }
@@ -1225,7 +1223,7 @@ namespace MgcPrxyDrftr
 
         private static async Task ReadAllConfiguredSets(List<string> setsToLoad)
         {
-            if(setsToLoad is not { Count: > 0 })
+            if (setsToLoad is not { Count: > 0 })
             {
                 Console.WriteLine("No sets configured!");
             }
@@ -1245,7 +1243,7 @@ namespace MgcPrxyDrftr
                     FileInfo file = new(@$"{BaseDirectory}\{JsonDirectory}\{SetDirectory}\{set}.json");
                     // force reread when file does no longer exist
                     // TODO: I forgot why I did it that way and now I am too afraid to ask
-                    if(!file.Exists) { Settings.LastUpdatesList[set] = DateTime.Now.AddDays(-2); Settings.Save(); }
+                    if (!file.Exists) { Settings.LastUpdatesList[set] = DateTime.Now.AddDays(-2); Settings.Save(); }
                     _ = await Settings.CheckLastUpdate(set, $@"{BaseDirectory}\{JsonDirectory}", SetDirectory).ConfigureAwait(false);
                     Console.WriteLine($"> Reading {set}");
                     _ = ReadSingleSet(set);
@@ -1272,7 +1270,7 @@ namespace MgcPrxyDrftr
             var o = JsonConvert.DeserializeObject<SetRoot>(txt);
 
             var json = JObject.Parse(txt);
-            if(json.SelectToken("data")?.SelectToken("booster") != null && json.SelectToken("data")?.SelectToken("booster")?.SelectToken("default") != null)
+            if (json.SelectToken("data")?.SelectToken("booster") != null && json.SelectToken("data")?.SelectToken("booster")?.SelectToken("default") != null)
             {
                 foreach (var item in json.SelectToken("data")?.SelectToken("booster")?.SelectToken("default")?.SelectToken("boosters")!)
                 {
@@ -1293,7 +1291,7 @@ namespace MgcPrxyDrftr
             {
                 ReleaseTimelineSets.Add(o.Data.ReleaseDate.ToString("yyyy-MM-dd") + o.Data.Code, o.Data.Code);
             }
-                
+
             return o;
         }
 
@@ -1395,14 +1393,14 @@ namespace MgcPrxyDrftr
                     colorIdent += ".Else";
                 }
 
-                if(cards[boosterCards[i]].Rarity == Rarity.Rare || cards[boosterCards[i]].Rarity == Rarity.Mythic)
+                if (cards[boosterCards[i]].Rarity == Rarity.Rare || cards[boosterCards[i]].Rarity == Rarity.Mythic)
                 {
                     if (!generalCardDictionary.TryAdd("R/M", 1))
                     {
                         generalCardDictionary["R/M"]++;
                     }
                 }
-                else if(cards[boosterCards[i]].OtherFaceIds != null && cards[boosterCards[i]].SetCode.ToUpper().Equals("NEO") && (cards[boosterCards[i]].Rarity == Rarity.Common || cards[boosterCards[i]].Rarity == Rarity.Uncommon))
+                else if (cards[boosterCards[i]].OtherFaceIds != null && cards[boosterCards[i]].SetCode.ToUpper().Equals("NEO") && (cards[boosterCards[i]].Rarity == Rarity.Common || cards[boosterCards[i]].Rarity == Rarity.Uncommon))
                 {
                     if (!generalCardDictionary.TryAdd("C/U", 1))
                     {
@@ -1458,7 +1456,7 @@ namespace MgcPrxyDrftr
             // determine booster blueprint
             var blueprint = dynamicBooster!.Boosters.ToDictionary(item => item.Contents, item => item.Weight / (float)dynamicBooster.BoostersTotalWeight);
             var booster = blueprint.RandomElementByWeight(e => e.Value);
-            
+
             // determine booster contents
             foreach (var sheet in booster.Key.GetType().GetProperties().Where(s => s.GetValue(booster.Key, null) != null))
             {
@@ -1514,7 +1512,7 @@ namespace MgcPrxyDrftr
 
             // if there are addtional sets given they will only be used to get their cards like BRO needs BRR
             if (additionalSetCodes == null) return boosterCards.Select(t => cards[t]).ToList();
-            
+
             foreach (var item in additionalSetCodes.Select(addSetCode => Sets[addSetCode.ToUpper()]).SelectMany(addSet => addSet.Data.Cards.Where(item => !cards.ContainsKey(item.Uuid) && item.Side is null or Side.A)))
             {
                 cards.Add(item.Uuid, item);
@@ -1527,7 +1525,7 @@ namespace MgcPrxyDrftr
         //{
         //    // individual deck guid
         //    var guid = Guid.NewGuid();
-            
+
         //    // create folder
         //    DirectoryInfo directory = new(@$"{BaseDirectory}\{TemporaryDirectory}\{DeckDirectory}\{guid}\");
         //    directory.Create();
@@ -1552,7 +1550,7 @@ namespace MgcPrxyDrftr
         //                // read json 
         //                var localDeck = JsonConvert.DeserializeObject<DeckRoot>(await File.ReadAllTextAsync(@$"{BaseDirectory}\{JsonDirectory}\{DeckDirectory}\{deckFromList.FileName}.json").ConfigureAwait(false));
         //                deck = localDeck.Data;
-                        
+
         //                // add it to the list of local decks
         //                Decks.Add($"{deckFromList.FileName.ToLowerInvariant()}_{deck.Name.ToLowerInvariant()}", deck);
         //            }
@@ -1644,7 +1642,7 @@ namespace MgcPrxyDrftr
         //            directory.Create();
         //            lineCounter = 1;
         //        }
-                    
+
         //        _ = await GetImage(card, directory.FullName);
         //    }
 
@@ -1707,7 +1705,7 @@ namespace MgcPrxyDrftr
                 // get a booster
                 var booster = GenerateBooster(set.Code);
 
-                foreach (var card in booster) 
+                foreach (var card in booster)
                 {
                     sb.AppendLine($"insert into rs_boostercards (boosterid, cardid) values ((select max(id) from rs_booster), (select cardid from rs_card where mtgjsonid = '{card.Uuid}'));");
                 }
@@ -1748,7 +1746,7 @@ namespace MgcPrxyDrftr
 
             // add new set
             Settings.AddSet(setCode.ToUpper());
-            
+
             // check dependencies 
             if (SetDependencies.ContainsKey(setCode.ToUpper()))
             {
@@ -1891,7 +1889,7 @@ namespace MgcPrxyDrftr
                 if (boosterResult.BoosterBox.Game == Enumerators.Game.Lorcana)
                 {
                     foreach (var card in booster.Cards) { await GetImageLorcana(card, boosterDirectory.FullName); }
-                } 
+                }
                 else if (boosterResult.BoosterBox.Game == Enumerators.Game.Magic)
                 {
                     foreach (var card in booster.Cards) { await GetImage(card, boosterDirectory.FullName); }
@@ -1939,7 +1937,7 @@ namespace MgcPrxyDrftr
                         cards.AddRange(Directory.GetFiles(@$"{imageDirectory.FullName}\foil\", "*"));
                     }
                 }
-                
+
                 // create pdf
                 _ = H.CreatePdfDocumentQuest(cards, $@"{setCode.ToLower()}_{Enum.GetName(boosterType)?.ToLowerInvariant()}_{Guid.NewGuid()}.pdf", draftDirectory.FullName);
             }
@@ -1955,7 +1953,7 @@ namespace MgcPrxyDrftr
                 {
                     foreach (var imageFile in imageDirectory.GetFiles())
                     {
-                        if(images.Count < 4)
+                        if (images.Count < 4)
                         {
                             try
                             {
@@ -2101,9 +2099,9 @@ namespace MgcPrxyDrftr
                 _ = H.CreatePdfDocument(boosterGuid, @$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}");
 
                 FileInfo file = new(@$"{BaseDirectory}\{TemporaryDirectory}\{BoosterDirectory}\{boosterGuid}\{boosterGuid}.pdf");
-                
+
                 if (file.Exists) { file.MoveTo($@"{draftDirectory}\{setCode.ToLower()}_{boosterGuid}.pdf"); }
-                
+
                 Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
                 Console.WriteLine($@"File {draftDirectory}\{boosterGuid}.pdf created.");
                 Console.WriteLine("".PadRight(Console.WindowWidth, '═'));
@@ -2120,7 +2118,7 @@ namespace MgcPrxyDrftr
                 {
                     // ignore - will be cleaned up when the application is starting again
                 }
-                
+
                 Console.Clear();
             }
 
@@ -2164,7 +2162,7 @@ namespace MgcPrxyDrftr
         //            // save last used set
         //            Settings.LastGeneratedSet = setCode;
         //            Settings.Save();
-                    
+
         //            Console.WriteLine("");
         //            if (set == null)
         //            {
@@ -2180,7 +2178,7 @@ namespace MgcPrxyDrftr
         //        Console.WriteLine($"Chosen set: {set.Name}");
         //        Console.WriteLine("Reading set file...");
         //        ReadSingleSetWithUpdateCheck(set.Code);
-                
+
         //        Settings.AddSet(set.Code);
         //        Settings.Save();
 
@@ -2260,7 +2258,7 @@ namespace MgcPrxyDrftr
         //        Console.Write("To exit the application press [x].");
 
         //    } while (Console.ReadKey().Key != ConsoleKey.X);
-            
+
         //    return true;
         //}
 
@@ -2275,7 +2273,7 @@ namespace MgcPrxyDrftr
 
             // check target directory
             DirectoryInfo directoryInfo = new(@$"{cacheDirectory}\{face}\{imageName[..1]}\{imageName.Substring(1, 1)}\");
-            if(!directoryInfo.Exists) { directoryInfo.Create(); }
+            if (!directoryInfo.Exists) { directoryInfo.Create(); }
 
             try
             {
@@ -2369,7 +2367,7 @@ namespace MgcPrxyDrftr
         private static async Task<bool> GetImage(ScryfallApi.Client.Models.Card card, string targetDirectory)
         {
             var currentColor = Console.ForegroundColor;
-            
+
             Console.ForegroundColor = GetColorByRarity(card.Rarity);
             Console.WriteLine($"Downloading {card.Name} ...");
 
@@ -2404,7 +2402,7 @@ namespace MgcPrxyDrftr
         {
             // get scryfall card
             var scryfallCard = await Api.GetCardByScryfallIdAsync(cardIdentifiers.ScryfallId);
-            
+
             return await GetImage(scryfallCard, targetDirectory);
         }
         private static async Task<bool> GetImage(string scryfallId, string targetDirectory)
