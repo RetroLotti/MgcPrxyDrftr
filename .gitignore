@@ -361,3 +361,4 @@ MigrationBackup/
 /src/MgcPrxyDrftr/cache/scryfall
 /src/MgcPrxyDrftr/json/sets
 /src/MgcPrxyDrftr/json
+/src/cache/AllPrintings.sqlite
