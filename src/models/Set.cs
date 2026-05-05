@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
+using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Converters;
 
 namespace MgcPrxyDrftr.models
 {
@@ -214,7 +214,7 @@ namespace MgcPrxyDrftr.models
         [System.Runtime.Serialization.EnumMember(Value = "2003")]
         Year2003,
         [System.Runtime.Serialization.EnumMember(Value = "2015")]
-        Year2015, 
+        Year2015,
         Future
     };
 
@@ -222,13 +222,14 @@ namespace MgcPrxyDrftr.models
     public enum Layout { Adventure, Aftermath, [System.Runtime.Serialization.EnumMember(Value = "art_series")] ArtSeries, Augment, Case, Class, [System.Runtime.Serialization.EnumMember(Value = "double_faced_token")] DoubleFacedToken, Mutate, Emblem, Flip, Host, Leveler, Meld, [System.Runtime.Serialization.EnumMember(Value = "modal_dfc")] ModalDfc, Normal, Planar, [System.Runtime.Serialization.EnumMember(Value = "reversible_card")] ReversibleCard, Saga, Scheme, Split, Token, Transform, Vanguard, Prototype }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum PromoType 
-    { 
+    public enum PromoType
+    {
         Alchemy, Ampersand, ArenaLeague, BoosterFun, Boxtopper, BrawlDeck, BringAFriend, Bundle, Buyabox, CommanderParty, Concept, ConfettiFoil, Convention, DateStamped, Dossier, Doubleexposure, DoubleRainbow, DraculaSeries, DraftWeekend, Duels, Embossed, Event,
         Fracturefoil,
         [System.Runtime.Serialization.EnumMember(Value = "fnm")]
-        FridayNightMagic, 
-        Galaxyfoil, Gameday, Giftbox, Gilded, Glossy, Godzillaseries, Halofoil, Imagine, Instore, Intropack, Invisibleink, Jpwalker, Judgegift, League, Magnified, Mediainsert, Moonlitland, Neonink, Oilslick, Openhouse, Planeswalkerstamped, Plastic, Playerrewards, Playpromo, Portrait, Poster, Premiereshop, Prerelease, Promopack, Rainbowfoil, Raisedfoil, Ravnicacity, Rebalanced, Release, Ripplefoil, Schinesealtart, Scroll, Serialized, Setextension, Setpromo, Silverfoil, Stamped, Starterdeck, Stepandcompleat, Storechampionship, Surgefoil, Textured, Themepack, Thick, Tourney, Vault, Wizardsplaynetwork };
+        FridayNightMagic,
+        Galaxyfoil, Gameday, Giftbox, Gilded, Glossy, Godzillaseries, Halofoil, Imagine, Instore, Intropack, Invisibleink, Jpwalker, Judgegift, League, Magnified, Mediainsert, Moonlitland, Neonink, Oilslick, Openhouse, Planeswalkerstamped, Plastic, Playerrewards, Playpromo, Portrait, Poster, Premiereshop, Prerelease, Promopack, Rainbowfoil, Raisedfoil, Ravnicacity, Rebalanced, Release, Ripplefoil, Schinesealtart, Scroll, Serialized, Setextension, Setpromo, Silverfoil, Stamped, Starterdeck, Stepandcompleat, Storechampionship, Surgefoil, Textured, Themepack, Thick, Tourney, Vault, Wizardsplaynetwork
+    };
 
     public enum Rarity { Bonus, Common, Mythic, Rare, Special, Uncommon }
 
@@ -261,10 +262,10 @@ namespace MgcPrxyDrftr.models
         Bird, Blood, Boar, Bobblehead, Bolas,
         [System.Runtime.Serialization.EnumMember(Value = "Bolas's Meditation Realm")]
         BolassMeditationRealm,
-        Brainiac, 
-        Bringer, 
-        Brushwagg, 
-        Bureaucrat, 
+        Brainiac,
+        Bringer,
+        Brushwagg,
+        Bureaucrat,
         Byode,
         [System.Runtime.Serialization.EnumMember(Value = "C'tan")]
         Ctan,
@@ -562,7 +563,7 @@ namespace MgcPrxyDrftr.models
         Otter,
         Ouphe,
         [System.Runtime.Serialization.EnumMember(Value = "Outside Mutter's Spiral")]
-        OutsideMuttersSpiral, 
+        OutsideMuttersSpiral,
         Ox,
         Oyster,
         Pangolin,
@@ -660,8 +661,8 @@ namespace MgcPrxyDrftr.models
     public enum Supertype { Basic, Host, Legendary, Ongoing, Snow, World }
 
     [JsonConverter(typeof(StringEnumConverter))]
-    public enum Type 
-    { 
+    public enum Type
+    {
         Artifact, Battle, Stickers, Creature, Card, Conspiracy, Dragon, Dungeon, Tolkien, Universewalker, Eaturecray, Elemental, Elite, Emblem, Enchantment, Ever, Goblin, Hero, Instant, Jaguar, Kindred, Knights, Land, Legend, Phenomenon, Plane, Planeswalker, Scariest, Scheme, See, Sorcery, Specter, Sticker, Summon, Token, Tribal, Vanguard, Wolf,
         [System.Runtime.Serialization.EnumMember(Value = "You'll")]
         Youll

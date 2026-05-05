@@ -1,14 +1,14 @@
-﻿using System;
+﻿using MgcPrxyDrftr.models;
+using Newtonsoft.Json;
+using OpenBoosters.Api;
+using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
-using MgcPrxyDrftr.models;
 using Card = ScryfallApi.Client.Models.Card;
 using Set = ScryfallApi.Client.Models.Set;
-using Newtonsoft.Json;
-using System.Net;
-using OpenBoostersAPI;
 
 namespace MgcPrxyDrftr
 {

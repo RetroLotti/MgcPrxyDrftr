@@ -1,9 +1,9 @@
-﻿using System;
+﻿using MgcPrxyDrftr.lib;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
-using MgcPrxyDrftr.lib;
-using Newtonsoft.Json;
 using JsonSerializer = System.Text.Json.JsonSerializer;
 
 namespace MgcPrxyDrftr.models
@@ -42,7 +42,7 @@ namespace MgcPrxyDrftr.models
         }
         public void RemoveSet(string setCode)
         {
-            if(SetsToLoad != null && SetsToLoad.Contains(setCode))
+            if (SetsToLoad != null && SetsToLoad.Contains(setCode))
             {
                 SetsToLoad.Remove(setCode);
             }
@@ -79,7 +79,7 @@ namespace MgcPrxyDrftr.models
             if (File.Exists(@$"{fullJsonPath}\{setFolder}\{setCode.ToUpper()}.json")) return true;
 
             await Helpers.DownloadSetFile(setCode, fullJsonPath, setFolder).ConfigureAwait(false);
-   
+
             return true;
         }
         public void UpdateStatistics(string stat, string value)

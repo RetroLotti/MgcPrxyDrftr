@@ -1,8 +1,27 @@
 {
   "profiles": {
     "MgcPrxyDrftr": {
-      "commandLineArgs": "--mode=Pdf --single --booster fdn|36|play",
+      "commandName": "Project",
+      "commandLineArgs": "--game=Magic --mode=Pdf --single --booster \"sos|6|play\""
+    },
+    "WSL": {
+      "commandName": "WSL2",
+      "distributionName": ""
+    },
+    "NoCommandLine": {
       "commandName": "Project"
+    },
+    "OnlyHelp": {
+      "commandName": "Project",
+      "commandLineArgs": "--help"
+    },
+    "OnlyVersion": {
+      "commandName": "Project",
+      "commandLineArgs": "--version"
+    },
+    "MultipleBoosters": {
+      "commandName": "Project",
+      "commandLineArgs": "-b \"3ed|1|default,sos|1|collector\""
     }
   }
 }

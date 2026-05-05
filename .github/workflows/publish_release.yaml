@@ -30,6 +30,8 @@ jobs:
 
       - name: Build
         shell: bash
+        env:
+          NuGetPackageSourceCredentials_github: Username=${{ github.actor }};Password=${{ secrets.GITHUB_TOKEN }}
         run: |
           tag=$(git describe --tags --abbrev=0)
           release_name="MgcPrxyDrftr-$tag-${{ matrix.target }}"

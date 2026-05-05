@@ -1,19 +1,16 @@
-﻿using System;
-using System.Collections;
+﻿using MgcPrxyDrftr.models;
+using Newtonsoft.Json;
+using QuestPDF.Fluent;
+using QuestPDF.Helpers;
+using Spire.Pdf;
+using Spire.Pdf.Graphics;
+using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
-using MgcPrxyDrftr.models;
-using Newtonsoft.Json;
-using QuestPDF.Fluent;
-using QuestPDF.Helpers;
-using Spire.Additions.Xps.Schema;
-using Spire.Pdf;
-using Spire.Pdf.Graphics;
 
 namespace MgcPrxyDrftr.lib
 {
@@ -270,10 +267,10 @@ namespace MgcPrxyDrftr.lib
 
             var cards = Directory.GetFiles(@$"{imageFolder}\", "*.png");
 #pragma warning disable CA1825
-            var foilCards = new string[] {};
+            var foilCards = new string[] { };
 #pragma warning restore CA1825
 
-            if(printFoils) foilCards = Directory.GetFiles(@$"{imageFolder}\foil\", "*.png");
+            if (printFoils) foilCards = Directory.GetFiles(@$"{imageFolder}\foil\", "*.png");
 
             var allCards = cards.Concat(foilCards).ToArray();
 

@@ -1,85 +1,90 @@
-namespace MgcPrxyDrftr.models { public partial class Contents { 
-public long? MultiverseLegend { get; set; }
-public long? UncommonBattle { get; set; }
-public long? RareMythicBattle { get; set; }
-public long? ExtendedArtCommanderJumpstart { get; set; }
-public long? FoilMulUncommon { get; set; }
-public long? FoilShowcase { get; set; }
-public long? RareMythicMulTraditional { get; set; }
-public long? ShowcaseWild { get; set; }
-public long? UncommonMulEtched { get; set; }
-public long? RareMythicMulEtched { get; set; }
-public long? RareMythicMulHalo { get; set; }
-public long? RareMythicMulSerialized { get; set; }
-public long? DoubleFoilPraetorSerialized { get; set; }
-public long? UncommonMulHalo { get; set; }
-public long? UncommonMulSerialized { get; set; }
-public long? FoilUncommonMul { get; set; }
-public long? FoilWithShowcaseAndMul { get; set; }
-public long? Brood1 { get; set; }
-public long? Brood1Foils { get; set; }
-public long? Brood2 { get; set; }
-public long? Brood2Foils { get; set; }
-public long? Buff1 { get; set; }
-public long? Buff1Foils { get; set; }
-public long? Buff2 { get; set; }
-public long? Buff2Foils { get; set; }
-public long? Expendable1 { get; set; }
-public long? Expendable1Foils { get; set; }
-public long? Expendable2 { get; set; }
-public long? Expendable2Foils { get; set; }
-public long? Overachiever1 { get; set; }
-public long? Overachiever1Foils { get; set; }
-public long? Overachiever2 { get; set; }
-public long? Overachiever2Foils { get; set; }
-public long? Reinforcement1 { get; set; }
-public long? Reinforcement1Foils { get; set; }
-public long? Reinforcement2 { get; set; }
-public long? Reinforcement2Foils { get; set; }
-public long? PromoTeamup { get; set; }
-public long? PromoTeamupFoil { get; set; }
-public long? FoilEtched { get; set; }
- } 
-public partial class Sheets { 
-public Sheet MultiverseLegend { get; set; }
-public Sheet UncommonBattle { get; set; }
-public Sheet RareMythicBattle { get; set; }
-public Sheet ExtendedArtCommanderJumpstart { get; set; }
-public Sheet FoilMulUncommon { get; set; }
-public Sheet FoilShowcase { get; set; }
-public Sheet RareMythicMulTraditional { get; set; }
-public Sheet ShowcaseWild { get; set; }
-public Sheet UncommonMulEtched { get; set; }
-public Sheet RareMythicMulEtched { get; set; }
-public Sheet RareMythicMulHalo { get; set; }
-public Sheet RareMythicMulSerialized { get; set; }
-public Sheet DoubleFoilPraetorSerialized { get; set; }
-public Sheet UncommonMulHalo { get; set; }
-public Sheet UncommonMulSerialized { get; set; }
-public Sheet FoilUncommonMul { get; set; }
-public Sheet FoilWithShowcaseAndMul { get; set; }
-public Sheet Brood1 { get; set; }
-public Sheet Brood1Foils { get; set; }
-public Sheet Brood2 { get; set; }
-public Sheet Brood2Foils { get; set; }
-public Sheet Buff1 { get; set; }
-public Sheet Buff1Foils { get; set; }
-public Sheet Buff2 { get; set; }
-public Sheet Buff2Foils { get; set; }
-public Sheet Expendable1 { get; set; }
-public Sheet Expendable1Foils { get; set; }
-public Sheet Expendable2 { get; set; }
-public Sheet Expendable2Foils { get; set; }
-public Sheet Overachiever1 { get; set; }
-public Sheet Overachiever1Foils { get; set; }
-public Sheet Overachiever2 { get; set; }
-public Sheet Overachiever2Foils { get; set; }
-public Sheet Reinforcement1 { get; set; }
-public Sheet Reinforcement1Foils { get; set; }
-public Sheet Reinforcement2 { get; set; }
-public Sheet Reinforcement2Foils { get; set; }
-public Sheet PromoTeamup { get; set; }
-public Sheet PromoTeamupFoil { get; set; }
-public Sheet FoilEtched { get; set; }
- } }
+namespace MgcPrxyDrftr.models
+{
+    public partial class Contents
+    {
+        public long? MultiverseLegend { get; set; }
+        public long? UncommonBattle { get; set; }
+        public long? RareMythicBattle { get; set; }
+        public long? ExtendedArtCommanderJumpstart { get; set; }
+        public long? FoilMulUncommon { get; set; }
+        public long? FoilShowcase { get; set; }
+        public long? RareMythicMulTraditional { get; set; }
+        public long? ShowcaseWild { get; set; }
+        public long? UncommonMulEtched { get; set; }
+        public long? RareMythicMulEtched { get; set; }
+        public long? RareMythicMulHalo { get; set; }
+        public long? RareMythicMulSerialized { get; set; }
+        public long? DoubleFoilPraetorSerialized { get; set; }
+        public long? UncommonMulHalo { get; set; }
+        public long? UncommonMulSerialized { get; set; }
+        public long? FoilUncommonMul { get; set; }
+        public long? FoilWithShowcaseAndMul { get; set; }
+        public long? Brood1 { get; set; }
+        public long? Brood1Foils { get; set; }
+        public long? Brood2 { get; set; }
+        public long? Brood2Foils { get; set; }
+        public long? Buff1 { get; set; }
+        public long? Buff1Foils { get; set; }
+        public long? Buff2 { get; set; }
+        public long? Buff2Foils { get; set; }
+        public long? Expendable1 { get; set; }
+        public long? Expendable1Foils { get; set; }
+        public long? Expendable2 { get; set; }
+        public long? Expendable2Foils { get; set; }
+        public long? Overachiever1 { get; set; }
+        public long? Overachiever1Foils { get; set; }
+        public long? Overachiever2 { get; set; }
+        public long? Overachiever2Foils { get; set; }
+        public long? Reinforcement1 { get; set; }
+        public long? Reinforcement1Foils { get; set; }
+        public long? Reinforcement2 { get; set; }
+        public long? Reinforcement2Foils { get; set; }
+        public long? PromoTeamup { get; set; }
+        public long? PromoTeamupFoil { get; set; }
+        public long? FoilEtched { get; set; }
+    }
+    public partial class Sheets
+    {
+        public Sheet MultiverseLegend { get; set; }
+        public Sheet UncommonBattle { get; set; }
+        public Sheet RareMythicBattle { get; set; }
+        public Sheet ExtendedArtCommanderJumpstart { get; set; }
+        public Sheet FoilMulUncommon { get; set; }
+        public Sheet FoilShowcase { get; set; }
+        public Sheet RareMythicMulTraditional { get; set; }
+        public Sheet ShowcaseWild { get; set; }
+        public Sheet UncommonMulEtched { get; set; }
+        public Sheet RareMythicMulEtched { get; set; }
+        public Sheet RareMythicMulHalo { get; set; }
+        public Sheet RareMythicMulSerialized { get; set; }
+        public Sheet DoubleFoilPraetorSerialized { get; set; }
+        public Sheet UncommonMulHalo { get; set; }
+        public Sheet UncommonMulSerialized { get; set; }
+        public Sheet FoilUncommonMul { get; set; }
+        public Sheet FoilWithShowcaseAndMul { get; set; }
+        public Sheet Brood1 { get; set; }
+        public Sheet Brood1Foils { get; set; }
+        public Sheet Brood2 { get; set; }
+        public Sheet Brood2Foils { get; set; }
+        public Sheet Buff1 { get; set; }
+        public Sheet Buff1Foils { get; set; }
+        public Sheet Buff2 { get; set; }
+        public Sheet Buff2Foils { get; set; }
+        public Sheet Expendable1 { get; set; }
+        public Sheet Expendable1Foils { get; set; }
+        public Sheet Expendable2 { get; set; }
+        public Sheet Expendable2Foils { get; set; }
+        public Sheet Overachiever1 { get; set; }
+        public Sheet Overachiever1Foils { get; set; }
+        public Sheet Overachiever2 { get; set; }
+        public Sheet Overachiever2Foils { get; set; }
+        public Sheet Reinforcement1 { get; set; }
+        public Sheet Reinforcement1Foils { get; set; }
+        public Sheet Reinforcement2 { get; set; }
+        public Sheet Reinforcement2Foils { get; set; }
+        public Sheet PromoTeamup { get; set; }
+        public Sheet PromoTeamupFoil { get; set; }
+        public Sheet FoilEtched { get; set; }
+    }
+}
 
